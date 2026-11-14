@@ -16,6 +16,42 @@ const STARTERS = [
   "高位下拉我总是手臂酸、背没感觉,怎么办?",
 ];
 
+function CoachAvatar() {
+  return (
+    <span
+      aria-hidden
+      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-base"
+    >
+      🏋️
+    </span>
+  );
+}
+
+function ChoiceButton({
+  label,
+  badge,
+  onClick,
+}: {
+  label: string;
+  badge?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3.5 py-3 text-left text-[15px] font-medium shadow-[0_2px_8px_rgba(20,30,60,0.04)] active:scale-[0.99] active:border-primary"
+    >
+      {badge && (
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-bold text-primary">
+          {badge}
+        </span>
+      )}
+      <span className="min-w-0 flex-1">{label}</span>
+      <span className="shrink-0 text-primary">›</span>
+    </button>
+  );
+}
+
 function Coach() {
   const { chat, profile } = useApp();
   const busy = useCoachBusy();
@@ -77,7 +113,7 @@ function Coach() {
   }
 
   const iconBtn =
-    "flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-line bg-surface text-xl disabled:opacity-40";
+    "flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full text-xl active:bg-primary-soft disabled:opacity-40";
 
   return (
     <div className="flex flex-col">
@@ -120,19 +156,18 @@ function Coach() {
       </header>
 
       {chat.length === 0 && (
-        <div className="space-y-2">
-          <p className="rounded-2xl bg-card p-4 text-[15px] leading-relaxed">
-            嗨,我是你的健身教练 💪 告诉我今天想练哪里,我会看你之前的记录,帮你排好动作、组数和重量。看到不会用的器械,拍张照发给我就行。
-          </p>
-          {STARTERS.map((s) => (
-            <button
-              key={s}
-              onClick={() => void sendToCoach(s)}
-              className="block w-full rounded-2xl border border-line bg-card px-4 py-3 text-left text-[15px] active:scale-[0.99]"
-            >
-              {s}
-            </button>
-          ))}
+        <div className="space-y-2.5">
+          <div className="flex items-start gap-2.5">
+            <CoachAvatar />
+            <p className="bubble-ai rounded-2xl rounded-tl-md px-4 py-3 text-[15px] leading-relaxed">
+              嗨,我是你的健身教练 💪 告诉我今天想练哪里,我会看你之前的记录,帮你排好动作、组数和重量。看到不会用的器械,拍张照发给我就行。
+            </p>
+          </div>
+          <div className="space-y-2 pl-[42px]">
+            {STARTERS.map((s) => (
+              <ChoiceButton key={s} label={s} onClick={() => void sendToCoach(s)} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -148,49 +183,54 @@ function Coach() {
               ) : m.image === "" ? (
                 <span className="text-xs text-sub">📷 照片(已不保留预览)</span>
               ) : null}
-              <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] text-white">
+              <div className="bubble-user max-w-[82%] whitespace-pre-wrap rounded-2xl rounded-br-md px-4 py-2.5 text-[15px] leading-relaxed">
                 {m.text}
               </div>
             </div>
           ) : (
             <div key={m.id} className="space-y-2">
               {(shown || streaming) && (
-                <div className="max-w-[92%] rounded-2xl rounded-bl-md bg-card px-4 py-2.5">
-                  {shown ? (
-                    <MD text={shown} />
-                  ) : (
-                    <span className="animate-pulse text-sm text-sub">教练正在想…</span>
-                  )}
+                <div className="flex items-start gap-2.5">
+                  <CoachAvatar />
+                  <div className="bubble-ai min-w-0 max-w-[calc(100%-42px)] rounded-2xl rounded-tl-md px-4 py-2.5">
+                    {shown ? (
+                      <MD text={shown} />
+                    ) : (
+                      <span className="flex items-center gap-1 py-1.5" aria-label="教练正在想">
+                        {[0, 1, 2].map((d) => (
+                          <span
+                            key={d}
+                            className="h-2 w-2 animate-bounce rounded-full bg-primary"
+                            style={{ animationDelay: `${d * 0.15}s` }}
+                          />
+                        ))}
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
               {m.plan && <PlanCard plan={m.plan} />}
               {m.logged && (
-                <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                <div className="ml-[42px] inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
                   ✓ 已记录:{m.logged}
                 </div>
               )}
               {m.exerciseAdded && (
-                <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                <div className="ml-[42px] inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
                   ✓ 已加入动作库:{m.exerciseAdded}
                 </div>
               )}
               {m.mealLogged && (
-                <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                <div className="ml-[42px] inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
                   🥗 已记录饮食:{m.mealLogged}
                 </div>
               )}
               {isLast && !busy && m.choices && m.choices.length > 0 && (
-                <div className="flex flex-col gap-2 pt-1" role="group" aria-label="快捷回复">
-                  {m.choices.map((c) => (
-                    <button
-                      key={c}
-                      onClick={() => submit(c)}
-                      className="w-full rounded-2xl border border-primary/40 bg-primary-soft px-4 py-3 text-left text-[15px] font-semibold text-primary active:scale-[0.99]"
-                    >
-                      {c}
-                    </button>
+                <div className="flex flex-col gap-2 pt-1 pl-[42px]" role="group" aria-label="快捷回复">
+                  {m.choices.map((c, k) => (
+                    <ChoiceButton key={c} label={c} badge={"ABCD"[k]} onClick={() => submit(c)} />
                   ))}
-                  <p className="text-center text-xs text-sub">点一下就能回答,也可以打字、说话或拍照</p>
+                  <p className="text-xs text-sub">点一下就能回答,也可以打字、说话或拍照</p>
                 </div>
               )}
             </div>
@@ -222,7 +262,7 @@ function Coach() {
               )}
             </div>
           )}
-          <div className="flex items-end gap-2">
+          <div className="chat-bar flex items-end gap-1 rounded-[26px] p-1.5">
             <input
               ref={fileRef}
               type="file"
@@ -244,7 +284,7 @@ function Coach() {
             </button>
             {dictation.supported && (
               <button
-                className={`${iconBtn} ${dictation.listening ? "border-primary bg-primary text-white" : ""}`}
+                className={`${iconBtn} ${dictation.listening ? "bg-primary text-white" : ""}`}
                 aria-label={dictation.listening ? "停止语音输入" : "语音输入"}
                 aria-pressed={dictation.listening}
                 disabled={busy}
@@ -265,14 +305,15 @@ function Coach() {
               rows={1}
               placeholder="跟教练说点什么…"
               aria-label="给教练发消息"
-              className="max-h-32 min-h-[46px] min-w-0 flex-1 resize-none rounded-2xl border border-line bg-surface px-3 py-2.5 outline-none focus:border-primary"
+              className="max-h-32 min-h-[42px] min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 outline-none"
             />
             <button
               onClick={() => submit()}
               disabled={busy || (!text.trim() && !photo)}
-              className="h-[46px] shrink-0 rounded-2xl bg-primary px-4 font-semibold text-white disabled:opacity-40"
+              aria-label="发送"
+              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-white disabled:opacity-35"
             >
-              {busy ? "…" : "发送"}
+              {busy ? "…" : "↑"}
             </button>
           </div>
         </div>

@@ -251,3 +251,34 @@ select {
     animation: none;
   }
 }
+
+/* ───────── Coach chat ───────── */
+.bubble-user {
+  background: linear-gradient(
+    135deg,
+    color-mix(in oklab, var(--c-primary) 78%, white),
+    var(--c-primary)
+  );
+  color: var(--c-on-accent);
+  box-shadow: 0 6px 16px color-mix(in srgb, var(--c-primary) 22%, transparent);
+}
+.bubble-ai {
+  background: var(--c-card);
+  border: 1px solid var(--c-line);
+  box-shadow: 0 4px 14px rgba(20, 30, 60, 0.05);
+}
+.bubble-ai strong {
+  color: var(--c-primary);
+  font-weight: 700;
+}
+[data-theme="tech"] .bubble-ai strong {
+  color: var(--c-ink);
+}
+.chat-bar {
+  background: var(--c-card);
+  border: 1px solid var(--c-line);
+  box-shadow: 0 8px 24px rgba(20, 30, 60, 0.1);
+}
+.chat-bar:focus-within {
+  border-color: var(--c-primary);
+}
