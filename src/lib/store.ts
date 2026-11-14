@@ -1,13 +1,28 @@
 "use client";
 import { useSyncExternalStore } from "react";
-import type { AppState, CustomExercise, MealLog, Workout, WorkoutExercise } from "./types";
+import type {
+  AppState,
+  CustomExercise,
+  MealLog,
+  PersonWorkspace,
+  Profile,
+  Workout,
+  WorkoutExercise,
+} from "./types";
 
 const KEY = "gymcoach:v1";
 const MAX_MEAL_THUMBS = 12;
 
-export const EMPTY: AppState = {
-  profile: {
+export const uid = () =>
+  Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+export function emptyProfile(id = "default", patch: Partial<Profile> = {}): Profile {
+  return {
+    id,
+    avatar: "🙂",
     name: "",
+    gender: "",
+    age: "",
     goal: "",
     level: "新手(刚开始健身)",
     daysPerWeek: "3",
@@ -18,18 +33,113 @@ export const EMPTY: AppState = {
     memory: [],
     passcode: "",
     speak: false,
-  },
-  plan: null,
-  active: null,
-  workouts: [],
-  chat: [],
+    ...patch,
+  };
+}
+
+export function emptyWorkspace(id = "default", patch: Partial<Profile> = {}): PersonWorkspace {
+  return {
+    profile: emptyProfile(id, patch),
+    plan: null,
+    active: null,
+    workouts: [],
+    chat: [],
+    meals: [],
+  };
+}
+
+interface RootStore {
+  activeProfileId: string;
+  profiles: PersonWorkspace[];
+  customExercises: CustomExercise[];
+  passcode: string;
+}
+
+const DEFAULT_ROOT: RootStore = {
+  activeProfileId: "default",
+  profiles: [emptyWorkspace("default")],
   customExercises: [],
-  meals: [],
+  passcode: "",
 };
 
-let state: AppState = EMPTY;
+function project(root: RootStore): AppState {
+  const activeWs =
+    root.profiles.find((p) => p.profile.id === root.activeProfileId) ?? root.profiles[0];
+  return {
+    activeProfileId: activeWs.profile.id,
+    profiles: root.profiles,
+    profile: { ...activeWs.profile, passcode: root.passcode || activeWs.profile.passcode },
+    plan: activeWs.plan,
+    active: activeWs.active,
+    workouts: activeWs.workouts,
+    chat: activeWs.chat,
+    customExercises: root.customExercises,
+    meals: activeWs.meals,
+  };
+}
+
+export const EMPTY: AppState = project(DEFAULT_ROOT);
+
+let rootState: RootStore = DEFAULT_ROOT;
+let viewState: AppState = EMPTY;
 let loaded = false;
 const listeners = new Set<() => void>();
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+function normalizeWorkspace(raw: any, fallbackId: string, sharedPasscode: string): PersonWorkspace {
+  const base = emptyWorkspace(raw?.profile?.id || fallbackId);
+  const p = raw?.profile ?? {};
+  return {
+    profile: {
+      ...base.profile,
+      ...p,
+      id: p.id || fallbackId,
+      memory: Array.isArray(p.memory) ? p.memory : [],
+      passcode: sharedPasscode || p.passcode || "",
+    },
+    plan: raw?.plan ?? null,
+    active: raw?.active ?? null,
+    workouts: Array.isArray(raw?.workouts) ? raw.workouts : [],
+    chat: Array.isArray(raw?.chat) ? raw.chat : [],
+    meals: Array.isArray(raw?.meals) ? raw.meals : [],
+  };
+}
+
+function parseRootData(p: any): RootStore | null {
+  if (!p || typeof p !== "object") return null;
+
+  // Multi-profile format
+  if (Array.isArray(p.profiles) && p.profiles.length > 0) {
+    const passcode = typeof p.passcode === "string" ? p.passcode : (p.profiles[0]?.profile?.passcode ?? "");
+    const profiles: PersonWorkspace[] = p.profiles.map((w: any, idx: number) =>
+      normalizeWorkspace(w, idx === 0 ? "default" : `p-${idx}`, passcode),
+    );
+    const activeProfileId = profiles.some((w) => w.profile.id === p.activeProfileId)
+      ? p.activeProfileId
+      : profiles[0].profile.id;
+    return {
+      activeProfileId,
+      profiles,
+      customExercises: Array.isArray(p.customExercises) ? p.customExercises : [],
+      passcode,
+    };
+  }
+
+  // Legacy single-profile format
+  if (p.profile) {
+    const passcode = typeof p.profile.passcode === "string" ? p.profile.passcode : "";
+    const ws = normalizeWorkspace(p, "default", passcode);
+    return {
+      activeProfileId: ws.profile.id,
+      profiles: [ws],
+      customExercises: Array.isArray(p.customExercises) ? p.customExercises : [],
+      passcode,
+    };
+  }
+
+  return null;
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 function load() {
   if (loaded || typeof window === "undefined") return;
@@ -37,36 +147,121 @@ function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const p = JSON.parse(raw);
-      state = {
-        ...EMPTY,
-        ...p,
-        profile: { ...EMPTY.profile, ...(p.profile ?? {}) },
-        workouts: Array.isArray(p.workouts) ? p.workouts : [],
-        chat: Array.isArray(p.chat) ? p.chat : [],
-        customExercises: Array.isArray(p.customExercises) ? p.customExercises : [],
-        meals: Array.isArray(p.meals) ? p.meals : [],
-      };
+      const parsed = parseRootData(JSON.parse(raw));
+      if (parsed) {
+        rootState = parsed;
+        viewState = project(rootState);
+      }
     }
   } catch {
     // corrupted or unavailable storage: start fresh
   }
 }
 
-export function getState(): AppState {
-  load();
-  return state;
-}
-
-export function setState(fn: (s: AppState) => AppState) {
-  load();
-  state = fn(state);
+function commit(nextRoot: RootStore) {
+  rootState = nextRoot;
+  viewState = project(rootState);
   try {
-    localStorage.setItem(KEY, JSON.stringify(state));
+    localStorage.setItem(KEY, JSON.stringify(rootState));
   } catch {
     // storage full / unavailable — keep in memory
   }
   listeners.forEach((l) => l());
+}
+
+export function getState(): AppState {
+  load();
+  return viewState;
+}
+
+export function setState(fn: (s: AppState) => AppState) {
+  load();
+  const prev = viewState;
+  const next = fn(prev);
+  const passcode =
+    next.profile.passcode !== prev.profile.passcode ? next.profile.passcode : rootState.passcode;
+
+  const updatedProfiles = next.profiles.map((ws) => {
+    if (ws.profile.id !== next.activeProfileId) {
+      return passcode === rootState.passcode
+        ? ws
+        : { ...ws, profile: { ...ws.profile, passcode } };
+    }
+    return {
+      profile: { ...next.profile, id: ws.profile.id, passcode },
+      plan: next.plan,
+      active: next.active,
+      workouts: next.workouts,
+      chat: next.chat,
+      meals: next.meals,
+    };
+  });
+
+  commit({
+    activeProfileId: next.activeProfileId,
+    profiles: updatedProfiles,
+    customExercises: next.customExercises,
+    passcode,
+  });
+}
+
+/** Update a specific profile workspace safely (e.g., streaming AI responses even if user switched profile). */
+export function setStateForProfile(
+  profileId: string,
+  fn: (ws: PersonWorkspace) => PersonWorkspace,
+) {
+  load();
+  const profiles = rootState.profiles.map((ws) =>
+    ws.profile.id === profileId ? fn(ws) : ws,
+  );
+  commit({ ...rootState, profiles });
+}
+
+export function switchProfile(profileId: string) {
+  load();
+  if (!rootState.profiles.some((w) => w.profile.id === profileId)) return;
+  commit({ ...rootState, activeProfileId: profileId });
+}
+
+export function createProfile(patch: Partial<Profile>, copyEquipment = true): string {
+  load();
+  const id = `p-${uid()}`;
+  const activeEquip = viewState.profile.equipment;
+  const ws = emptyWorkspace(id, {
+    ...patch,
+    id,
+    equipment: copyEquipment && !patch.equipment ? activeEquip : (patch.equipment ?? ""),
+    passcode: rootState.passcode,
+  });
+  commit({
+    ...rootState,
+    activeProfileId: id,
+    profiles: [...rootState.profiles, ws],
+  });
+  return id;
+}
+
+export function deleteProfile(profileId: string) {
+  load();
+  if (rootState.profiles.length <= 1) return;
+  const remaining = rootState.profiles.filter((w) => w.profile.id !== profileId);
+  const activeProfileId =
+    rootState.activeProfileId === profileId ? remaining[0].profile.id : rootState.activeProfileId;
+  commit({ ...rootState, activeProfileId, profiles: remaining });
+}
+
+export function exportRootBackup(): RootStore {
+  load();
+  return rootState;
+}
+
+export function importRootBackup(rawData: unknown): { profilesCount: number; workoutsCount: number } | null {
+  load();
+  const parsed = parseRootData(rawData);
+  if (!parsed) return null;
+  commit(parsed);
+  const workoutsCount = parsed.profiles.reduce((n, w) => n + w.workouts.length, 0);
+  return { profilesCount: parsed.profiles.length, workoutsCount };
 }
 
 export function addCustomExercise(ex: CustomExercise) {
@@ -83,17 +278,30 @@ export function removeCustomExercise(id: string) {
   }));
 }
 
-export function addMealLog(meal: MealLog) {
-  setState((s) => {
-    const next = [...s.meals, meal];
-    let kept = 0;
-    const pruned = [...next].reverse().map((m) => {
+export function pruneMealImages(meals: MealLog[]): MealLog[] {
+  let kept = 0;
+  return [...meals]
+    .reverse()
+    .map((m) => {
       if (!m.image) return m;
       kept++;
       return kept > MAX_MEAL_THUMBS ? { ...m, image: undefined } : m;
-    });
-    return { ...s, meals: pruned.reverse() };
-  });
+    })
+    .reverse();
+}
+
+export function addMealLog(meal: MealLog, profileId?: string) {
+  if (profileId) {
+    setStateForProfile(profileId, (ws) => ({
+      ...ws,
+      meals: pruneMealImages([...ws.meals, meal]),
+    }));
+    return;
+  }
+  setState((s) => ({
+    ...s,
+    meals: pruneMealImages([...s.meals, meal]),
+  }));
 }
 
 export function removeMealLog(id: string) {
@@ -120,9 +328,6 @@ export function useHydrated(): boolean {
     () => false,
   );
 }
-
-export const uid = () =>
-  Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 export function sameExercise(
   a: { exerciseId?: string; name: string },

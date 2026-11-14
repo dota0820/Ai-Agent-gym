@@ -8,6 +8,7 @@ import {
   historyForCoach,
   lastPerformance,
   setState,
+  setStateForProfile,
   uid,
 } from "./store";
 import type { ChatMsg, Guide, MealLog, Plan, Workout, WorkoutExercise } from "./types";
@@ -99,11 +100,14 @@ function buildContext(): string {
   const s = getState();
   const p = s.profile;
   const now = new Date();
+  const genderLabel = p.gender === "male" ? "男" : p.gender === "female" ? "女" : "(未填)";
   const lines = [
     `今天是 ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")},星期${"日一二三四五六"[now.getDay()]}。`,
     "",
-    "## 用户资料",
+    `## 当前人物档案: ${p.avatar || "🧑"} ${p.name || "默认人物"} (ID: ${p.id})`,
+    "说明: 以下所有记忆、计划、训练记录、饮食记录均仅属于当前人物档案。所有训练安排、重量建议和营养指导必须严格匹配此人物的身体数据与目标。",
     `称呼: ${p.name || "(未填)"}`,
+    `性别 / 年龄: ${genderLabel} / ${p.age ? `${p.age} 岁` : "(未填)"}`,
     `目标: ${p.goal || "(未填)"}`,
     `经验: ${p.level || "(未填)"}`,
     `每周计划去健身房: ${p.daysPerWeek || "?"} 次`,
@@ -175,10 +179,6 @@ function extractChoices(raw: string): string[] {
     .map((x) => x.trim())
     .filter(Boolean)
     .slice(0, 4);
-}
-
-function patchMsg(id: string, fn: (m: ChatMsg) => ChatMsg) {
-  setState((s) => ({ ...s, chat: s.chat.map((m) => (m.id === id ? fn(m) : m)) }));
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -277,34 +277,44 @@ const MAX_THUMBS = 8;
 export async function sendToCoach(text: string, photo?: { full: string; thumb: string }) {
   text = text.trim() || (photo ? "帮我看看这张照片" : "");
   if (!text || busy) return;
+  const targetProfileId = getState().activeProfileId;
   setBusy(true);
   const ts = new Date().toISOString();
   const aid = uid();
-  setState((s) => ({
-    ...s,
+  const patchTargetMsg = (fn: (m: ChatMsg) => ChatMsg) =>
+    setStateForProfile(targetProfileId, (ws) => ({
+      ...ws,
+      chat: ws.chat.map((m) => (m.id === aid ? fn(m) : m)),
+    }));
+  const initialContext = buildContext();
+
+  setStateForProfile(targetProfileId, (ws) => ({
+    ...ws,
     chat: [
-      ...s.chat,
+      ...ws.chat,
       { id: uid(), role: "user", text, ts, image: photo?.thumb },
       { id: aid, role: "assistant", text: "", ts },
     ],
   }));
   if (photo) {
     // keep storage small: only the most recent photos keep their thumbnail
-    setState((s) => {
+    setStateForProfile(targetProfileId, (ws) => {
       let kept = 0;
-      const chat = [...s.chat].reverse().map((m) => {
+      const chat = [...ws.chat].reverse().map((m) => {
         if (!m.image) return m;
         kept++;
         return kept > MAX_THUMBS ? { ...m, image: "" } : m;
       });
-      return { ...s, chat: chat.reverse() };
+      return { ...ws, chat: chat.reverse() };
     });
   }
   const fail = (msg: string) =>
-    patchMsg(aid, (m) => ({ ...m, text: (m.text ? m.text + "\n\n" : "") + `⚠️ ${msg}` }));
+    patchTargetMsg((m) => ({ ...m, text: (m.text ? m.text + "\n\n" : "") + `⚠️ ${msg}` }));
 
   try {
     const s = getState();
+    const targetWs = s.profiles.find((p) => p.profile.id === targetProfileId);
+    const chatSnapshot = targetWs ? targetWs.chat : s.chat;
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: {
@@ -312,8 +322,8 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
         "x-app-passcode": s.profile.passcode,
       },
       body: JSON.stringify({
-        messages: historyForApi(s.chat.filter((m) => m.id !== aid)),
-        context: buildContext(),
+        messages: historyForApi(chatSnapshot.filter((m) => m.id !== aid)),
+        context: initialContext,
         image: photo?.full,
       }),
     });
@@ -329,26 +339,26 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
       if (!line.trim()) return;
       const ev = JSON.parse(line);
       if (ev.type === "text") {
-        patchMsg(aid, (m) => ({ ...m, text: m.text + ev.text }));
+        patchTargetMsg((m) => ({ ...m, text: m.text + ev.text }));
       } else if (ev.type === "plan") {
         const plan = toPlan(ev.plan);
-        setState((st) => ({ ...st, plan }));
-        patchMsg(aid, (m) => ({ ...m, plan }));
+        setStateForProfile(targetProfileId, (ws) => ({ ...ws, plan }));
+        patchTargetMsg((m) => ({ ...m, plan }));
       } else if (ev.type === "workout") {
         const w = toWorkout(ev.workout);
-        setState((st) => ({ ...st, workouts: [...st.workouts, w] }));
-        patchMsg(aid, (m) => ({ ...m, logged: w.title }));
+        setStateForProfile(targetProfileId, (ws) => ({ ...ws, workouts: [...ws.workouts, w] }));
+        patchTargetMsg((m) => ({ ...m, logged: w.title }));
       } else if (ev.type === "meal") {
         const meal = toMeal(ev.meal);
-        addMealLog(meal);
-        patchMsg(aid, (m) => ({
+        addMealLog(meal, targetProfileId);
+        patchTargetMsg((m) => ({
           ...m,
           mealLogged: `${meal.summary} (${meal.calories} kcal · 蛋白 ${meal.protein}g)`,
         }));
       } else if (ev.type === "memory") {
-        setState((st) => ({
-          ...st,
-          profile: { ...st.profile, memory: [...st.profile.memory, ev.note] },
+        setStateForProfile(targetProfileId, (ws) => ({
+          ...ws,
+          profile: { ...ws.profile, memory: [...ws.profile.memory, ev.note] },
         }));
       } else if (ev.type === "error") {
         fail(ev.error);
@@ -368,13 +378,14 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
   } catch {
     fail("网络断了,请再发一次。");
   } finally {
-    patchMsg(aid, (m) => {
+    patchTargetMsg((m) => {
       const choices = extractChoices(m.text);
       return {
         ...m,
         choices: choices.length ? choices : undefined,
         text:
-          visibleText(m.text) || (m.plan || m.logged ? "" : "⚠️ 教练没有回复,请再试一次。"),
+          visibleText(m.text) ||
+          (m.plan || m.logged || m.mealLogged ? "" : "⚠️ 教练没有回复,请再试一次。"),
       };
     });
     setBusy(false);

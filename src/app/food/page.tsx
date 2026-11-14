@@ -1,7 +1,9 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
+import ProfileSwitchBar from "@/components/ProfileSwitchBar";
 import { fileToJpegDataUrl } from "@/lib/actions";
 import {
   computeNutritionTargets,
@@ -61,12 +63,22 @@ function MacroBar({
   );
 }
 
-export default function FoodPage() {
+function FoodContent() {
   const { meals, profile, workouts } = useApp();
+  const searchParams = useSearchParams();
   const ready = useHydrated();
 
   const today = localDateKey();
-  const [dateKey, setDateKey] = useState(today);
+  const rawDate = searchParams.get("date");
+  const validParamDate = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
+  const [dateKey, setDateKey] = useState(validParamDate ?? today);
+  const lastParamDate = useRef(validParamDate);
+  useEffect(() => {
+    if (validParamDate && validParamDate !== lastParamDate.current) {
+      setDateKey(validParamDate);
+    }
+    lastParamDate.current = validParamDate;
+  }, [validParamDate]);
   const [mealType, setMealType] = useState<MealType>(() => defaultMealTypeForHour());
   const [text, setText] = useState("");
   const [photo, setPhoto] = useState<{ full: string; thumb: string } | null>(null);
@@ -105,8 +117,10 @@ export default function FoodPage() {
     setBusy(true);
     setError("");
     try {
+      const genderLabel =
+        profile.gender === "male" ? "男" : profile.gender === "female" ? "女" : "未知";
       const ctxLines = [
-        `目标: ${profile.goal || "保持健康"}, 体重: ${profile.weightKg || "?"} kg, 身高: ${profile.heightCm || "?"} cm`,
+        `当前人物档案: ${profile.name || "默认人物"} (性别: ${genderLabel}, 年龄: ${profile.age || "?"}岁, 身高: ${profile.heightCm || "?"} cm, 体重: ${profile.weightKg || "?"} kg, 目标: ${profile.goal || "保持健康"}, 每周训练: ${profile.daysPerWeek || "?"} 次)`,
         dayWorkouts.length
           ? `当天训练: ${dayWorkouts.map((w) => w.title).join("、")}${workoutCals ? ` (手表消耗 ${workoutCals} kcal)` : ""}`
           : "当天暂未记录训练",
@@ -236,6 +250,7 @@ export default function FoodPage() {
 
   return (
     <div className="space-y-4">
+      <ProfileSwitchBar compact />
       <div className="flex items-start justify-between gap-2">
         <H1 sub="拍照片或说一句话，AI 营养师帮你算热量、蛋白质、碳水和脂肪">饮食营养</H1>
         <div className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-card p-1 text-xs font-semibold">
@@ -264,7 +279,12 @@ export default function FoodPage() {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs font-semibold text-sub">
-              {fmtDateKey(dateKey)}营养进度 {targets.isCustom ? "(自定义目标)" : "(按体重与目标推算)"}
+              {fmtDateKey(dateKey)}营养进度{" "}
+              {targets.isCustom
+                ? "(自定义目标)"
+                : targets.missingBodyStats
+                  ? "(默认参考 · 填身高体重更准)"
+                  : `(${profile.heightCm}cm/${profile.weightKg}kg · BMR ${targets.bmr})`}
             </div>
             <div className="mt-0.5 text-2xl font-bold tabular-nums">
               {totals.calories}
@@ -652,5 +672,13 @@ export default function FoodPage() {
         )}
       </section>
     </div>
+  );
+}
+
+export default function FoodPage() {
+  return (
+    <Suspense fallback={null}>
+      <FoodContent />
+    </Suspense>
   );
 }

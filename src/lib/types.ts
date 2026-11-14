@@ -238,8 +238,14 @@ export interface NutritionTargets {
   fat?: number | null;
 }
 
+export type Gender = "female" | "male" | "";
+
 export interface Profile {
+  id: string;
+  avatar?: string;
   name: string;
+  gender?: Gender;
+  age?: string;
   goal: string;
   level: string;
   daysPerWeek: string;
@@ -267,7 +273,18 @@ export interface ChatMsg {
   ts: string;
 }
 
+export interface PersonWorkspace {
+  profile: Profile;
+  plan: Plan | null;
+  active: Workout | null;
+  workouts: Workout[];
+  chat: ChatMsg[];
+  meals: MealLog[];
+}
+
 export interface AppState {
+  activeProfileId: string;
+  profiles: PersonWorkspace[];
   profile: Profile;
   plan: Plan | null;
   active: Workout | null;
