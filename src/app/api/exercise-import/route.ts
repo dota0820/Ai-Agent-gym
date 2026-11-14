@@ -25,6 +25,7 @@ const DEFAULT_PRIMARY: Record<Group, Muscle[]> = {
   shoulders: ["front-deltoids"],
   arms: ["biceps"],
   core: ["abs"],
+  mobility: ["gluteal", "upper-back"],
   cardio: ["quadriceps"],
 };
 

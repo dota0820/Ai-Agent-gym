@@ -6,6 +6,7 @@ export type Group =
   | "shoulders"
   | "arms"
   | "core"
+  | "mobility"
   | "cardio";
 
 export const GROUPS: { id: Group; label: string; emoji: string }[] = [
@@ -16,6 +17,7 @@ export const GROUPS: { id: Group; label: string; emoji: string }[] = [
   { id: "shoulders", label: "肩", emoji: "🤸" },
   { id: "arms", label: "手臂", emoji: "💪" },
   { id: "core", label: "核心", emoji: "🔥" },
+  { id: "mobility", label: "灵活/热身", emoji: "🧘" },
   { id: "cardio", label: "有氧", emoji: "🏃" },
 ];
 
@@ -103,6 +105,11 @@ export const SUBS: Record<Group, { id: string; label: string }[]> = {
     { id: "lower", label: "下腹" },
     { id: "obliques", label: "侧腹" },
     { id: "deep", label: "深层稳定" },
+  ],
+  mobility: [
+    { id: "hip", label: "髋与下肢" },
+    { id: "spine", label: "胸椎与脊柱" },
+    { id: "shoulder", label: "肩袖与肩胛" },
   ],
   cardio: [],
 };

@@ -45,6 +45,25 @@ export const CUES: Record<string, [string, string, string]> = {
   "hammer-curl": ["掌心相对,像握锤子", "手肘贴身不动", "慢慢放下"],
   "russian-twist": ["上身后倾 45 度,背挺直", "身体带着手一起转", "慢一点"],
   "hip-adduction": ["起始宽度不要调太开", "用力向中间夹,停 1 秒", "慢慢打开"],
+  "worlds-greatest-stretch": ["后腿蹬直,手肘往脚踝内侧沉", "同侧手臂向天花板旋转打开", "眼睛跟着手指看"],
+  "cat-cow": ["呼气拱背低头,像炸毛的猫", "吸气沉腰推胸,肩远离耳朵", "一节一节缓慢活动脊柱"],
+  "thoracic-open-book": ["双膝屈 90 度贴紧地面不动", "上方手臂像翻书向对侧打开", "呼气让远端肩膀慢慢落向地面"],
+  "hip-90-90": ["前后腿膝盖各弯成 90 度", "挺直上身,不要弯腰驼背", "以脚跟为轴平稳翻转双膝"],
+  "wall-slide": ["臀、上背、后脑勺贴紧墙面", "手肘和手背尽量全程贴墙", "腰不要拱起离开墙面"],
+  "ankle-pry-squat": ["蹲到底,用手肘把膝盖往外顶", "脚跟踩死地面绝不抬起", "重心左右平移把膝盖压过脚尖"],
+  "band-monster-walk": ["弹力带套在膝盖上方或脚踝", "微屈髋膝半蹲,脚尖始终朝前", "迈小步始终绷紧弹力带"],
+  "foam-roll-back": ["泡沫轴只滚上背,不滚下腰", "双手托头保护脖子,先抬起屁股", "遇到酸痛点停住深呼吸 3 次"],
+  "bulgarian-split-squat": ["后脚脚背轻搭凳面,不靠后腿蹬", "上身微前倾,重心全在前脚脚跟", "前膝朝脚尖方向稳定下蹲"],
+  "sumo-squat": ["双脚约 1.5 倍肩宽,脚尖外展 45°", "膝盖严格顺着脚尖方向打开", "脚跟与大腿内侧发力蹲起"],
+  "cable-pull-through": ["背对低滑轮,双脚跨过绳索站立", "屁股像关门一样往后推,背挺平", "髋部往前顶并夹紧屁股站直"],
+  "single-leg-glute-bridge": ["单脚脚跟踩实,另一腿抬空固定", "用支撑脚脚跟把髋顶成一条直线", "骨盆保持水平,不要一边高一边低"],
+  "chest-supported-row": ["胸口贴紧 30–45° 上斜凳不借力", "先沉肩,手肘往后拉向裤子口袋", "顶端把肩胛骨用力夹紧 1 秒"],
+  "prone-ytw": ["大拇指朝天花板,不拿重物或极轻", "全程沉肩,不要耸脖子", "Y、T、W 每个字母在顶端停 2 秒"],
+  "band-external-rotation": ["手肘弯 90 度,紧紧夹在肋骨旁", "可在腋下夹毛巾防手肘离开", "小臂像开门一样缓慢向外转"],
+  "preacher-curl": ["大臂后侧完全贴紧斜托垫不动", "下放到底前留一点微弯不锁死", "只靠二头收缩把重量弯举上来"],
+  "bird-dog": ["四足跪姿,腰背平得像放了杯水", "对侧手往前伸、脚往后蹬到水平", "骨盆不翻转、腰部绝不塌陷"],
+  "pallof-press": ["侧对龙门架,滑轮调到胸口高度", "双手把把手从胸前垂直往前推直", "核心收紧对抗拉索,身体绝不扭转"],
+  "farmers-walk": ["双手提重铃,肩膀后收下沉不耸肩", "收紧肚子和屁股,身体不左右摇晃", "目视前方,迈小步平稳往前走"],
 };
 
 export type AttachmentType =
@@ -99,6 +118,8 @@ export const EXERCISE_ATTACHMENT: Record<string, { type: AttachmentType; grip: s
   "cable-kickback": { type: "ankle-strap", grip: "绑在脚踝上扣紧,金属环朝后" },
   "cable-fly-high": { type: "d-handle", grip: "两边滑轮各挂一个,一手握一个" },
   "cable-fly-low": { type: "d-handle", grip: "两边滑轮各挂一个,一手握一个" },
+  "cable-pull-through": { type: "rope", grip: "背对滑轮从胯下穿过绳索,双手各握一端橡胶球上方" },
+  "pallof-press": { type: "d-handle", grip: "侧对滑轮,双手十指交扣共同握住一个单手把手" },
 };
 
 /** Goals in the "shaping" starter collection. */
@@ -114,30 +135,43 @@ export const SHAPE_GOALS = [
 /** Beginner-friendly picks for body shaping, by goal. */
 export const SHAPE: Record<string, string> = {
   "hip-thrust": "glutes",
+  "bulgarian-split-squat": "glutes",
+  "cable-pull-through": "glutes",
   "glute-bridge": "glutes",
+  "single-leg-glute-bridge": "glutes",
   "hip-abduction": "glutes",
+  "band-monster-walk": "glutes",
   "cable-kickback": "glutes",
   "db-rdl": "glutes",
   "goblet-squat": "legs",
+  "sumo-squat": "legs",
   "leg-press": "legs",
   lunge: "legs",
   "leg-curl": "legs",
   "hip-adduction": "legs",
   "lat-pulldown": "posture",
   "seated-row": "posture",
+  "chest-supported-row": "posture",
   "face-pull": "posture",
+  "prone-ytw": "posture",
+  "wall-slide": "posture",
+  "band-external-rotation": "posture",
   "back-extension": "posture",
   "rear-delt-fly": "posture",
   "lateral-raise": "arms",
   "db-shoulder-press": "arms",
   "triceps-pushdown": "arms",
   "db-curl": "arms",
+  "preacher-curl": "arms",
   plank: "waist",
   "dead-bug": "waist",
+  "bird-dog": "waist",
+  "pallof-press": "waist",
   "leg-raise": "waist",
   "russian-twist": "waist",
   "treadmill-walk": "burn",
   elliptical: "burn",
+  "farmers-walk": "burn",
 };
 
 /** "It doesn't feel right" shortcuts: common places the effort goes instead. */
@@ -156,6 +190,7 @@ const WRONG_FEEL: Record<string, string[]> = {
   "arms/biceps": ["小臂和手腕酸,二头没感觉", "肩膀在用力"],
   "arms/triceps": ["手肘不舒服", "肩膀在用力,手臂后侧没感觉"],
   core: ["脖子酸", "腰在酸", "大腿根(髋)酸,肚子没感觉"],
+  mobility: ["关节深处有挤压或刺痛感", "憋气导致全身僵硬", "腰部代偿酸痛"],
   cardio: ["膝盖不舒服", "喘得说不出话"],
 };
 
