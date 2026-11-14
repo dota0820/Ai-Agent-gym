@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { subsFor } from "@/lib/exercises";
 import { isDark, useTheme } from "@/lib/theme";
 import { GROUPS } from "@/lib/types";
@@ -65,7 +65,11 @@ export default function StartFlow({ name }: { name: string }) {
 
   const group = GROUPS.find((g) => g.id === part);
   const subs = part ? subsFor(part) : [];
+  // The tap that picks a body part is followed by a click at the same spot. The
+  // sheet has just appeared under the finger, so that click must not dismiss it.
+  const openedAt = useRef(0);
   const pick = (p: BodyPart) => {
+    openedAt.current = performance.now();
     setPart(p);
     setFocus("");
     setTime("");
@@ -73,6 +77,9 @@ export default function StartFlow({ name }: { name: string }) {
     setStep(subsFor(p).length ? 0 : 1);
   };
   const close = () => setPart(null);
+  const closeFromBackdrop = () => {
+    if (performance.now() - openedAt.current > 450) close();
+  };
 
   const go = (energySay: string) => {
     if (!group) return;
@@ -191,7 +198,7 @@ export default function StartFlow({ name }: { name: string }) {
       )}
 
       {part && group && (
-        <div className="fixed inset-0 z-40 flex items-end bg-black/50" onClick={close}>
+        <div className="fixed inset-0 z-40 flex items-end bg-black/50" onClick={closeFromBackdrop}>
           <div
             role="dialog"
             aria-label={`安排${group.label}的训练`}

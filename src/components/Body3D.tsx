@@ -116,6 +116,9 @@ export default function Body3D({
       gltf.scene.traverse((o) => {
         const m = o as PartMesh;
         if (!m.isMesh) return;
+        // the bounds stored in the model file are not reliable; hit-testing needs correct ones
+        m.geometry.computeBoundingBox();
+        m.geometry.computeBoundingSphere();
         const name = (m.name || m.parent?.name || "").toLowerCase();
         const part = PARTS.find((p) => name.startsWith(p));
         if (name.startsWith("skin")) {
@@ -138,6 +141,8 @@ export default function Body3D({
           metalness: 0.05,
           emissive: new THREE.Color(0x000000),
           clippingPlanes: [reveal],
+          // some source muscles are wound inside-out; draw and hit-test both faces
+          side: THREE.DoubleSide,
         });
         if (part) {
           m.userData.part = part;
