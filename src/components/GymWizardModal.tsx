@@ -5,6 +5,7 @@ import {
   EQUIPMENT_CATEGORIES,
   EQUIPMENT_DETAIL_PROMPTS,
   EQUIPMENT_HINTS,
+  equipmentImage,
   EQUIPMENT_PRESETS,
   formatEquipmentList,
   mergeEquipmentItems,
@@ -40,7 +41,9 @@ function DumbbellRangeHelper({
   value: string;
   onSet: (formatted: string) => void;
 }) {
-  const rangeMatch = /(\d+(?:\.\d+)?)\s*[-–~到至]\s*(\d+(?:\.\d+)?)/.exec(value);
+  const rangeMatch = /(\d+(?:\.\d+)?)\s*[-–~到至]\s*(\d+(?:\.\d+)?)/.exec(
+    value,
+  );
   const minMatch = /最轻\s*(\d+(?:\.\d+)?)/.exec(value);
   const maxMatch = /最重\s*(\d+(?:\.\d+)?)/.exec(value);
   const minW = rangeMatch ? rangeMatch[1] : minMatch ? minMatch[1] : "";
@@ -100,7 +103,9 @@ export default function GymWizardModal({
   const [busy, setBusy] = useState(false);
   const [scanError, setScanError] = useState("");
   const [scanNotice, setScanNotice] = useState("");
-  const [pendingScan, setPendingScan] = useState<PendingScanResult | null>(null);
+  const [pendingScan, setPendingScan] = useState<PendingScanResult | null>(
+    null,
+  );
   const fileRef = useRef<HTMLInputElement>(null);
 
   const selected = parseEquipmentList(draft.equipment);
@@ -117,11 +122,17 @@ export default function GymWizardModal({
   };
 
   const toggleItem = (item: string) => {
-    setDraft((prev) => ({ ...prev, equipment: toggleEquipmentItem(prev.equipment, item) }));
+    setDraft((prev) => ({
+      ...prev,
+      equipment: toggleEquipmentItem(prev.equipment, item),
+    }));
   };
 
   const selectAllInItems = (items: string[]) => {
-    setDraft((prev) => ({ ...prev, equipment: mergeEquipmentItems(prev.equipment, items) }));
+    setDraft((prev) => ({
+      ...prev,
+      equipment: mergeEquipmentItems(prev.equipment, items),
+    }));
   };
 
   const addCustomItems = () => {
@@ -156,7 +167,9 @@ export default function GymWizardModal({
         return;
       }
       const candidates = Array.from(
-        new Set<string>([...(j.matched ?? []), ...(j.extra ?? [])].filter(Boolean)),
+        new Set<string>(
+          [...(j.matched ?? []), ...(j.extra ?? [])].filter(Boolean),
+        ),
       );
       const detectedMap: Record<string, string> = {};
       if (Array.isArray(j.details)) {
@@ -165,7 +178,10 @@ export default function GymWizardModal({
         }
       }
       if (candidates.length === 0) {
-        setScanError(j.summary || "没认出具体器械名称，请换个角度再拍一张，或在下一步手动勾选。");
+        setScanError(
+          j.summary ||
+            "没认出具体器械名称，请换个角度再拍一张，或在下一步手动勾选。",
+        );
         return;
       }
       const checked: Record<string, boolean> = {};
@@ -189,11 +205,14 @@ export default function GymWizardModal({
     setDraft((prev) => {
       const nextDetails = { ...(prev.details ?? {}) };
       for (const item of chosen) {
-        if (pendingScan.details[item]) nextDetails[item] = pendingScan.details[item];
+        if (pendingScan.details[item])
+          nextDetails[item] = pendingScan.details[item];
       }
       return {
         ...prev,
-        equipment: chosen.length ? mergeEquipmentItems(prev.equipment, chosen) : prev.equipment,
+        equipment: chosen.length
+          ? mergeEquipmentItems(prev.equipment, chosen)
+          : prev.equipment,
         details: nextDetails,
       };
     });
@@ -216,7 +235,9 @@ export default function GymWizardModal({
           : currentStep.id === "lower"
             ? EQUIPMENT_CATEGORIES.filter((c) => c.id === "lower")
             : currentStep.id === "cardio"
-              ? EQUIPMENT_CATEGORIES.filter((c) => c.id === "cardio" || c.id === "small")
+              ? EQUIPMENT_CATEGORIES.filter(
+                  (c) => c.id === "cardio" || c.id === "small",
+                )
               : [];
 
   const categoryItemsOnScreen = activeCategories.flatMap((c) => c.items);
@@ -233,7 +254,10 @@ export default function GymWizardModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/45" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-end bg-black/45"
+      onClick={onClose}
+    >
       <div
         className="safe-b mx-auto flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-3xl bg-bg"
         onClick={(e) => e.stopPropagation()}
@@ -254,13 +278,20 @@ export default function GymWizardModal({
 
         <div className="shrink-0 rounded-t-3xl border-b border-line bg-white px-5 pt-4 pb-3">
           <div className="flex items-center justify-between gap-2">
-            <button type="button" className="text-xs font-semibold text-sub" onClick={onClose}>
+            <button
+              type="button"
+              className="text-xs font-semibold text-sub"
+              onClick={onClose}
+            >
               取消
             </button>
             <div className="text-center">
-              <div className="text-sm font-bold">{draft.name.trim() || "健身房"}</div>
+              <div className="text-sm font-bold">
+                {draft.name.trim() || "健身房"}
+              </div>
               <div className="text-[11px] text-sub">
-                第 {step + 1} / {STEPS.length} 步 · {currentStep.title} · 已选 {selected.length} 项
+                第 {step + 1} / {STEPS.length} 步 · {currentStep.title} · 已选{" "}
+                {selected.length} 项
               </div>
             </div>
             <button
@@ -275,7 +306,9 @@ export default function GymWizardModal({
           <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-bg">
             <div
               className="h-full rounded-full bg-primary transition-all"
-              style={{ width: `${Math.round(((step + 1) / STEPS.length) * 100)}%` }}
+              style={{
+                width: `${Math.round(((step + 1) / STEPS.length) * 100)}%`,
+              }}
             />
           </div>
         </div>
@@ -294,7 +327,9 @@ export default function GymWizardModal({
               </label>
 
               <div className="space-y-2">
-                <div className="text-xs font-semibold text-sub">选择场景（可选预设）</div>
+                <div className="text-xs font-semibold text-sub">
+                  选择场景（可选预设）
+                </div>
                 {EQUIPMENT_PRESETS.map((p) => {
                   const activeScene = draft.scene === p.label;
                   return (
@@ -302,7 +337,10 @@ export default function GymWizardModal({
                       key={p.id}
                       type="button"
                       onClick={() => {
-                        if (selected.length === 0 || confirm(`用「${p.label}」预设覆盖现有器械？`)) {
+                        if (
+                          selected.length === 0 ||
+                          confirm(`用「${p.label}」预设覆盖现有器械？`)
+                        ) {
                           setDraft((prev) => ({
                             ...prev,
                             scene: p.label,
@@ -333,9 +371,12 @@ export default function GymWizardModal({
           {currentStep.id === "photo" && (
             <div className="space-y-4">
               <div>
-                <h2 className="text-base font-bold">不确定器械叫什么？拍照让 AI 帮你确认</h2>
+                <h2 className="text-base font-bold">
+                  不确定器械叫什么？拍照让 AI 帮你确认
+                </h2>
                 <p className="mt-1 text-xs leading-relaxed text-sub">
-                  对着不认识的机器或健身房角落拍一张照，AI 会认出名字和用途，列出来让你打勾确认后再加入。都认识的话可以直接点「下一步」。
+                  对着不认识的机器或健身房角落拍一张照，AI
+                  会认出名字和用途，列出来让你打勾确认后再加入。都认识的话可以直接点「下一步」。
                 </p>
               </div>
 
@@ -347,9 +388,13 @@ export default function GymWizardModal({
               >
                 <span className="text-2xl">{busy ? "⏳" : "📷"}</span>
                 <span className="text-sm font-bold text-primary">
-                  {busy ? "AI 正在识别照片里的器械…" : "拍照 / 从相册选图让 AI 识别"}
+                  {busy
+                    ? "AI 正在识别照片里的器械…"
+                    : "拍照 / 从相册选图让 AI 识别"}
                 </span>
-                <span className="text-xs text-sub">识别后会先给你看清单，你点确认才会加入</span>
+                <span className="text-xs text-sub">
+                  识别后会先给你看清单，你点确认才会加入
+                </span>
               </button>
 
               {scanError && (
@@ -390,7 +435,9 @@ export default function GymWizardModal({
                             )
                           }
                           className={`flex w-full items-start gap-2.5 rounded-xl border p-2.5 text-left text-xs ${
-                            on ? "border-primary bg-primary/5" : "border-line bg-bg opacity-60"
+                            on
+                              ? "border-primary bg-primary/5"
+                              : "border-line bg-bg opacity-60"
                           }`}
                         >
                           <span className="mt-0.5 text-sm font-bold text-primary">
@@ -401,7 +448,11 @@ export default function GymWizardModal({
                               {item}
                               {spec ? ` (${spec})` : ""}
                             </div>
-                            {hint && <div className="mt-0.5 text-[11px] text-sub">{hint}</div>}
+                            {hint && (
+                              <div className="mt-0.5 text-[11px] text-sub">
+                                {hint}
+                              </div>
+                            )}
                           </div>
                         </button>
                       );
@@ -421,7 +472,12 @@ export default function GymWizardModal({
                       onClick={confirmPendingScan}
                     >
                       ✓ 确认加入 (
-                      {pendingScan.candidates.filter((c) => pendingScan.checked[c]).length} 项)
+                      {
+                        pendingScan.candidates.filter(
+                          (c) => pendingScan.checked[c],
+                        ).length
+                      }{" "}
+                      项)
                     </button>
                   </div>
                 </div>
@@ -436,7 +492,9 @@ export default function GymWizardModal({
                   <div className="flex items-baseline justify-between gap-2">
                     <div>
                       <div className="text-sm font-bold">{cat.label}</div>
-                      <div className="mt-0.5 text-xs text-sub">{cat.question}</div>
+                      <div className="mt-0.5 text-xs text-sub">
+                        {cat.question}
+                      </div>
                     </div>
                     <button
                       type="button"
@@ -452,36 +510,48 @@ export default function GymWizardModal({
                       const on = selectedSet.has(item);
                       const spec = details[item];
                       const hint = EQUIPMENT_HINTS[item];
+                      const img = equipmentImage(item);
                       return (
                         <button
                           key={item}
                           type="button"
                           aria-pressed={on}
                           onClick={() => toggleItem(item)}
-                          className={`flex flex-col items-start rounded-2xl border p-3 text-left transition ${
+                          className={`flex flex-col items-start overflow-hidden rounded-2xl border text-left transition ${
                             on
                               ? "border-primary bg-primary text-white shadow-sm"
                               : "border-line bg-white text-ink active:bg-bg"
                           }`}
                         >
-                          <span className="text-sm font-bold leading-snug">
-                            {on ? "✓ " : ""}
-                            {item}
+                          {img && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={img}
+                              alt={`${item}的样子`}
+                              loading="lazy"
+                              className="aspect-[3/2] w-full bg-[#141418] object-cover"
+                            />
+                          )}
+                          <span className="flex flex-col items-start p-3">
+                            <span className="text-sm font-bold leading-snug">
+                              {on ? "✓ " : ""}
+                              {item}
+                            </span>
+                            {hint && (
+                              <span
+                                className={`mt-1 text-[11px] leading-snug ${
+                                  on ? "text-white/85" : "text-sub"
+                                }`}
+                              >
+                                {hint}
+                              </span>
+                            )}
+                            {on && spec && (
+                              <span className="mt-1 rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold">
+                                📌 {spec}
+                              </span>
+                            )}
                           </span>
-                          {hint && (
-                            <span
-                              className={`mt-1 text-[11px] leading-snug ${
-                                on ? "text-white/85" : "text-sub"
-                              }`}
-                            >
-                              {hint}
-                            </span>
-                          )}
-                          {on && spec && (
-                            <span className="mt-1 rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold">
-                              📌 {spec}
-                            </span>
-                          )}
                         </button>
                       );
                     })}
@@ -521,7 +591,9 @@ export default function GymWizardModal({
                               <button
                                 key={opt}
                                 type="button"
-                                onClick={() => setDetail(item, active ? "" : opt)}
+                                onClick={() =>
+                                  setDetail(item, active ? "" : opt)
+                                }
                                 className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                                   active
                                     ? "bg-primary text-white"
@@ -574,7 +646,13 @@ export default function GymWizardModal({
                     <button
                       type="button"
                       className="text-xs text-sub underline"
-                      onClick={() => setDraft((prev) => ({ ...prev, equipment: "", details: {} }))}
+                      onClick={() =>
+                        setDraft((prev) => ({
+                          ...prev,
+                          equipment: "",
+                          details: {},
+                        }))
+                      }
                     >
                       清空
                     </button>
@@ -623,13 +701,17 @@ export default function GymWizardModal({
               </div>
 
               <label className="block rounded-2xl border border-line bg-white p-3.5">
-                <span className="text-xs font-bold text-sub">补充说明（可选）</span>
+                <span className="text-xs font-bold text-sub">
+                  补充说明（可选）
+                </span>
                 <textarea
                   className={`${input} mt-1.5 text-xs`}
                   rows={3}
                   placeholder="例如：没有重于 20kg 的哑铃、高峰期深蹲架常排队…"
                   value={draft.notes ?? ""}
-                  onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, notes: e.target.value })
+                  }
                 />
               </label>
 
@@ -639,7 +721,9 @@ export default function GymWizardModal({
                     type="button"
                     className="text-xs font-semibold text-sub underline"
                     onClick={() => {
-                      if (confirm(`确定删除「${draft.name || "这个健身房"}」吗？`)) {
+                      if (
+                        confirm(`确定删除「${draft.name || "这个健身房"}」吗？`)
+                      ) {
                         onDelete();
                       }
                     }}
@@ -662,7 +746,11 @@ export default function GymWizardModal({
               ← 上一步
             </button>
           ) : (
-            <button type="button" className={`${btnGhost} shrink-0 px-4`} onClick={onClose}>
+            <button
+              type="button"
+              className={`${btnGhost} shrink-0 px-4`}
+              onClick={onClose}
+            >
               关闭
             </button>
           )}
@@ -676,7 +764,11 @@ export default function GymWizardModal({
               下一步（{STEPS[step + 1].title}） →
             </button>
           ) : (
-            <button type="button" className={`${btnPrimary} flex-1`} onClick={saveAndClose}>
+            <button
+              type="button"
+              className={`${btnPrimary} flex-1`}
+              onClick={saveAndClose}
+            >
               ✓ 完成保存
             </button>
           )}

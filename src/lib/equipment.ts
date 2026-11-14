@@ -127,6 +127,54 @@ export const EQUIPMENT_HINTS: Record<string, string> = {
   "健腹轮/瑞士球": "双手推的小滚轮，或大号充气瑜伽球",
 };
 
+/**
+ * Photo of each piece of equipment in use (public-domain free-exercise-db).
+ * Items without a good photo are left out and show text only.
+ */
+const EQUIPMENT_IMAGE_KEYS: Record<string, string> = {
+  哑铃: "dumbbell",
+  杠铃: "barbell",
+  "固定短杠/曲杆(EZ杆)": "ez-bar",
+  壶铃: "kettlebell",
+  可调卧推凳: "bench",
+  深蹲架: "squat-rack",
+  史密斯机: "smith",
+  "地雷管(T杠)": "landmine",
+  "龙门架/拉索": "cable",
+  高位下拉机: "lat-pulldown",
+  坐姿划船机: "seated-row",
+  "胸托划船机(悍马划船)": "chest-row",
+  "双杠/悬垂举腿架": "dip-station",
+  坐姿推胸机: "chest-press",
+  上斜推胸机: "incline-press",
+  "蝴蝶机(夹胸/后束)": "pec-deck",
+  推肩机: "shoulder-press",
+  二头弯举机: "biceps-machine",
+  三头下压机: "triceps-machine",
+  "倒蹬机(腿举)": "leg-press",
+  腿屈伸机: "leg-extension",
+  腿弯举机: "leg-curl",
+  "髋外展/内收机": "hip-abd",
+  哈克深蹲机: "hack-squat",
+  "坐姿/站姿提踵机": "calf",
+  罗马椅: "roman-chair",
+  跑步机: "treadmill",
+  椭圆机: "elliptical",
+  划船机: "rower",
+  动感单车: "bike",
+  "楼梯机(爬楼机)": "stairs",
+  瑜伽垫: "mat",
+  弹力带: "band",
+  器械卷腹机: "ab-machine",
+  "有氧台阶/踏板": "step",
+  "健腹轮/瑞士球": "ball",
+};
+
+export function equipmentImage(item: string): string | undefined {
+  const key = EQUIPMENT_IMAGE_KEYS[item];
+  return key ? `/equipment/${key}.jpg` : undefined;
+}
+
 export const ALL_EQUIPMENT_ITEMS = EQUIPMENT_CATEGORIES.flatMap((c) => c.items);
 
 export const EQUIPMENT_PRESETS: {
