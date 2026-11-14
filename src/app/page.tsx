@@ -1,0 +1,119 @@
+"use client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import PlanCard from "@/components/PlanCard";
+import { btnGhost, btnPrimary, Card, H1 } from "@/components/ui";
+import { startFree } from "@/lib/actions";
+import { durationMin, fmtDate, useApp, useHydrated } from "@/lib/store";
+import { GROUPS } from "@/lib/types";
+
+export default function Home() {
+  const { profile, plan, active, workouts } = useApp();
+  const ready = useHydrated();
+  const router = useRouter();
+  const sorted = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const last = sorted[0];
+  const [now] = useState(() => new Date());
+  const weekAgo = new Date(now.getTime() - 7 * 864e5).toISOString();
+  const thisWeek = workouts.filter((w) => w.startedAt >= weekAgo).length;
+  const hour = now.getHours();
+  const hello = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
+
+  if (!ready) return null;
+
+  return (
+    <div className="space-y-4">
+      <H1 sub={`最近 7 天练了 ${thisWeek} 次 · 一共 ${workouts.length} 次`}>
+        {hello}
+        {profile.name ? `,${profile.name}` : ""} 👋
+      </H1>
+
+      {!profile.goal && (
+        <Link href="/me" className="block">
+          <Card className="border-primary/30 bg-primary-soft">
+            <div className="font-semibold text-primary">先让教练认识你 →</div>
+            <p className="mt-1 text-sm text-ink/70">
+              花 1 分钟填一下目标和健身房器械,教练的安排会更适合你。
+            </p>
+          </Card>
+        </Link>
+      )}
+
+      {active && (
+        <Card className="border-mint/40 bg-mint-soft">
+          <div className="text-sm font-semibold text-mint">训练进行中</div>
+          <div className="mt-0.5 text-lg font-bold">{active.title}</div>
+          <Link href="/workout" className={`${btnPrimary} mt-3 w-full`}>
+            继续训练
+          </Link>
+        </Card>
+      )}
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-sub">今天想练什么?让教练安排</h2>
+        <div className="grid grid-cols-4 gap-2">
+          {GROUPS.map((g) => (
+            <Link
+              key={g.id}
+              href={`/coach?q=${encodeURIComponent(`今天想练${g.label},帮我安排一下`)}`}
+              className="flex flex-col items-center gap-1 rounded-2xl border border-line bg-card py-3 text-sm font-semibold active:scale-95"
+            >
+              <span className="text-2xl">{g.emoji}</span>
+              {g.label}
+            </Link>
+          ))}
+        </div>
+        <Link
+          href={`/coach?q=${encodeURIComponent("我不知道今天该练什么,你根据我的记录帮我决定吧")}`}
+          className={`${btnGhost} mt-2 w-full`}
+        >
+          🤔 不知道练什么,教练帮我决定
+        </Link>
+      </section>
+
+      {plan && !active && (
+        <section>
+          <h2 className="mb-2 text-sm font-semibold text-sub">
+            教练安排的计划 · {fmtDate(plan.createdAt)}
+          </h2>
+          <PlanCard plan={plan} />
+        </section>
+      )}
+
+      {!active && (
+        <button
+          className={`${btnGhost} w-full`}
+          onClick={() => {
+            startFree();
+            router.push("/workout");
+          }}
+        >
+          ✍️ 不用计划,自己记录一次训练
+        </button>
+      )}
+
+      {last && (
+        <section>
+          <h2 className="mb-2 text-sm font-semibold text-sub">上一次训练</h2>
+          <Link href={`/history/${last.id}`} className="block">
+            <Card>
+              <div className="flex items-baseline justify-between">
+                <div className="font-bold">{last.title}</div>
+                <div className="text-xs text-sub">{fmtDate(last.startedAt)}</div>
+              </div>
+              <p className="mt-1 text-sm text-sub">
+                {last.exercises.map((e) => e.name).join(" · ") || "没有记录动作"}
+              </p>
+              <p className="mt-1 text-xs text-sub">
+                {durationMin(last) ? `${durationMin(last)} 分钟` : ""}
+                {last.watch?.calories ? ` · ${last.watch.calories} 千卡` : ""}
+                {last.watch?.avgHr ? ` · 平均心率 ${last.watch.avgHr}` : ""}
+              </p>
+            </Card>
+          </Link>
+        </section>
+      )}
+    </div>
+  );
+}

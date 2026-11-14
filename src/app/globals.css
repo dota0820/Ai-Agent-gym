@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #fbf6f1;
+  --color-card: #ffffff;
+  --color-ink: #2a2733;
+  --color-sub: #857f8f;
+  --color-line: #efe6de;
+  --color-primary: #e8615a;
+  --color-primary-soft: #fde9e5;
+  --color-mint: #2fa98c;
+  --color-mint-soft: #e2f5ef;
+  --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
+    "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+input,
+textarea,
+select {
+  font-size: 16px; /* prevents iOS zoom on focus */
+}
+.safe-b {
+  padding-bottom: env(safe-area-inset-bottom);
+}
