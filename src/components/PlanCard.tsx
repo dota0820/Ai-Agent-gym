@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { startFromPlan } from "@/lib/actions";
+import { saveToLibrary, startFromPlan } from "@/lib/actions";
 import { useApp } from "@/lib/store";
 import { MUSCLE_LABEL, type Muscle, type Plan } from "@/lib/types";
 import Guide, { guideFor } from "./Guide";
@@ -56,6 +56,14 @@ export default function PlanCard({ plan }: { plan: Plan }) {
                     <p className="mb-3 rounded-xl bg-primary-soft px-3 py-2 text-sm text-primary">
                       💡 教练提醒:{it.note}
                     </p>
+                  )}
+                  {!it.exerciseId && it.custom && (
+                    <button
+                      onClick={() => saveToLibrary(it)}
+                      className="mb-3 w-full rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-primary"
+                    >
+                      ＋ 加入我的动作库(以后可以直接用)
+                    </button>
                   )}
                   {g ? (
                     <Guide guide={g} name={it.name} nameEn={it.nameEn} />

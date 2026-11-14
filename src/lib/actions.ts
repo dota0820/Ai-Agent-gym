@@ -2,8 +2,10 @@
 import { useSyncExternalStore } from "react";
 import { formatGymsContext } from "./equipment";
 import { allExerciseNamesForPrompt, findExerciseById } from "./exercise-lookup";
+import { customExerciseFromGuide, guideFromCoach } from "./custom-exercise";
 import { nutritionContextForCoach } from "./nutrition";
 import {
+  addCustomExercise,
   addMealLog,
   aiHeaders,
   getState,
@@ -216,16 +218,7 @@ function toPlan(p: any): Plan {
         restSec: e.rest_seconds,
         weight: e.suggested_weight,
         note: e.coach_note,
-        custom:
-          !lib && c
-            ? {
-                equipment: c.equipment,
-                setup: c.setup,
-                steps: c.steps ?? [],
-                mistakes: c.common_mistakes ?? [],
-                feel: c.feel,
-              }
-            : undefined,
+        custom: !lib && c ? guideFromCoach(c) : undefined,
       };
     }),
   };
@@ -384,6 +377,14 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
             ...m,
             mealLogged: `${meal.summary} (${meal.calories} kcal · 蛋白 ${meal.protein}g)`,
           }));
+        } else if (ev.type === "exercise") {
+          const ex = customExerciseFromGuide(
+            ev.exercise.name,
+            ev.exercise.name_en,
+            guideFromCoach(ev.exercise),
+          );
+          addCustomExercise(ex);
+          patchTargetMsg((m) => ({ ...m, exerciseAdded: ex.name }));
         } else if (ev.type === "memory") {
           setStateForProfile(targetProfileId, (ws) => ({
             ...ws,
@@ -427,7 +428,7 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
         choices: choices.length ? choices : undefined,
         text:
           visibleText(m.text) ||
-          (m.plan || m.logged || m.mealLogged ? "" : "⚠️ 教练没有回复,请再试一次。"),
+          (m.plan || m.logged || m.mealLogged || m.exerciseAdded ? "" : "⚠️ 教练没有回复,请再试一次。"),
       };
     });
     setBusy(false);
@@ -442,4 +443,25 @@ export async function fileToJpegDataUrl(file: File, max = 1568): Promise<string>
   c.height = Math.round(bmp.height * scale);
   c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
   return c.toDataURL("image/jpeg", 0.85);
+}
+
+/**
+ * Saves an off-library exercise from the current plan or in-progress workout
+ * into the user's library and points every matching item at the saved copy.
+ */
+export function saveToLibrary(item: { name: string; nameEn?: string; custom?: Guide }): string | null {
+  if (!item.custom) return null;
+  const ex = customExerciseFromGuide(item.name, item.nameEn, item.custom);
+  addCustomExercise(ex);
+  const link = <T extends { name: string; exerciseId?: string; custom?: Guide }>(x: T): T =>
+    !x.exerciseId && x.name === item.name ? { ...x, exerciseId: ex.id, custom: undefined } : x;
+  setState((s) => ({
+    ...s,
+    plan: s.plan ? { ...s.plan, items: s.plan.items.map(link) } : s.plan,
+    active: s.active ? { ...s.active, exercises: s.active.exercises.map(link) } : s.active,
+    chat: s.chat.map((m) =>
+      m.plan ? { ...m, plan: { ...m.plan, items: m.plan.items.map(link) } } : m,
+    ),
+  }));
+  return ex.id;
 }

@@ -8,7 +8,7 @@ import Guide, { guideFor } from "@/components/Guide";
 import NumInput from "@/components/NumInput";
 import WatchForm from "@/components/WatchForm";
 import { btnGhost, btnPrimary, btnSoft, Card, input } from "@/components/ui";
-import { newExercise } from "@/lib/actions";
+import { newExercise, saveToLibrary } from "@/lib/actions";
 import { findExerciseById, isCustomExercise } from "@/lib/exercise-lookup";
 import {
   fmtDate,
@@ -212,6 +212,14 @@ export default function WorkoutPage() {
               )}
               {openGuide === i && (
                 <div className="mt-3 border-t border-line pt-3">
+                  {!ex.exerciseId && ex.custom && (
+                    <button
+                      onClick={() => saveToLibrary(ex)}
+                      className="mb-3 w-full rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-primary"
+                    >
+                      ＋ 加入我的动作库(以后可以直接用)
+                    </button>
+                  )}
                   {guide ? (
                     <Guide guide={guide} name={ex.name} nameEn={ex.nameEn} showAnim={!imgShown} />
                   ) : (

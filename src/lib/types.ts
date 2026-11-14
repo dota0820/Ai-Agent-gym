@@ -27,6 +27,12 @@ export interface Guide {
   steps: string[];
   mistakes: string[];
   feel: string;
+  /** Extras the coach supplies for exercises outside the library. */
+  cues?: string[];
+  group?: string;
+  primary?: string[];
+  secondary?: string[];
+  startWeight?: string;
 }
 
 export type Muscle =
@@ -288,6 +294,8 @@ export interface ChatMsg {
   plan?: Plan;
   logged?: string;
   mealLogged?: string;
+  /** Name of an exercise the coach added to the user's library in this message. */
+  exerciseAdded?: string;
   choices?: string[];
   ts: string;
 }

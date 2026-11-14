@@ -1,12 +1,44 @@
 import { z } from "zod";
 import { ALL_EQUIPMENT_ITEMS } from "./equipment";
 
+const GROUP_IDS = ["back", "chest", "legs", "glutes", "shoulders", "arms", "core", "mobility", "cardio"] as const;
+const MUSCLE_IDS = [
+  "trapezius",
+  "upper-back",
+  "lower-back",
+  "chest",
+  "biceps",
+  "triceps",
+  "forearm",
+  "back-deltoids",
+  "front-deltoids",
+  "abs",
+  "obliques",
+  "adductor",
+  "abductors",
+  "hamstring",
+  "quadriceps",
+  "calves",
+  "gluteal",
+] as const;
+
+/** How to do an exercise that is not in the built-in library. */
 const guideSchema = z.object({
   equipment: z.string(),
   setup: z.string().describe("器械怎么调、坐/站在哪里、手握哪里"),
   steps: z.array(z.string()).describe("一步一步的动作要领,含呼吸和速度"),
   common_mistakes: z.array(z.string()),
   feel: z.string().describe("应该哪里有感觉"),
+  key_points: z.array(z.string()).max(3).optional().describe("最重要的 3 个要点,每个不超过 14 个字"),
+  group: z.enum(GROUP_IDS).optional().describe("属于哪个部位"),
+  primary_muscles: z.array(z.enum(MUSCLE_IDS)).optional().describe("主要练到的肌肉"),
+  secondary_muscles: z.array(z.enum(MUSCLE_IDS)).optional().describe("辅助参与的肌肉"),
+  start_weight: z.string().optional().describe("新手起始重量,例如 每只 3–5 kg"),
+});
+
+const addExerciseSchema = guideSchema.extend({
+  name: z.string().describe("中文名"),
+  name_en: z.string().optional().describe("英文名"),
 });
 
 const planSchema = z.object({
@@ -98,6 +130,14 @@ export const COACH_TOOLS: CoachTool[] = [
     schema: chatMealSchema,
     event: (meal) => ({ type: "meal", meal }),
     result: "已记入今日饮食记录。",
+  },
+  {
+    name: "add_exercise_to_library",
+    description:
+      "把一个动作库里没有的动作保存进用户自己的动作库,以后可以在动作库里查看、在训练里直接添加。用户说“把这个动作加进动作库”,或你介绍了一个库外动作而用户想保留时调用。库里已有的动作不要重复添加。",
+    schema: addExerciseSchema,
+    event: (exercise) => ({ type: "exercise", exercise }),
+    result: "已加入用户的动作库,以后安排训练时可以用它的 id 直接引用(见上下文里的自定义动作列表)。",
   },
   {
     name: "remember",
