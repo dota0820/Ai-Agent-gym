@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { isDark, themeColors, type Theme } from "@/lib/theme";
 import type { Group as BodyGroup } from "@/lib/types";
 
 export type BodyPart = Exclude<BodyGroup, "cardio">;
@@ -36,11 +37,6 @@ const PADS: Pad[] = [
   ...SIDE.flatMap((p) => [p, { ...p, pos: [-p.pos[0], p.pos[1], p.pos[2]] as V3 }]),
 ];
 
-const PALETTE = {
-  tech: { body: 0x1b2a4a, wire: 0x3f6fb5, pad: 0x1e86b0, hot: 0x35d8ff, pick: 0x7dffcf, ring: 0x35d8ff },
-  warm: { body: 0xe9dfd6, wire: 0xcdbfb2, pad: 0xf1b9aa, hot: 0xe8615a, pick: 0xe8615a, ring: 0xe8615a },
-};
-
 /**
  * A stylised 3D figure you can spin with a finger and tap to choose a body part.
  * Calls onPick with the tapped part; `selected` keeps that part lit.
@@ -53,7 +49,7 @@ export default function Body3D({
 }: {
   selected: BodyPart | null;
   onPick: (p: BodyPart) => void;
-  theme: "tech" | "warm";
+  theme: Theme;
   onUnavailable?: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null);
@@ -83,7 +79,17 @@ export default function Body3D({
         onUnavailableRef.current?.();
         return;
       }
-      const colors = PALETTE[theme];
+      const tc = themeColors();
+      const glow = isDark(theme);
+      const hex = (c: string) => new THREE.Color(c).getHex();
+      const colors = {
+        body: hex(tc.body),
+        wire: hex(glow ? tc.muscle2 : tc.line),
+        pad: hex(tc.muscle2),
+        hot: hex(tc.muscle),
+        pick: hex(glow ? tc.mint : tc.muscle),
+        ring: hex(tc.primary),
+      };
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
       camera.position.set(0, 0.98, 3.3);
@@ -93,11 +99,11 @@ export default function Body3D({
       renderer.domElement.style.touchAction = "pan-y";
       renderer.domElement.style.display = "block";
 
-      scene.add(new THREE.AmbientLight(0xffffff, theme === "tech" ? 0.9 : 1.6));
-      const key = new THREE.DirectionalLight(0xffffff, theme === "tech" ? 1.4 : 1.2);
+      scene.add(new THREE.AmbientLight(0xffffff, glow ? 0.9 : 1.6));
+      const key = new THREE.DirectionalLight(0xffffff, glow ? 1.4 : 1.2);
       key.position.set(1.5, 2.5, 3);
       scene.add(key);
-      const rim = new THREE.DirectionalLight(theme === "tech" ? 0x6f8cff : 0xffffff, 0.9);
+      const rim = new THREE.DirectionalLight(glow ? 0x6f8cff : 0xffffff, 0.9);
       rim.position.set(-2, 1.5, -2.5);
       scene.add(rim);
 
@@ -108,15 +114,15 @@ export default function Body3D({
       const bodyMat = new THREE.MeshStandardMaterial({
         color: colors.body,
         roughness: 0.75,
-        metalness: theme === "tech" ? 0.35 : 0,
-        transparent: theme === "tech",
-        opacity: theme === "tech" ? 0.82 : 1,
+        metalness: glow ? 0.35 : 0,
+        transparent: glow,
+        opacity: glow ? 0.82 : 1,
       });
       const wireMat = new THREE.MeshBasicMaterial({
         color: colors.wire,
         wireframe: true,
         transparent: true,
-        opacity: theme === "tech" ? 0.22 : 0.12,
+        opacity: glow ? 0.22 : 0.12,
       });
       const sphere = new THREE.SphereGeometry(1, 20, 14);
       const addBlob = (pos: V3, scale: V3) => {
@@ -148,10 +154,10 @@ export default function Body3D({
         const mat = new THREE.MeshStandardMaterial({
           color: colors.pad,
           emissive: colors.pad,
-          emissiveIntensity: theme === "tech" ? 0.35 : 0,
+          emissiveIntensity: glow ? 0.35 : 0,
           roughness: 0.5,
           transparent: true,
-          opacity: theme === "tech" ? 0.9 : 1,
+          opacity: glow ? 0.9 : 1,
         });
         const m = new THREE.Mesh(sphere, mat);
         m.position.set(...p.pos);
@@ -165,7 +171,7 @@ export default function Body3D({
       const ringMat = new THREE.MeshBasicMaterial({
         color: colors.ring,
         transparent: true,
-        opacity: theme === "tech" ? 0.55 : 0.25,
+        opacity: glow ? 0.55 : 0.25,
         side: THREE.DoubleSide,
       });
       const floor = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.45, 64), ringMat);
@@ -183,7 +189,7 @@ export default function Body3D({
         new THREE.MeshBasicMaterial({ color: colors.ring, transparent: true, opacity: 0.7 }),
       );
       scan.rotation.x = Math.PI / 2;
-      scan.visible = theme === "tech";
+      scan.visible = glow;
       scene.add(scan);
 
       // ── sizing ──
@@ -278,7 +284,7 @@ export default function Body3D({
           const part = m.userData.part as BodyPart;
           const target = part === sel ? pick : part === hover ? hot : base;
           mat.color.lerp(target, 0.2);
-          if (theme === "tech") {
+          if (glow) {
             mat.emissive.lerp(target, 0.2);
             mat.emissiveIntensity =
               part === sel ? 0.9 + Math.sin(t * 4) * 0.25 : part === hover ? 0.8 : 0.35;

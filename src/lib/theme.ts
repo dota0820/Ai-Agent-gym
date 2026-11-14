@@ -1,16 +1,31 @@
 "use client";
 import { useSyncExternalStore } from "react";
 
-export type Theme = "tech" | "warm";
+/** Colour themes. The CSS variables for each one live in src/app/globals.css. */
+export const THEMES = [
+  { id: "frost", label: "科技浅色", dark: false, bg: "#f2f6fc", card: "#ffffff", primary: "#2f6bff", ink: "#14213a" },
+  { id: "warm", label: "暖色奶油", dark: false, bg: "#fbf6f1", card: "#ffffff", primary: "#e8615a", ink: "#2a2733" },
+  { id: "mint", label: "薄荷清新", dark: false, bg: "#f2faf6", card: "#ffffff", primary: "#128a66", ink: "#1e2f29" },
+  { id: "lavender", label: "薰衣草紫", dark: false, bg: "#f7f5fd", card: "#ffffff", primary: "#7054e0", ink: "#2a2440" },
+  { id: "sakura", label: "樱花粉", dark: false, bg: "#fff5f8", card: "#ffffff", primary: "#d6447c", ink: "#3a2630" },
+  { id: "tech", label: "科技深色", dark: true, bg: "#060a13", card: "#0d1526", primary: "#35d8ff", ink: "#e8f1ff" },
+] as const;
+
+export type Theme = (typeof THEMES)[number]["id"];
+const DEFAULT: Theme = "frost";
 const KEY = "gymcoach:theme";
 const listeners = new Set<() => void>();
 
+const isTheme = (v: unknown): v is Theme => THEMES.some((t) => t.id === v);
+export const isDark = (t: Theme) => THEMES.find((x) => x.id === t)?.dark ?? false;
+
 export function getTheme(): Theme {
-  if (typeof window === "undefined") return "tech";
+  if (typeof window === "undefined") return DEFAULT;
   try {
-    return localStorage.getItem(KEY) === "warm" ? "warm" : "tech";
+    const v = localStorage.getItem(KEY);
+    return isTheme(v) ? v : DEFAULT;
   } catch {
-    return "tech";
+    return DEFAULT;
   }
 }
 
@@ -23,7 +38,7 @@ export function setTheme(t: Theme) {
   document.documentElement.dataset.theme = t;
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", t === "tech" ? "#060a13" : "#fbf6f1");
+    ?.setAttribute("content", THEMES.find((x) => x.id === t)!.bg);
   listeners.forEach((l) => l());
 }
 
@@ -34,9 +49,25 @@ export function useTheme(): Theme {
       return () => listeners.delete(l);
     },
     getTheme,
-    () => "tech",
+    () => DEFAULT,
   );
 }
 
+/** Reads the active theme's colours (for canvas / SVG drawing that cannot use CSS classes). */
+export function themeColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (name: string) => cs.getPropertyValue(name).trim();
+  return {
+    body: v("--c-body"),
+    muscle: v("--c-muscle"),
+    muscle2: v("--c-muscle-2"),
+    primary: v("--c-primary"),
+    mint: v("--c-mint"),
+    line: v("--c-line"),
+  };
+}
+
 /** Runs before first paint so the saved theme never flashes. */
-export const THEME_INIT_SCRIPT = `try{var t=localStorage.getItem("${KEY}")==="warm"?"warm":"tech";document.documentElement.dataset.theme=t;if(t==="warm"){var m=document.querySelector('meta[name="theme-color"]');m&&m.setAttribute("content","#fbf6f1")}}catch(e){}`;
+export const THEME_INIT_SCRIPT = `try{var k=${JSON.stringify(
+  Object.fromEntries(THEMES.map((t) => [t.id, t.bg])),
+)},t=localStorage.getItem("${KEY}");if(!k[t])t="${DEFAULT}";document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');m&&m.setAttribute("content",k[t])}catch(e){}`;

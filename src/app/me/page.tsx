@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { setTheme, useTheme } from "@/lib/theme";
+import { setTheme, THEMES, useTheme } from "@/lib/theme";
 import ProfileSheet from "@/components/ProfileSheet";
 import { Card, H1, Row } from "@/components/ui";
 import { getProfileGyms, parseEquipmentList } from "@/lib/equipment";
@@ -79,22 +79,33 @@ export default function Me() {
 
       <Card>
         <div className="text-sm font-bold">🎨 外观</div>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          {(
-            [
-              { id: "tech", label: "科技感(深色)" },
-              { id: "warm", label: "暖色(浅色)" },
-            ] as const
-          ).map((t) => (
+        <p className="mt-0.5 text-xs text-sub">点一下马上换,随时可以改</p>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          {THEMES.map((t) => (
             <button
               key={t.id}
               aria-pressed={theme === t.id}
               onClick={() => setTheme(t.id)}
-              className={`rounded-xl px-3 py-3 text-sm font-semibold ${
-                theme === t.id ? "bg-primary text-white" : "border border-line bg-surface text-ink"
+              className={`overflow-hidden rounded-2xl border-2 text-left ${
+                theme === t.id ? "border-primary" : "border-line"
               }`}
             >
-              {t.label}
+              <span className="block p-2" style={{ background: t.bg }}>
+                <span
+                  className="block rounded-lg p-1.5"
+                  style={{ background: t.card, boxShadow: "0 1px 3px rgba(0,0,0,.12)" }}
+                >
+                  <span className="block h-1.5 w-8 rounded-full" style={{ background: t.ink }} />
+                  <span
+                    className="mt-1.5 block h-4 rounded-md"
+                    style={{ background: t.primary }}
+                  />
+                </span>
+              </span>
+              <span className="block px-2 py-1.5 text-xs font-semibold">
+                {theme === t.id ? "✓ " : ""}
+                {t.label}
+              </span>
             </button>
           ))}
         </div>

@@ -15,12 +15,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#060a13",
+  themeColor: "#f2f6fc",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN" className="h-full antialiased" data-theme="tech" suppressHydrationWarning>
+    <html lang="zh-CN" className="h-full antialiased" data-theme="frost" suppressHydrationWarning>
       <body className="min-h-full">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">

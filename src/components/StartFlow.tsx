@@ -2,7 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { subsFor } from "@/lib/exercises";
-import { useTheme } from "@/lib/theme";
+import { isDark, useTheme } from "@/lib/theme";
 import { GROUPS } from "@/lib/types";
 import Body3D, { type BodyPart } from "./Body3D";
 
@@ -133,7 +133,7 @@ export default function StartFlow({ name }: { name: string }) {
             animate ? "rise-in" : ""
           }`}
         >
-          {theme === "tech" && (
+          {isDark(theme) && (
             <div
               aria-hidden
               className="scan-sweep pointer-events-none absolute inset-x-0 top-0 h-full bg-gradient-to-b from-transparent via-primary/10 to-transparent"

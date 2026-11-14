@@ -1,27 +1,27 @@
 @import "tailwindcss";
 
 /* ───────── Themes ─────────
- * "tech" (default): dark, glowing, AI-console look.
- * "warm": the original cream + coral look.
+ * One block of colour variables per theme; "frost" (light tech) is the default.
+ * The list shown in the picker lives in src/lib/theme.ts.
  * Colours are CSS variables so every screen follows the active theme.
  */
 :root,
-[data-theme="tech"] {
-  color-scheme: dark;
-  --c-bg: #060a13;
-  --c-card: #0d1526;
-  --c-surface: #121c31;
-  --c-ink: #e8f1ff;
-  --c-sub: #8696b4;
-  --c-line: #1e2b45;
-  --c-primary: #35d8ff;
-  --c-primary-soft: #0f2a40;
-  --c-mint: #3df0b0;
-  --c-mint-soft: #0e2c2a;
-  --c-on-accent: #04121f;
-  --c-body: #24324f;
-  --c-muscle: #35d8ff;
-  --c-muscle-2: #1f6f93;
+[data-theme="frost"] {
+  color-scheme: light;
+  --c-bg: #f2f6fc;
+  --c-card: #ffffff;
+  --c-surface: #ffffff;
+  --c-ink: #14213a;
+  --c-sub: #66758f;
+  --c-line: #dde6f2;
+  --c-primary: #2f6bff;
+  --c-primary-soft: #e5edff;
+  --c-mint: #0f9d7a;
+  --c-mint-soft: #dcf5ec;
+  --c-on-accent: #ffffff;
+  --c-body: #d3dceb;
+  --c-muscle: #2f6bff;
+  --c-muscle-2: #a9c2ff;
 }
 [data-theme="warm"] {
   color-scheme: light;
@@ -39,6 +39,74 @@
   --c-body: #e6dfd8;
   --c-muscle: #e8615a;
   --c-muscle-2: #f6b8a8;
+}
+[data-theme="mint"] {
+  color-scheme: light;
+  --c-bg: #f2faf6;
+  --c-card: #ffffff;
+  --c-surface: #ffffff;
+  --c-ink: #1e2f29;
+  --c-sub: #667d73;
+  --c-line: #d9ebe2;
+  --c-primary: #128a66;
+  --c-primary-soft: #dbf3e9;
+  --c-mint: #2380c9;
+  --c-mint-soft: #e0effa;
+  --c-on-accent: #ffffff;
+  --c-body: #d6e6de;
+  --c-muscle: #128a66;
+  --c-muscle-2: #9ed9c3;
+}
+[data-theme="lavender"] {
+  color-scheme: light;
+  --c-bg: #f7f5fd;
+  --c-card: #ffffff;
+  --c-surface: #ffffff;
+  --c-ink: #2a2440;
+  --c-sub: #787191;
+  --c-line: #e6e1f5;
+  --c-primary: #7054e0;
+  --c-primary-soft: #ece7fc;
+  --c-mint: #2fa98c;
+  --c-mint-soft: #e2f5ef;
+  --c-on-accent: #ffffff;
+  --c-body: #dfd9ef;
+  --c-muscle: #7054e0;
+  --c-muscle-2: #c3b6f3;
+}
+[data-theme="sakura"] {
+  color-scheme: light;
+  --c-bg: #fff5f8;
+  --c-card: #ffffff;
+  --c-surface: #ffffff;
+  --c-ink: #3a2630;
+  --c-sub: #8c7482;
+  --c-line: #f5dfe7;
+  --c-primary: #d6447c;
+  --c-primary-soft: #fde5ee;
+  --c-mint: #2fa98c;
+  --c-mint-soft: #e2f5ef;
+  --c-on-accent: #ffffff;
+  --c-body: #f0dbe3;
+  --c-muscle: #d6447c;
+  --c-muscle-2: #f3b2cb;
+}
+[data-theme="tech"] {
+  color-scheme: dark;
+  --c-bg: #060a13;
+  --c-card: #0d1526;
+  --c-surface: #121c31;
+  --c-ink: #e8f1ff;
+  --c-sub: #8696b4;
+  --c-line: #1e2b45;
+  --c-primary: #35d8ff;
+  --c-primary-soft: #0f2a40;
+  --c-mint: #3df0b0;
+  --c-mint-soft: #0e2c2a;
+  --c-on-accent: #04121f;
+  --c-body: #24324f;
+  --c-muscle: #35d8ff;
+  --c-muscle-2: #1f6f93;
 }
 
 @theme inline {
@@ -85,10 +153,26 @@ select {
     var(--c-bg);
   background-attachment: fixed;
 }
-/* text on bright accent fills must be dark to stay readable */
-[data-theme="tech"] :is(.bg-primary, .bg-mint, .bg-ink).text-white,
-[data-theme="tech"] :is(.bg-primary, .bg-mint, .bg-ink) [class*="text-white"] {
+/* text on accent fills follows the theme (dark text on the bright tech accents) */
+:is(.bg-primary, .bg-mint, .bg-ink).text-white,
+:is(.bg-primary, .bg-mint, .bg-ink) [class*="text-white"] {
   color: var(--c-on-accent);
+}
+[data-theme="frost"] body {
+  background:
+    radial-gradient(800px 460px at 90% -10%, rgba(47, 107, 255, 0.12), transparent 60%),
+    radial-gradient(700px 460px at -10% 25%, rgba(0, 200, 220, 0.1), transparent 60%),
+    linear-gradient(rgba(47, 107, 255, 0.035) 1px, transparent 1px) 0 0 / 100% 28px,
+    linear-gradient(90deg, rgba(47, 107, 255, 0.035) 1px, transparent 1px) 0 0 / 28px 100%,
+    var(--c-bg);
+  background-attachment: fixed;
+}
+[data-theme="frost"] .bg-primary {
+  background-image: linear-gradient(135deg, #2f6bff, #19b5e6);
+  box-shadow: 0 6px 18px rgba(47, 107, 255, 0.22);
+}
+[data-theme="frost"] .bg-card {
+  box-shadow: 0 6px 20px rgba(30, 60, 120, 0.06);
 }
 [data-theme="tech"] .bg-primary {
   background-image: linear-gradient(135deg, #35d8ff, #6f8cff);

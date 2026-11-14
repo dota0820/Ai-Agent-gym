@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "给健身新手的 AI 教练",
     start_url: "/",
     display: "standalone",
-    background_color: "#060a13",
-    theme_color: "#060a13",
+    background_color: "#f2f6fc",
+    theme_color: "#f2f6fc",
     icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
   };
 }
