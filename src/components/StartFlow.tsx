@@ -173,6 +173,19 @@ export default function StartFlow({ name }: { name: string }) {
                 {g.label}
               </button>
             ))}
+            {[
+              { label: "有氧", q: "今天想做有氧,帮我安排一下" },
+              { label: "拉伸放松", q: "今天想做拉伸和活动度放松,帮我安排一下" },
+              { label: "帮我决定", q: "我不知道今天该练什么,你根据我的记录帮我决定吧" },
+            ].map((x) => (
+              <button
+                key={x.label}
+                onClick={() => router.push(`/coach?q=${encodeURIComponent(x.q)}`)}
+                className="shrink-0 rounded-full border border-primary/40 bg-primary-soft px-3 py-1.5 text-sm font-semibold text-primary"
+              >
+                {x.label}
+              </button>
+            ))}
           </div>
         </div>
       )}

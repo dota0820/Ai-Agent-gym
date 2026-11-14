@@ -9,6 +9,7 @@ import {
   getState,
   historyForCoach,
   lastPerformance,
+  setsSummary,
   setState,
   setStateForProfile,
   uid,
@@ -126,7 +127,18 @@ function buildContext(): string {
           .map((i) => `${i.name} ${i.sets}×${i.reps}${i.weight ? ` ${i.weight}` : ""}`)
           .join(";")}`
       : "(暂无)",
-    s.active ? `\n用户此刻正在进行一次训练: ${s.active.title}` : "",
+    s.active
+      ? `\n用户此刻正在进行一次训练「${s.active.title}」(还没保存),目前的进度:\n${
+          s.active.exercises
+            .map((e) => {
+              const done = e.sets.filter((x) => x.done).length;
+              return `- ${e.name}${e.exerciseId ? ` [${e.exerciseId}]` : ""}: ${
+                done ? setsSummary(e) : "还没开始"
+              }(已完成 ${done}/${e.sets.length} 组)`;
+            })
+            .join("\n") || "(还没有添加动作)"
+        }`
+      : "",
     "",
     "## 最近的训练记录(新的在前)",
     historyForCoach(s.workouts),

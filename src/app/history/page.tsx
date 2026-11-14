@@ -2,9 +2,10 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import ProfileChip from "@/components/ProfileChip";
-import { btnSoft, Card, H1 } from "@/components/ui";
+import PlanCard from "@/components/PlanCard";
+import { btnPrimary, btnSoft, Card, H1 } from "@/components/ui";
 import { startFree } from "@/lib/actions";
 import {
   computeNutritionTargets,
@@ -23,7 +24,8 @@ import {
 import { MEAL_TYPES, type MealLog } from "@/lib/types";
 
 function HistoryContent() {
-  const { workouts, active, meals, profile } = useApp();
+  const { workouts, active, meals, profile, plan } = useApp();
+  const [now] = useState(() => Date.now());
   const router = useRouter();
   const searchParams = useSearchParams();
   const ready = useHydrated();
@@ -36,6 +38,10 @@ function HistoryContent() {
   };
 
   const sortedWorkouts = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const weekAgo = new Date(now - 7 * 864e5).toISOString();
+  const weekWorkouts = workouts.filter((w) => w.startedAt >= weekAgo);
+  const weekCount = weekWorkouts.length;
+  const weekMinutes = weekWorkouts.reduce((n, w) => n + (durationMin(w) ?? 0), 0);
   const targets = computeNutritionTargets(profile);
 
   // Group meals by local calendar day, newest day first, newest meal first within each day
@@ -91,6 +97,40 @@ function HistoryContent() {
 
       {tab === "workout" ? (
         <div className="space-y-3">
+          {active && (
+            <Card className="border-mint/40 bg-mint-soft">
+              <div className="text-sm font-semibold text-mint">训练进行中</div>
+              <div className="mt-0.5 text-lg font-bold">{active.title}</div>
+              <Link href="/workout" className={`${btnPrimary} mt-3 w-full`}>
+                继续训练
+              </Link>
+            </Card>
+          )}
+
+          <div className="grid grid-cols-3 gap-2 text-center">
+            {[
+              { l: "最近 7 天", v: weekCount, u: "次" },
+              { l: "一共", v: workouts.length, u: "次" },
+              { l: "最近 7 天", v: weekMinutes, u: "分钟" },
+            ].map((x, i) => (
+              <div key={i} className="rounded-2xl border border-line bg-card py-2.5">
+                <div className="text-xl font-bold tabular-nums">{x.v}</div>
+                <div className="text-[11px] text-sub">
+                  {x.l} · {x.u}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {plan && !active && (
+            <section>
+              <h2 className="mb-2 text-sm font-semibold text-sub">
+                教练安排的计划 · {fmtDate(plan.createdAt)}
+              </h2>
+              <PlanCard plan={plan} />
+            </section>
+          )}
+
           <div className="grid grid-cols-2 gap-2">
             <button
               className={btnSoft}
@@ -113,7 +153,7 @@ function HistoryContent() {
           {sortedWorkouts.length === 0 ? (
             <Card>
               <p className="text-sm text-sub">
-                还没有训练记录。去「今天」让教练按当前人物安排第一次训练吧，练完这里就会出现记录，下次还能看到和上次的对比。
+                还没有训练记录。去「今天」点一下 3D 人体,让教练安排第一次训练吧，练完这里就会出现记录，下次还能看到和上次的对比。
               </p>
             </Card>
           ) : (
