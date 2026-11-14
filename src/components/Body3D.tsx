@@ -5,92 +5,24 @@ import type { Group as BodyGroup } from "@/lib/types";
 
 export type BodyPart = Exclude<BodyGroup, "cardio" | "mobility">;
 
-type V3 = [number, number, number];
-/** A muscle zone painted onto the figure: which group, where it sits, how far it reaches. */
-interface Zone {
-  part: BodyPart;
-  pos: V3;
-  r: V3;
-}
+const PARTS: BodyPart[] = ["chest", "shoulders", "arms", "core", "back", "glutes", "legs"];
 
-// The figure is scaled to 1.75 units tall, feet at y=0, facing +z.
-// Zones are in that space; side zones are mirrored for left/right below.
-const SIDE: Zone[] = [
-  { part: "chest", pos: [0.08, 1.34, 0.1], r: [0.11, 0.085, 0.1] },
-  { part: "shoulders", pos: [0.18, 1.38, -0.01], r: [0.07, 0.07, 0.1] },
-  { part: "arms", pos: [0.2, 1.22, -0.03], r: [0.09, 0.14, 0.11] }, // upper arm
-  { part: "arms", pos: [0.225, 0.98, 0.02], r: [0.09, 0.15, 0.1] }, // forearm
-  { part: "core", pos: [0.1, 1.17, 0.02], r: [0.05, 0.09, 0.08] }, // obliques
-  { part: "back", pos: [0.09, 1.31, -0.08], r: [0.1, 0.1, 0.08] }, // lats
-  { part: "glutes", pos: [0.08, 1.0, -0.1], r: [0.11, 0.11, 0.1] },
-  { part: "legs", pos: [0.13, 0.75, -0.01], r: [0.14, 0.23, 0.15] }, // thigh
-  { part: "legs", pos: [0.15, 0.3, -0.02], r: [0.11, 0.21, 0.12] }, // lower leg
-];
-const CENTER: Zone[] = [
-  { part: "core", pos: [0, 1.19, 0.08], r: [0.1, 0.1, 0.09] }, // abs
-  { part: "core", pos: [0, 1.03, 0.08], r: [0.1, 0.07, 0.07] }, // lower abs
-  { part: "back", pos: [0, 1.43, -0.07], r: [0.12, 0.06, 0.07] }, // traps
-  { part: "back", pos: [0, 1.17, -0.08], r: [0.1, 0.08, 0.07] }, // lower back
-];
-const ZONES: Zone[] = [
-  ...CENTER,
-  ...SIDE.flatMap((z) => [z, { ...z, pos: [-z.pos[0], z.pos[1], z.pos[2]] as V3 }]),
-];
-const N = ZONES.length;
-
-/** Where to turn the figure and aim the camera when a part is chosen. */
+/** Where to turn the figure and aim the camera when a part is chosen (figure is 1.75 tall). */
 const FOCUS: Record<BodyPart, { rot: number; y: number }> = {
-  chest: { rot: 0.25, y: 1.34 },
-  core: { rot: -0.25, y: 1.17 },
-  shoulders: { rot: 0.7, y: 1.38 },
+  chest: { rot: 0.25, y: 1.32 },
+  core: { rot: -0.25, y: 1.1 },
+  shoulders: { rot: 0.7, y: 1.4 },
   arms: { rot: 0.75, y: 1.12 },
   back: { rot: Math.PI - 0.3, y: 1.3 },
-  glutes: { rot: Math.PI + 0.35, y: 1.0 },
+  glutes: { rot: Math.PI + 0.35, y: 0.9 },
   legs: { rot: 0.45, y: 0.55 },
 };
 
-const VERT_DECL = /* glsl */ `
-varying vec3 vFig;
-uniform mat4 uInvFig;
-`;
-const VERT_BODY = /* glsl */ `
-vFig = (uInvFig * modelMatrix * vec4(transformed, 1.0)).xyz;
-`;
-const FRAG_DECL = /* glsl */ `
-varying vec3 vFig;
-uniform vec3 uC[${N}];
-uniform vec3 uR[${N}];
-uniform vec2 uW[${N}];
-uniform vec3 uGlow;
-uniform vec3 uPick;
-uniform vec3 uRim;
-uniform float uRimK;
-uniform float uEm;
-uniform float uReveal;
-`;
-// Runs just before lighting: paints zones onto the surface, adds an edge glow,
-// and "materialises" the figure from the feet up.
-const FRAG_BODY = /* glsl */ `
-if (vFig.y > uReveal) discard;
-{
-  float fres = pow(1.0 - clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), 2.2);
-  totalEmissiveRadiance += uRim * fres * uRimK;
-  for (int i = 0; i < ${N}; i++) {
-    float k = 1.0 - smoothstep(0.5, 1.0, length((vFig - uC[i]) / uR[i]));
-    vec3 col = mix(uGlow, uPick, uW[i].y);
-    float a = k * uW[i].x;
-    diffuseColor.rgb = mix(diffuseColor.rgb, col, clamp(a, 0.0, 0.92));
-    totalEmissiveRadiance += col * a * uEm;
-  }
-  float edge = smoothstep(uReveal - 0.06, uReveal, vFig.y);
-  totalEmissiveRadiance += uRim * edge * 2.5;
-}
-`;
-
 /**
- * An animated 3D figure you can spin with a finger and tap to choose a body part.
- * Muscle zones glow on the surface; choosing one turns the figure and moves the
- * camera in. Calls onPick with the tapped part; `selected` keeps that part lit.
+ * An anatomical muscle figure you can spin with a finger and tap to choose a
+ * body part. Each muscle group is its own mesh (see public/models/anatomy.glb,
+ * built from BodyParts3D), so the tapped group lights up exactly. Choosing one
+ * turns the figure and moves the camera in.
  */
 export default function Body3D({
   selected,
@@ -133,7 +65,7 @@ export default function Body3D({
         onUnavailableRef.current?.();
         return;
       }
-      const gltf = await new GLTFLoader().loadAsync("/models/xbot.glb");
+      const gltf = await new GLTFLoader().loadAsync("/models/anatomy.glb");
       if (disposed) {
         renderer.dispose();
         return;
@@ -142,80 +74,80 @@ export default function Body3D({
       const tc = themeColors();
       const dark = isDark(theme);
       const col = (c: string) => new THREE.Color(c);
+      // anatomical muscle red, like a textbook plate; the chosen group takes the theme accent
+      const MUSCLE = col(dark ? "#b8463c" : "#c24c40");
+      const MUSCLE_DIM = col(dark ? "#5a2a2a" : "#dcb0a8");
+      const HOVER = col("#f08a6e");
+      const PICK = col(dark ? tc.mint : tc.muscle);
 
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.localClippingEnabled = true;
       el.appendChild(renderer.domElement);
       const c = renderer.domElement;
       c.style.touchAction = "pan-y";
       c.style.display = "block";
       c.style.cursor = "grab";
 
-      scene.add(new THREE.AmbientLight(0xffffff, dark ? 0.7 : 1.5));
-      const key = new THREE.DirectionalLight(0xffffff, dark ? 1.6 : 1.5);
-      key.position.set(1.5, 2.6, 3);
+      scene.add(new THREE.HemisphereLight(0xffffff, dark ? 0x202840 : 0xb9a79c, dark ? 1.3 : 1.45));
+      const key = new THREE.DirectionalLight(0xffffff, 2.6);
+      key.position.set(1.4, 2.6, 3);
       scene.add(key);
-      const rim = new THREE.DirectionalLight(col(tc.primary), dark ? 2.2 : 0.8);
-      rim.position.set(-2, 1.6, -2.5);
+      const fill = new THREE.DirectionalLight(0xffffff, 0.9);
+      fill.position.set(-2.2, 1.2, 1.5);
+      scene.add(fill);
+      const rim = new THREE.DirectionalLight(col(tc.primary), dark ? 2.4 : 0.9);
+      rim.position.set(-1.5, 1.8, -3);
       scene.add(rim);
 
-      // ── the figure ──
+      // reveal: the figure "materialises" from the feet up
+      const reveal = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+
       const figure = new THREE.Group();
       scene.add(figure);
-      const model = gltf.scene;
-      const box = new THREE.Box3().setFromObject(model);
-      const scale = 1.75 / (box.max.y - box.min.y);
-      model.scale.setScalar(scale);
-      model.position.set(
-        -((box.min.x + box.max.x) / 2) * scale,
-        -box.min.y * scale,
-        -((box.min.z + box.max.z) / 2) * scale,
-      );
-      figure.add(model);
+      figure.add(gltf.scene);
 
-      const uniforms = {
-        uInvFig: { value: new THREE.Matrix4() },
-        uC: { value: ZONES.map((z) => new THREE.Vector3(...z.pos)) },
-        uR: { value: ZONES.map((z) => new THREE.Vector3(...z.r)) },
-        uW: { value: ZONES.map(() => new THREE.Vector2(0, 0)) },
-        uGlow: { value: col(dark ? tc.muscle : tc.muscle2) },
-        uPick: { value: col(dark ? tc.mint : tc.muscle) },
-        uRim: { value: col(tc.primary) },
-        uRimK: { value: dark ? 1.1 : 0.25 },
-        uEm: { value: dark ? 0.9 : 0.12 },
-        uReveal: { value: 0 },
-      };
-      const skinned: import("three").SkinnedMesh[] = [];
-      model.traverse((o) => {
-        const m = o as import("three").SkinnedMesh;
+      type PartMesh = import("three").Mesh<
+        import("three").BufferGeometry,
+        import("three").MeshStandardMaterial
+      >;
+      const partMeshes: PartMesh[] = [];
+      gltf.scene.traverse((o) => {
+        const m = o as PartMesh;
         if (!m.isMesh) return;
-        const isJoint = /joint/i.test(m.name) || /joint/i.test((m.material as { name?: string }).name ?? "");
-        const mat = new THREE.MeshStandardMaterial({
-          color: isJoint ? col(dark ? tc.muscle2 : tc.muscle2) : col(tc.body),
-          roughness: isJoint ? 0.35 : 0.55,
-          metalness: dark ? 0.55 : 0.1,
+        const name = (m.name || m.parent?.name || "").toLowerCase();
+        const part = PARTS.find((p) => name.startsWith(p));
+        if (name.startsWith("skin")) {
+          // a faint shell so head, hands and feet read as a whole body
+          m.material = new THREE.MeshStandardMaterial({
+            color: col(dark ? tc.muscle2 : tc.body),
+            transparent: true,
+            opacity: dark ? 0.16 : 0.15,
+            roughness: 0.9,
+            depthWrite: false,
+            side: THREE.FrontSide,
+            clippingPlanes: [reveal],
+          }) as never;
+          m.renderOrder = 2;
+          return;
+        }
+        m.material = new THREE.MeshStandardMaterial({
+          color: MUSCLE.clone(),
+          roughness: 0.62,
+          metalness: 0.05,
+          emissive: new THREE.Color(0x000000),
+          clippingPlanes: [reveal],
         });
-        mat.onBeforeCompile = (shader) => {
-          Object.assign(shader.uniforms, uniforms);
-          shader.vertexShader = shader.vertexShader
-            .replace("#include <common>", `#include <common>\n${VERT_DECL}`)
-            .replace("#include <project_vertex>", `#include <project_vertex>\n${VERT_BODY}`);
-          shader.fragmentShader = shader.fragmentShader
-            .replace("#include <common>", `#include <common>\n${FRAG_DECL}`)
-            .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>\n${FRAG_BODY}`);
-        };
-        m.material = mat;
-        m.frustumCulled = false;
-        if (m.isSkinnedMesh) skinned.push(m);
+        if (part) {
+          m.userData.part = part;
+          partMeshes.push(m);
+        } else {
+          m.userData.neutral = true;
+        }
       });
 
-      const mixer = new THREE.AnimationMixer(model);
-      const idle = gltf.animations.find((a) => a.name === "idle") ?? gltf.animations[0];
-      if (idle) mixer.clipAction(idle).play();
-      mixer.update(0);
-
-      // ── stage: rings, grid, floating particles, scan ring ──
+      // ── stage: rings, floating particles, scan ring ──
       const stage = new THREE.Group();
       scene.add(stage);
       const lineColor = col(tc.primary);
@@ -231,8 +163,12 @@ export default function Body3D({
         const g = new THREE.Group();
         const arc = (Math.PI * 2) / parts;
         for (let i = 0; i < parts; i++) {
-          const seg = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 24, 1, i * arc, arc * (1 - gap)), ringMat(opacity));
-          g.add(seg);
+          g.add(
+            new THREE.Mesh(
+              new THREE.RingGeometry(r0, r1, 24, 1, i * arc, arc * (1 - gap)),
+              ringMat(opacity),
+            ),
+          );
         }
         g.rotation.x = -Math.PI / 2;
         g.position.y = 0.004;
@@ -246,7 +182,10 @@ export default function Body3D({
       disc.rotation.x = -Math.PI / 2;
       stage.add(disc);
 
-      const scan = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.0035, 8, 72), ringMat(dark ? 0.8 : 0.45));
+      const scan = new THREE.Mesh(
+        new THREE.TorusGeometry(0.4, 0.0035, 8, 72),
+        ringMat(dark ? 0.8 : 0.45),
+      );
       scan.rotation.x = Math.PI / 2;
       stage.add(scan);
 
@@ -255,7 +194,7 @@ export default function Body3D({
       const pSeed = new Float32Array(P);
       for (let i = 0; i < P; i++) {
         const a = Math.random() * Math.PI * 2;
-        const r = 0.45 + Math.random() * 0.45;
+        const r = 0.5 + Math.random() * 0.45;
         pPos.set([Math.cos(a) * r, Math.random() * 1.9, Math.sin(a) * r], i * 3);
         pSeed[i] = 0.06 + Math.random() * 0.12;
       }
@@ -276,6 +215,7 @@ export default function Body3D({
 
       // burst ring shown where a part is picked
       const burst = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), ringMat(0));
+      burst.renderOrder = 3;
       scene.add(burst);
       let burstT = 1;
 
@@ -297,8 +237,6 @@ export default function Body3D({
       // ── interaction: drag to spin, tap to pick ──
       const ray = new THREE.Raycaster();
       const ndc = new THREE.Vector2();
-      const inv = new THREE.Matrix4();
-      const local = new THREE.Vector3();
       let hover: BodyPart | null = null;
       let dragging = false;
       let moved = 0;
@@ -307,33 +245,14 @@ export default function Body3D({
       let touched = false;
       let rotY = -0.6;
       let lastHover = 0;
+      let rotTarget: number | null = null;
 
-      /** Which zone a figure-space point belongs to (nearest zone it falls inside). */
-      const zoneAt = (p: import("three").Vector3): BodyPart | null => {
-        let best: BodyPart | null = null;
-        let bestD = 1.15;
-        for (const z of ZONES) {
-          const d = Math.hypot((p.x - z.pos[0]) / z.r[0], (p.y - z.pos[1]) / z.r[1], (p.z - z.pos[2]) / z.r[2]);
-          if (d < bestD) {
-            bestD = d;
-            best = z.part;
-          }
-        }
-        return best;
-      };
       const hitAt = (e: PointerEvent) => {
         const r = c.getBoundingClientRect();
         ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
         ray.setFromCamera(ndc, camera);
-        for (const m of skinned) {
-          m.computeBoundingSphere();
-          m.computeBoundingBox();
-        }
-        const hit = ray.intersectObjects(skinned, false)[0];
-        if (!hit) return null;
-        figure.updateMatrixWorld();
-        local.copy(hit.point).applyMatrix4(inv.copy(figure.matrixWorld).invert());
-        return { part: zoneAt(local), point: hit.point.clone() };
+        const hit = ray.intersectObjects(partMeshes, false)[0];
+        return hit ? { part: hit.object.userData.part as BodyPart, point: hit.point.clone() } : null;
       };
       const down = (e: PointerEvent) => {
         dragging = true;
@@ -351,7 +270,7 @@ export default function Body3D({
           velocity = dx * 0.011;
           rotY += velocity;
           rotTarget = null;
-        } else if (e.pointerType === "mouse" && performance.now() - lastHover > 90) {
+        } else if (e.pointerType === "mouse" && performance.now() - lastHover > 60) {
           lastHover = performance.now();
           hover = hitAt(e)?.part ?? null;
           c.style.cursor = hover ? "pointer" : "grab";
@@ -363,7 +282,7 @@ export default function Body3D({
         c.style.cursor = "grab";
         if (moved < 8) {
           const h = hitAt(e);
-          if (h?.part) {
+          if (h) {
             burst.position.copy(h.point);
             burstT = 0;
             onPickRef.current(h.part);
@@ -388,10 +307,10 @@ export default function Body3D({
       let lastT = performance.now();
       let t = 0;
       let lastSel: BodyPart | null = null;
-      let rotTarget: number | null = null;
-      const cam = { y: 0.95, z: 4.1, lookY: 0.9 };
-      const camGoal = { y: 0.98, z: 3.5, lookY: 0.88 };
-      const weights = uniforms.uW.value;
+      let revealY = reduced ? 9 : 0;
+      const cam = { y: 0.95, z: 4.3, lookY: 0.9 };
+      const camGoal = { y: 0.98, z: 3.6, lookY: 0.88 };
+      const black = new THREE.Color(0x000000);
       let raf = 0;
 
       const frame = () => {
@@ -401,7 +320,6 @@ export default function Body3D({
         lastT = nowT;
         if (!visible || document.hidden) return;
         t += dt;
-        if (!reduced) mixer.update(dt);
 
         // selection changed: turn to show it and move the camera in
         const sel = selectedRef.current;
@@ -409,16 +327,15 @@ export default function Body3D({
           lastSel = sel;
           if (sel) {
             const f = FOCUS[sel];
-            // shortest way round to the target angle
             const turns = Math.round((rotY - f.rot) / (Math.PI * 2));
             rotTarget = f.rot + turns * Math.PI * 2;
             // aim a little below the part so it sits in the upper half, above the question sheet
-            Object.assign(camGoal, { y: f.y - 0.05, z: 2.35, lookY: f.y - 0.28 });
+            Object.assign(camGoal, { y: f.y - 0.05, z: 2.4, lookY: f.y - 0.28 });
             velocity = 0;
             touched = true;
           } else {
             rotTarget = null;
-            Object.assign(camGoal, { y: 0.98, z: 3.5, lookY: 0.88 });
+            Object.assign(camGoal, { y: 0.98, z: 3.6, lookY: 0.88 });
           }
         }
         if (!dragging) {
@@ -430,8 +347,8 @@ export default function Body3D({
           }
         }
         figure.rotation.y = rotY;
-        figure.updateMatrixWorld();
-        uniforms.uInvFig.value.copy(figure.matrixWorld).invert();
+        // a hint of breathing so the figure does not look frozen
+        if (!reduced) figure.scale.set(1 + Math.sin(t * 1.4) * 0.004, 1, 1 + Math.sin(t * 1.4) * 0.008);
 
         const ease = Math.min(1, dt * 3.2);
         cam.y += (camGoal.y - cam.y) * ease;
@@ -440,24 +357,23 @@ export default function Body3D({
         camera.position.set(0, cam.y, cam.z);
         camera.lookAt(0, cam.lookY, 0);
 
-        // materialise from the feet up, then keep everything visible
-        uniforms.uReveal.value = reduced ? 9 : Math.min(9, uniforms.uReveal.value + dt * (uniforms.uReveal.value < 1.9 ? 1.5 : 20));
+        revealY = Math.min(9, revealY + dt * (revealY < 1.9 ? 1.4 : 20));
+        reveal.constant = revealY;
 
-        for (let i = 0; i < N; i++) {
-          const z = ZONES[i];
-          const isSel = z.part === sel;
-          const isHover = z.part === hover;
-          // idle: a soft wave travelling up the body hints that zones are tappable
-          const wave = 0.16 + 0.12 * Math.max(0, Math.sin(t * 1.6 - z.pos[1] * 4));
-          const goalW = isSel ? 0.85 + 0.12 * Math.sin(t * 5) : isHover ? 0.6 : sel ? 0.06 : wave;
-          weights[i].x += (goalW - weights[i].x) * Math.min(1, dt * 8);
-          weights[i].y += ((isSel ? 1 : 0) - weights[i].y) * Math.min(1, dt * 8);
+        const k = Math.min(1, dt * 9);
+        for (const m of partMeshes) {
+          const part = m.userData.part as BodyPart;
+          const isSel = part === sel;
+          const isHover = part === hover && !isSel;
+          m.material.color.lerp(isSel ? PICK : isHover ? HOVER : sel ? MUSCLE_DIM : MUSCLE, k);
+          m.material.emissive.lerp(isSel ? PICK : black, k);
+          m.material.emissiveIntensity = isSel ? (dark ? 0.55 : 0.18) + Math.sin(t * 5) * 0.12 : 0;
         }
 
         ringA.rotation.z = t * 0.5;
         ringB.rotation.z = -t * 0.25;
         ringC.scale.setScalar(1 + 0.04 * Math.sin(t * 2));
-        scan.position.y = 0.92 + Math.sin(t * 0.9) * 0.86;
+        scan.position.y = revealY < 1.9 ? revealY : 0.92 + Math.sin(t * 0.9) * 0.86;
         const pa = pGeo.attributes.position as import("three").BufferAttribute;
         for (let i = 0; i < P; i++) {
           let y = pa.getY(i) + pSeed[i] * dt;
@@ -469,9 +385,9 @@ export default function Body3D({
 
         if (burstT < 1) {
           burstT += dt * 2.2;
-          const k = Math.min(1, burstT);
-          burst.scale.setScalar(0.03 + k * 0.22);
-          (burst.material as import("three").MeshBasicMaterial).opacity = (1 - k) * 0.9;
+          const b = Math.min(1, burstT);
+          burst.scale.setScalar(0.03 + b * 0.22);
+          (burst.material as import("three").MeshBasicMaterial).opacity = (1 - b) * 0.9;
           burst.lookAt(camera.position);
         }
         renderer.render(scene, camera);
@@ -488,7 +404,6 @@ export default function Body3D({
         c.removeEventListener("pointerup", up);
         c.removeEventListener("pointerleave", leave);
         c.removeEventListener("pointercancel", leave);
-        mixer.stopAllAction();
         scene.traverse((o) => {
           const mesh = o as import("three").Mesh;
           if (mesh.isMesh || (o as import("three").Points).isPoints) {
@@ -517,7 +432,7 @@ export default function Body3D({
       ref={host}
       className="relative h-full w-full"
       role="img"
-      aria-label="可以转动的 3D 人体模型,点一下身体部位来选择要练哪里"
+      aria-label="可以转动的 3D 肌肉人体模型,点一下肌肉来选择要练哪里"
     >
       {loading && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-sub">

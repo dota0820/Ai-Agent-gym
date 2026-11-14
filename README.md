@@ -48,4 +48,4 @@ npm run dev                  # http://localhost:3000
 
 - 动作示范照片:[free-exercise-db](https://github.com/yuhonas/free-exercise-db)(公共领域 / Unlicense),放在 `public/exercises/`。
 - 肌肉示意图:[react-body-highlighter](https://github.com/giavinh79/react-body-highlighter)(MIT)。
-- 首页 3D 人体:Mixamo 的 X Bot 模型(取自 three.js 示例),放在 `public/models/xbot.glb`。
+- 首页 3D 肌肉人体:由 BodyParts3D 的肌肉模型精简合并而成(`public/models/anatomy.glb`,生成脚本见 `scripts/build-anatomy.py`)。BodyParts3D, © The Database Center for Life Science, licensed under CC Attribution-Share Alike 2.1 Japan。这个模型文件同样以 CC BY-SA 2.1 JP 授权。

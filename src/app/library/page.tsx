@@ -151,7 +151,7 @@ function Library() {
       </ul>
 
       <p className="mt-4 text-center text-[11px] text-sub">
-        内置示范照片来自公共领域的 free-exercise-db 开源动作库
+        内置示范照片来自公共领域的 free-exercise-db 开源动作库 · 3D 人体模型:BodyParts3D © DBCLS(CC BY-SA 2.1 JP)
       </p>
 
       {showImport && (
