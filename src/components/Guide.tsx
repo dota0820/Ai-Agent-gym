@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { wrongFeel } from "@/lib/exercise-extras";
 import { EX_BY_ID, videoUrl } from "@/lib/exercises";
 import type { Exercise, Guide as G } from "@/lib/types";
 import AttachmentTip from "./AttachmentTip";
@@ -97,6 +99,24 @@ export default function Guide({
             ))}
           </ul>
         </details>
+      )}
+
+      {lib && wrongFeel(lib).length > 0 && (
+        <div>
+          <Label>感觉不对?点一下问教练</Label>
+          <div className="mt-2 space-y-2">
+            {wrongFeel(lib).map((w) => (
+              <Link
+                key={w}
+                href={`/coach?q=${encodeURIComponent(`我做${lib.name}(${lib.nameEn})的时候,${w}。是哪里做错了?怎么改?`)}`}
+                className="flex items-center justify-between gap-2 rounded-2xl border border-primary/40 bg-white px-3 py-3 text-[16px] font-semibold text-primary active:scale-[0.99]"
+              >
+                <span>{w}?</span>
+                <span className="shrink-0 text-sm">问教练 ›</span>
+              </Link>
+            ))}
+          </div>
+        </div>
       )}
 
       <a

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ExercisePicker from "@/components/ExercisePicker";
 import Guide, { guideFor } from "@/components/Guide";
+import NumInput from "@/components/NumInput";
 import WatchForm from "@/components/WatchForm";
 import { btnGhost, btnPrimary, btnSoft, Card, input } from "@/components/ui";
 import { newExercise } from "@/lib/actions";
@@ -23,7 +24,6 @@ function update(fn: (w: Workout) => Workout) {
 function updateEx(i: number, fn: (e: WorkoutExercise) => WorkoutExercise) {
   update((w) => ({ ...w, exercises: w.exercises.map((e, j) => (j === i ? fn(e) : e)) }));
 }
-const num = (v: string) => (v === "" || isNaN(Number(v)) ? null : Number(v));
 const mmss = (sec: number) =>
   `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
 
@@ -211,33 +211,28 @@ export default function WorkoutPage() {
                   className="grid grid-cols-[28px_1fr_1fr_44px] items-center gap-2 py-1"
                 >
                   <span className="text-center text-sm font-semibold text-sub">{k + 1}</span>
-                  <input
+                  <NumInput
+                    decimal
                     className={`${input} text-center ${s.done ? "bg-mint-soft" : ""}`}
-                    inputMode="decimal"
                     placeholder="自重"
                     aria-label={`${ex.name} 第 ${k + 1} 组重量`}
-                    value={s.weight ?? ""}
-                    onChange={(e) =>
+                    value={s.weight}
+                    onChange={(v) =>
                       updateEx(i, (x) => ({
                         ...x,
-                        sets: x.sets.map((y, j) =>
-                          j === k ? { ...y, weight: num(e.target.value) } : y,
-                        ),
+                        sets: x.sets.map((y, j) => (j === k ? { ...y, weight: v } : y)),
                       }))
                     }
                   />
-                  <input
+                  <NumInput
                     className={`${input} text-center ${s.done ? "bg-mint-soft" : ""}`}
-                    inputMode="numeric"
                     placeholder="—"
                     aria-label={`${ex.name} 第 ${k + 1} 组次数`}
-                    value={s.reps ?? ""}
-                    onChange={(e) =>
+                    value={s.reps}
+                    onChange={(v) =>
                       updateEx(i, (x) => ({
                         ...x,
-                        sets: x.sets.map((y, j) =>
-                          j === k ? { ...y, reps: num(e.target.value) } : y,
-                        ),
+                        sets: x.sets.map((y, j) => (j === k ? { ...y, reps: v } : y)),
                       }))
                     }
                   />
