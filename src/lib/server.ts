@@ -66,11 +66,11 @@ export function guard(req: Request): Response | null {
 
 export function apiErrorMessage(err: unknown): string {
   if (err instanceof OpenRouterError) {
-    if (err.status === 401) return "OpenRouter 的 API Key 无效,请检查 OPENROUTER_API_KEY。";
+    if (err.status === 401) return "OpenRouter 的 API Key 无效。请到「我的 → AI 模型」重新粘贴一次 Key(以 sk-or- 开头)。";
     if (err.status === 402) return "OpenRouter 账户余额不足,请先充值。";
     if (err.status === 429) return "请求太频繁了,等一会儿再试。";
     if (err.status === 404 || err.status === 400)
-      return `OpenRouter 不接受这个请求(${err.status}),请检查 OPENROUTER_MODEL 是否填对。`;
+      return `OpenRouter 不接受这个请求(${err.status})。请到「我的 → AI 模型」换一个模型再试。`;
     return `AI 服务出错了(${err.status}),请稍后再试。`;
   }
   if (err instanceof Anthropic.AuthenticationError)
