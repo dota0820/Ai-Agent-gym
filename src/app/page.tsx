@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import PlanCard from "@/components/PlanCard";
-import ProfileSwitchBar from "@/components/ProfileSwitchBar";
+import ProfileChip from "@/components/ProfileChip";
 import { btnGhost, btnPrimary, Card, H1 } from "@/components/ui";
 import { startFree } from "@/lib/actions";
 import { computeNutritionTargets, localDateKey, mealsForDate, sumMealMacros } from "@/lib/nutrition";
@@ -30,7 +30,7 @@ export default function Home() {
 
   return (
     <div className="space-y-4">
-      <ProfileSwitchBar compact />
+      <ProfileChip />
       <H1 sub={`最近 7 天练了 ${thisWeek} 次 · 一共 ${workouts.length} 次`}>
         {hello}
         {profile.name ? `,${profile.name}` : ""} 👋

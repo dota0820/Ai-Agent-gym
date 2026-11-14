@@ -1,10 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { isAllowedModel } from "./models";
 import { OpenRouterError } from "./openrouter";
 
 export const MODEL = "claude-opus-5-5";
 
 /** OpenRouter is used when its key is set; otherwise the Anthropic API directly. */
 export const viaOpenRouter = () => !!process.env.OPENROUTER_API_KEY;
+
+/** Client-requested model; returns undefined if absent or not allowlisted. */
+export function requestedModel(req: Request): string | undefined {
+  const id = req.headers.get("x-ai-model")?.trim() ?? "";
+  return isAllowedModel(id) ? id : undefined;
+}
 
 let client: Anthropic | null = null;
 export function anthropic() {

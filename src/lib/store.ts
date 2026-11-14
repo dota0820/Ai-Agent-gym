@@ -67,6 +67,7 @@ interface RootStore {
   profiles: PersonWorkspace[];
   customExercises: CustomExercise[];
   passcode: string;
+  aiModel: string;
 }
 
 const DEFAULT_ROOT: RootStore = {
@@ -74,6 +75,7 @@ const DEFAULT_ROOT: RootStore = {
   profiles: [emptyWorkspace("default")],
   customExercises: [],
   passcode: "",
+  aiModel: "",
 };
 
 function project(root: RootStore): AppState {
@@ -89,6 +91,7 @@ function project(root: RootStore): AppState {
     chat: activeWs.chat,
     customExercises: root.customExercises,
     meals: activeWs.meals,
+    aiModel: root.aiModel,
   };
 }
 
@@ -143,6 +146,7 @@ function parseRootData(p: any): RootStore | null {
       profiles,
       customExercises: Array.isArray(p.customExercises) ? p.customExercises : [],
       passcode,
+      aiModel: typeof p.aiModel === "string" ? p.aiModel : "",
     };
   }
 
@@ -155,6 +159,7 @@ function parseRootData(p: any): RootStore | null {
       profiles: [ws],
       customExercises: Array.isArray(p.customExercises) ? p.customExercises : [],
       passcode,
+      aiModel: typeof p.aiModel === "string" ? p.aiModel : "",
     };
   }
 
@@ -223,7 +228,23 @@ export function setState(fn: (s: AppState) => AppState) {
     profiles: updatedProfiles,
     customExercises: next.customExercises,
     passcode,
+    aiModel: next.aiModel,
   });
+}
+
+export function setAiModel(id: string) {
+  load();
+  commit({ ...rootState, aiModel: id });
+}
+
+/** Shared headers for all /api/* AI endpoints. */
+export function aiHeaders(): Record<string, string> {
+  const s = getState();
+  return {
+    "Content-Type": "application/json",
+    "x-app-passcode": s.profile.passcode,
+    ...(s.aiModel ? { "x-ai-model": s.aiModel } : {}),
+  };
 }
 
 /** Update a specific profile workspace safely (e.g., streaming AI responses even if user switched profile). */

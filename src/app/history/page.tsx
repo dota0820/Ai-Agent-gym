@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import ProfileSwitchBar from "@/components/ProfileSwitchBar";
+import ProfileChip from "@/components/ProfileChip";
 import { btnSoft, Card, H1 } from "@/components/ui";
 import { startFree } from "@/lib/actions";
 import {
@@ -51,7 +51,7 @@ function HistoryContent() {
 
   return (
     <div className="space-y-4">
-      <ProfileSwitchBar compact />
+      <ProfileChip />
 
       <H1
         sub={`${profile.avatar || "🧑"} ${profile.name || "当前人物"} · ${workouts.length} 次训练 · ${meals.length} 条饮食`}

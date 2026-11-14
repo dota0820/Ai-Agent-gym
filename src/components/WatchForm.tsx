@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import { fileToJpegDataUrl } from "@/lib/actions";
-import { getState } from "@/lib/store";
+import { aiHeaders } from "@/lib/store";
 import type { WatchData } from "@/lib/types";
 import { btnSoft, input } from "./ui";
 
@@ -30,10 +30,7 @@ export default function WatchForm({
       const image = await fileToJpegDataUrl(file);
       const res = await fetch("/api/watch", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-app-passcode": getState().profile.passcode,
-        },
+        headers: aiHeaders(),
         body: JSON.stringify({ image }),
       });
       const j = await res.json();

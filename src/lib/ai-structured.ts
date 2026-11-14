@@ -10,6 +10,7 @@ export async function runStructuredAI<T>(opts: {
   image?: string;
   maxTokens?: number;
   effort?: "low" | "medium" | "high";
+  model?: string;
 }): Promise<T | null> {
   if (viaOpenRouter()) {
     return structuredOpenRouter({
@@ -18,6 +19,7 @@ export async function runStructuredAI<T>(opts: {
       prompt: opts.prompt,
       image: opts.image,
       maxTokens: opts.maxTokens,
+      model: opts.model,
     });
   }
 

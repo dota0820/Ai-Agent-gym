@@ -2,7 +2,7 @@ import { z } from "zod";
 import { runStructuredAI } from "@/lib/ai-structured";
 import { EquipmentScanSchema } from "@/lib/coach-tools";
 import { ALL_EQUIPMENT_ITEMS } from "@/lib/equipment";
-import { apiErrorMessage, guard } from "@/lib/server";
+import { apiErrorMessage, guard, requestedModel } from "@/lib/server";
 
 export const maxDuration = 120;
 
@@ -30,6 +30,7 @@ export async function POST(req: Request) {
     "如果照片里根本不是健身器械，把 is_gym_photo 设为 false。",
   ].join("\n");
 
+  const model = requestedModel(req);
   try {
     const out = await runStructuredAI({
       schema: EquipmentScanSchema,
@@ -38,6 +39,7 @@ export async function POST(req: Request) {
       image: parsed.data.image,
       maxTokens: 1200,
       effort: "low",
+      model,
     });
     if (!out) {
       return Response.json({ error: "没看清照片里的器械，可以换个角度拍一张。" }, { status: 422 });

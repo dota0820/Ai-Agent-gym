@@ -304,4 +304,5 @@ export interface AppState {
   chat: ChatMsg[];
   customExercises: CustomExercise[];
   meals: MealLog[];
+  aiModel: string;
 }

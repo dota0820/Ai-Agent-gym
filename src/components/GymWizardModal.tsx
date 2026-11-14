@@ -2,37 +2,27 @@
 import { useRef, useState } from "react";
 import { fileToJpegDataUrl } from "@/lib/actions";
 import {
-  ALL_EQUIPMENT_ITEMS,
   EQUIPMENT_CATEGORIES,
   EQUIPMENT_DETAIL_PROMPTS,
   EQUIPMENT_PRESETS,
   formatEquipmentList,
-  formatGymForCoach,
   mergeEquipmentItems,
   parseEquipmentList,
   toggleEquipmentItem,
 } from "@/lib/equipment";
-import { getState } from "@/lib/store";
+import { aiHeaders } from "@/lib/store";
 import type { GymEnvironment } from "@/lib/types";
 import { btnGhost, btnPrimary, btnSoft, input } from "./ui";
 
 const STEPS = [
-  { id: "scene", short: "1.场景" },
-  { id: "photo", short: "2.拍照" },
-  { id: "free", short: "3.自由重量" },
-  { id: "cable", short: "4.拉索" },
-  { id: "upper", short: "5.上肢" },
-  { id: "lower", short: "6.下肢" },
-  { id: "cardio", short: "7.有氧工具" },
-  { id: "notes", short: "8.补充确认" },
+  { id: "scene", title: "基本" },
+  { id: "free", title: "自由重量" },
+  { id: "cable", title: "绳索与拉力" },
+  { id: "upper", title: "上肢器械" },
+  { id: "lower", title: "下肢与臀腿" },
+  { id: "cardio", title: "有氧与小工具" },
+  { id: "confirm", title: "确认" },
 ] as const;
-
-const NOTE_CHIPS = [
-  "没有重于 20kg 的哑铃",
-  "高峰期深蹲架常排队",
-  "偏好固定器械为主",
-  "部分机器在维修中",
-];
 
 function DumbbellRangeHelper({
   value,
@@ -81,16 +71,18 @@ function DumbbellRangeHelper({
 
 export default function GymWizardModal({
   initialGym,
-  initialStep = 0,
+  canDelete = false,
+  onDelete,
   onClose,
   onSave,
 }: {
   initialGym: GymEnvironment;
-  initialStep?: number;
+  canDelete?: boolean;
+  onDelete?: () => void;
   onClose: () => void;
   onSave: (nextGym: GymEnvironment) => void;
 }) {
-  const [step, setStep] = useState(Math.max(0, Math.min(STEPS.length - 1, initialStep)));
+  const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<GymEnvironment>({
     ...initialGym,
     details: initialGym.details ? { ...initialGym.details } : {},
@@ -98,13 +90,10 @@ export default function GymWizardModal({
   const [customItem, setCustomItem] = useState("");
   const [busy, setBusy] = useState(false);
   const [scanMsg, setScanMsg] = useState("");
-  const [presetHint, setPresetHint] = useState<{ label: string; items: string[] } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const selected = parseEquipmentList(draft.equipment);
   const selectedSet = new Set(selected);
-  const knownSet = new Set(ALL_EQUIPMENT_ITEMS);
-  const extras = selected.filter((x) => !knownSet.has(x));
   const details = draft.details ?? {};
 
   const setDetail = (item: string, spec: string) => {
@@ -124,12 +113,6 @@ export default function GymWizardModal({
     setDraft((prev) => ({ ...prev, equipment: mergeEquipmentItems(prev.equipment, items) }));
   };
 
-  const clearItems = (items: string[]) => {
-    const drop = new Set(items);
-    const next = parseEquipmentList(draft.equipment).filter((x) => !drop.has(x));
-    setDraft((prev) => ({ ...prev, equipment: formatEquipmentList(next) }));
-  };
-
   const addCustomItems = () => {
     const clean = customItem.trim();
     if (!clean) return;
@@ -147,10 +130,7 @@ export default function GymWizardModal({
       const image = await fileToJpegDataUrl(file);
       const res = await fetch("/api/equipment", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-app-passcode": getState().profile.passcode,
-        },
+        headers: aiHeaders(),
         body: JSON.stringify({ image }),
       });
       const j = await res.json();
@@ -177,14 +157,11 @@ export default function GymWizardModal({
           details: nextDetails,
         };
       });
-      if (found.length > 0) {
-        const detailText = detectedDetails.length
-          ? `（已记下规格：${detectedDetails.map((d) => `${d.equipment} ${d.spec}`).join("、")}）`
-          : "";
-        setScanMsg(`✓ 已识别并加入 ${found.length} 项：${found.join("、")}${detailText}`);
-      } else {
-        setScanMsg(j.summary || "没认出具体器械名称，可以在后面几步直接点选。");
-      }
+      setScanMsg(
+        found.length > 0
+          ? `✓ 已识别并加入 ${found.length} 项：${found.join("、")}`
+          : j.summary || "没认出具体器械名称，可以在下一步手动点选。",
+      );
     } catch {
       setScanMsg("识别出错了，请再试一次。");
     } finally {
@@ -192,17 +169,17 @@ export default function GymWizardModal({
     }
   }
 
-  const currentStepId = STEPS[step].id;
+  const currentStep = STEPS[step];
   const activeCategories =
-    currentStepId === "free"
+    currentStep.id === "free"
       ? EQUIPMENT_CATEGORIES.filter((c) => c.id === "free")
-      : currentStepId === "cable"
+      : currentStep.id === "cable"
         ? EQUIPMENT_CATEGORIES.filter((c) => c.id === "cable")
-        : currentStepId === "upper"
+        : currentStep.id === "upper"
           ? EQUIPMENT_CATEGORIES.filter((c) => c.id === "upper")
-          : currentStepId === "lower"
+          : currentStep.id === "lower"
             ? EQUIPMENT_CATEGORIES.filter((c) => c.id === "lower")
-            : currentStepId === "cardio"
+            : currentStep.id === "cardio"
               ? EQUIPMENT_CATEGORIES.filter((c) => c.id === "cardio" || c.id === "small")
               : [];
 
@@ -222,23 +199,20 @@ export default function GymWizardModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end bg-black/45" onClick={onClose}>
       <div
-        className="safe-b mx-auto flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl bg-bg"
+        className="safe-b mx-auto flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-3xl bg-bg"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
-        aria-label="Gym 环境配置向导"
+        aria-label="Gym 环境配置"
       >
-        {/* Top bar */}
-        <div className="shrink-0 border-b border-line bg-white px-5 pt-4 pb-3 rounded-t-3xl">
+        <div className="shrink-0 rounded-t-3xl border-b border-line bg-white px-5 pt-4 pb-3">
           <div className="flex items-center justify-between gap-2">
             <button type="button" className="text-xs font-semibold text-sub" onClick={onClose}>
               取消
             </button>
             <div className="text-center">
-              <div className="text-sm font-bold">
-                🏋️ 配置「{draft.name.trim() || "Gym"}」环境
-              </div>
+              <div className="text-sm font-bold">{draft.name.trim() || "健身房"}</div>
               <div className="text-[11px] text-sub">
-                第 {step + 1} / {STEPS.length} 步 · 已选 {selected.length} 项器械
+                第 {step + 1} / {STEPS.length} 步 · {currentStep.title} · 已选 {selected.length} 项
               </div>
             </div>
             <button
@@ -250,42 +224,17 @@ export default function GymWizardModal({
             </button>
           </div>
 
-          {/* Progress bar & jumpable step pills */}
-          <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-bg">
+          <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-bg">
             <div
               className="h-full rounded-full bg-primary transition-all"
               style={{ width: `${Math.round(((step + 1) / STEPS.length) * 100)}%` }}
             />
           </div>
-          <div className="mt-2.5 flex gap-1.5 overflow-x-auto pb-0.5">
-            {STEPS.map((st, idx) => (
-              <button
-                key={st.id}
-                type="button"
-                onClick={() => setStep(idx)}
-                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
-                  idx === step
-                    ? "bg-primary text-white"
-                    : "border border-line bg-bg text-sub hover:text-ink"
-                }`}
-              >
-                {st.short}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Scrollable question body */}
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          {currentStepId === "scene" && (
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          {currentStep.id === "scene" && (
             <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-bold">这家场地叫什么？平时是哪种 Gym？</h2>
-                <p className="mt-1 text-xs text-sub">
-                  第 1 步先定下大环境（可以添加多个 Gym，比如 Gym 1 公司馆、Gym 2 家里）。
-                </p>
-              </div>
-
               <label className="block">
                 <span className="text-xs font-semibold text-sub">场地名称</span>
                 <input
@@ -297,7 +246,7 @@ export default function GymWizardModal({
               </label>
 
               <div className="space-y-2">
-                <div className="text-xs font-semibold text-sub">选择最接近的健身房类型：</div>
+                <div className="text-xs font-semibold text-sub">选择场景（可选预设）</div>
                 {EQUIPMENT_PRESETS.map((p) => {
                   const activeScene = draft.scene === p.label;
                   return (
@@ -305,80 +254,30 @@ export default function GymWizardModal({
                       key={p.id}
                       type="button"
                       onClick={() => {
-                        setDraft((prev) => ({
-                          ...prev,
-                          scene: p.label,
-                          equipment:
-                            parseEquipmentList(prev.equipment).length === 0
-                              ? formatEquipmentList(p.items)
-                              : prev.equipment,
-                        }));
-                        if (selected.length > 0) {
-                          setPresetHint({ label: p.label, items: p.items });
+                        if (selected.length === 0 || confirm(`用「${p.label}」预设覆盖现有器械？`)) {
+                          setDraft((prev) => ({
+                            ...prev,
+                            scene: p.label,
+                            equipment: formatEquipmentList(p.items),
+                          }));
+                        } else {
+                          setDraft((prev) => ({ ...prev, scene: p.label }));
                         }
                       }}
                       className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition ${
                         activeScene
-                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                          : "border-line bg-white active:bg-soft"
+                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          : "border-line bg-white active:bg-bg"
                       }`}
                     >
                       <span className="text-2xl leading-none">{p.emoji}</span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-bold">{p.label}</span>
-                          {activeScene && (
-                            <span className="rounded bg-primary px-1.5 py-0.5 text-[10px] font-bold text-white">
-                              已选
-                            </span>
-                          )}
-                        </div>
+                        <div className="text-sm font-bold">{p.label}</div>
                         <div className="mt-0.5 text-xs text-sub">{p.desc}</div>
                       </div>
                     </button>
                   );
                 })}
-              </div>
-
-              {presetHint && (
-                <div className="rounded-2xl border border-primary/30 bg-primary-soft p-3 text-xs space-y-2">
-                  <div className="font-semibold text-ink">
-                    你已经勾选了 {selected.length} 项器械，要把「{presetHint.label}」的常用器械也应用上吗？
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      className="rounded-xl bg-primary px-3 py-1.5 font-semibold text-white"
-                      onClick={() => {
-                        setDraft((prev) => ({
-                          ...prev,
-                          equipment: formatEquipmentList(presetHint.items),
-                        }));
-                        setPresetHint(null);
-                      }}
-                    >
-                      套用该场景器械 ({presetHint.items.length}项)
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-xl border border-line bg-white px-3 py-1.5 font-semibold text-sub"
-                      onClick={() => setPresetHint(null)}
-                    >
-                      保留我现有的
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {currentStepId === "photo" && (
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-bold">要拍照让 AI 帮你认器械吗？（可跳过）</h2>
-                <p className="mt-1 text-xs text-sub">
-                  可以连续拍几张：哑铃架（能读出上面标注的公斤数）、拉索区、或你常练的机器，识别结果会累加勾选。
-                </p>
               </div>
 
               <input
@@ -392,156 +291,78 @@ export default function GymWizardModal({
                   e.target.value = "";
                 }}
               />
-
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => fileRef.current?.click()}
-                className="flex w-full flex-col items-center justify-center gap-2 rounded-3xl border-2 border-dashed border-primary/40 bg-white px-4 py-7 text-center active:bg-soft disabled:opacity-50"
+                className={`${btnSoft} w-full text-xs`}
               >
-                <span className="text-3xl">{busy ? "⏳" : "📷"}</span>
-                <span className="text-sm font-bold text-primary">
-                  {busy ? "AI 正在看照片里的器械与重量…" : "拍照或从相册上传健身房照片"}
-                </span>
-                <span className="text-xs text-sub">
-                  可拍哑铃架重量牌、固定器械、龙门架或整个环境
-                </span>
+                {busy ? "AI 正在识别器械…" : "📷 拍照自动识别器械"}
               </button>
-
               {scanMsg && (
-                <div className="rounded-2xl bg-mint-soft px-3.5 py-2.5 text-xs leading-relaxed text-mint">
-                  {scanMsg}
-                </div>
+                <p className="rounded-xl bg-mint-soft px-3 py-2 text-xs text-mint">{scanMsg}</p>
               )}
-
-              {selected.length > 0 && (
-                <div className="rounded-2xl border border-line bg-white p-3 text-xs space-y-1.5">
-                  <div className="font-semibold text-sub">目前已勾选 ({selected.length} 项)：</div>
-                  <div className="leading-relaxed text-ink">
-                    {selected
-                      .map((item) => (details[item] ? `${item}(${details[item]})` : item))
-                      .join("、")}
-                  </div>
-                </div>
-              )}
-
-              <div className="rounded-2xl border border-line bg-white p-3 space-y-2">
-                <div className="text-xs font-semibold text-sub">
-                  或者自己手动输入器械名称（用顿号或逗号隔开）：
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    className={input}
-                    placeholder="例如：六角杠铃、雪橇车、战绳"
-                    value={customItem}
-                    onChange={(e) => setCustomItem(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addCustomItems();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className={`${btnSoft} shrink-0`}
-                    disabled={!customItem.trim()}
-                    onClick={addCustomItems}
-                  >
-                    添加
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
           {activeCategories.length > 0 && (
             <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-bold">
-                  {activeCategories.map((c) => c.label).join(" & ")}
-                </h2>
-                <p className="mt-1 text-xs text-sub">{activeCategories[0].question}</p>
-              </div>
-
-              {activeCategories.map((cat) => {
-                const catCount = cat.items.filter((x) => selectedSet.has(x)).length;
-                return (
-                  <div key={cat.id} className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-sub">
-                        {cat.label}（已选 {catCount}/{cat.items.length}）
-                      </span>
-                      <div className="flex gap-3 text-xs font-semibold">
-                        <button
-                          type="button"
-                          className="text-primary underline"
-                          onClick={() => selectAllInItems(cat.items)}
-                        >
-                          全选这类
-                        </button>
-                        {catCount > 0 && (
-                          <button
-                            type="button"
-                            className="text-sub underline"
-                            onClick={() => clearItems(cat.items)}
-                          >
-                            清空这类
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      {cat.items.map((item) => {
-                        const on = selectedSet.has(item);
-                        const spec = details[item];
-                        return (
-                          <button
-                            key={item}
-                            type="button"
-                            aria-pressed={on}
-                            onClick={() => toggleItem(item)}
-                            className={`flex flex-col items-start rounded-2xl border p-3 text-left transition ${
-                              on
-                                ? "border-primary bg-primary text-white shadow-sm"
-                                : "border-line bg-white text-ink active:bg-soft"
-                            }`}
-                          >
-                            <span className="text-sm font-bold leading-snug">
-                              {on ? "✓ " : ""}
-                              {item}
-                            </span>
-                            {on && EQUIPMENT_DETAIL_PROMPTS[item] && (
-                              <span className="mt-1 text-[11px] opacity-90">
-                                {spec ? `📌 ${spec}` : "可在下方补充重量/规格 ↓"}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
+              {activeCategories.map((cat) => (
+                <div key={cat.id} className="space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold">{cat.label}</span>
+                    <button
+                      type="button"
+                      className="text-xs font-semibold text-primary underline"
+                      onClick={() => selectAllInItems(cat.items)}
+                    >
+                      全选
+                    </button>
                   </div>
-                );
-              })}
 
-              {/* Follow-up detail questions for checked items on this step */}
+                  <div className="grid grid-cols-2 gap-2">
+                    {cat.items.map((item) => {
+                      const on = selectedSet.has(item);
+                      const spec = details[item];
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          aria-pressed={on}
+                          onClick={() => toggleItem(item)}
+                          className={`flex flex-col items-start rounded-2xl border p-3 text-left transition ${
+                            on
+                              ? "border-primary bg-primary text-white shadow-sm"
+                              : "border-line bg-white text-ink active:bg-bg"
+                          }`}
+                        >
+                          <span className="text-sm font-bold leading-snug">
+                            {on ? "✓ " : ""}
+                            {item}
+                          </span>
+                          {on && spec && (
+                            <span className="mt-1 text-[11px] opacity-90">{spec}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
               {selectedWithPrompt.length > 0 && (
                 <div className="space-y-3 border-t border-line pt-3">
-                  <div className="text-xs font-bold text-primary">
-                    🧐 再追问一个小细节（帮 AI 推荐更准的重量与动作）：
-                  </div>
                   {selectedWithPrompt.map((item) => {
                     const p = EQUIPMENT_DETAIL_PROMPTS[item];
                     const cur = details[item] ?? "";
                     return (
                       <div
                         key={item}
-                        className="space-y-2 rounded-2xl border border-primary/25 bg-white p-3"
+                        className="space-y-2 rounded-2xl border border-line bg-white p-3"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-bold">
-                            「{item}」· {p.question}
+                            {item} · {p.question}
                           </span>
                           {cur && (
                             <button
@@ -592,51 +413,15 @@ export default function GymWizardModal({
                   })}
                 </div>
               )}
-
-              {/* Quick custom machine adder on any category page */}
-              <div className="rounded-2xl border border-line bg-white p-3 space-y-2">
-                <div className="text-xs font-semibold text-sub">
-                  这页没列到你健身房的机器？直接补上：
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    className={`${input} text-xs`}
-                    placeholder="例如：悍马推胸、站姿提踵机、爬楼机"
-                    value={customItem}
-                    onChange={(e) => setCustomItem(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addCustomItems();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className={`${btnSoft} shrink-0`}
-                    disabled={!customItem.trim()}
-                    onClick={addCustomItems}
-                  >
-                    添加
-                  </button>
-                </div>
-              </div>
             </div>
           )}
 
-          {currentStepId === "notes" && (
+          {currentStep.id === "confirm" && (
             <div className="space-y-4">
-              <div>
-                <h2 className="text-lg font-bold">最后确认 · 还有要补充给 AI 的吗？</h2>
-                <p className="mt-1 text-xs text-sub">
-                  比如某些器械太少、高峰期不想等、或特殊重量限制，AI 排计划时会严格绕开。
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-line bg-white p-3 space-y-2">
+              <div className="space-y-2 rounded-2xl border border-line bg-white p-3.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-sub">
-                    已选器械（{selected.length} 项，点一下可移除）
+                    已选器械（{selected.length} 项，点一下移除）
                   </span>
                   {selected.length > 0 && (
                     <button
@@ -644,12 +429,12 @@ export default function GymWizardModal({
                       className="text-xs text-sub underline"
                       onClick={() => setDraft((prev) => ({ ...prev, equipment: "", details: {} }))}
                     >
-                      全部清空
+                      清空
                     </button>
                   )}
                 </div>
                 {selected.length === 0 ? (
-                  <p className="text-xs text-sub">还没有勾选任何器械（可以回去点选或保留空白）。</p>
+                  <p className="text-xs text-sub">暂未勾选器械。</p>
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
                     {selected.map((item) => (
@@ -666,14 +451,10 @@ export default function GymWizardModal({
                   </div>
                 )}
 
-                {extras.length > 0 && (
-                  <div className="text-[11px] text-sub">包含自定义添加：{extras.join("、")}</div>
-                )}
-
                 <div className="flex gap-2 pt-1">
                   <input
                     className={`${input} text-xs`}
-                    placeholder="手动加一台其它器械…"
+                    placeholder="其他器械（如：战绳、雪橇车）"
                     value={customItem}
                     onChange={(e) => setCustomItem(e.target.value)}
                     onKeyDown={(e) => {
@@ -694,50 +475,44 @@ export default function GymWizardModal({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-line bg-white p-3 space-y-2">
-                <div className="text-xs font-bold text-sub">补充限制或偏好说明（可选）：</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {NOTE_CHIPS.map((chip) => (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => {
-                        const cur = draft.notes?.trim() || "";
-                        const next = cur ? `${cur}；${chip}` : chip;
-                        setDraft({ ...draft, notes: next });
-                      }}
-                      className="rounded-full border border-line bg-bg px-2.5 py-1 text-[11px] font-semibold text-sub"
-                    >
-                      + {chip}
-                    </button>
-                  ))}
-                </div>
+              <label className="block rounded-2xl border border-line bg-white p-3.5">
+                <span className="text-xs font-bold text-sub">补充说明（可选）</span>
                 <textarea
-                  className={`${input} text-xs`}
+                  className={`${input} mt-1.5 text-xs`}
                   rows={3}
-                  placeholder="例如：只有周一三五晚上去，人多时优先用固定器械或哑铃，不要安排需要两个龙门架同时拉的动作。"
+                  placeholder="例如：没有重于 20kg 的哑铃、高峰期深蹲架常排队…"
                   value={draft.notes ?? ""}
                   onChange={(e) => setDraft({ ...draft, notes: e.target.value })}
                 />
-              </div>
+              </label>
 
-              <div className="rounded-2xl border border-primary/25 bg-primary-soft p-3 text-xs leading-relaxed text-ink">
-                <div className="font-bold text-primary">🤖 AI 教练将看到的场地情报：</div>
-                <div className="mt-1">{formatGymForCoach(draft)}</div>
-              </div>
+              {canDelete && onDelete && (
+                <div className="text-center">
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-sub underline"
+                    onClick={() => {
+                      if (confirm(`确定删除「${draft.name || "这个健身房"}」吗？`)) {
+                        onDelete();
+                      }
+                    }}
+                  >
+                    删除这个健身房
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Sticky bottom navigation */}
-        <div className="shrink-0 border-t border-line bg-white px-5 py-3 flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-white px-5 py-3">
           {step > 0 ? (
             <button
               type="button"
               className={`${btnGhost} shrink-0 px-4`}
               onClick={() => setStep((s) => Math.max(0, s - 1))}
             >
-              ← 上一题
+              ← 上一步
             </button>
           ) : (
             <button type="button" className={`${btnGhost} shrink-0 px-4`} onClick={onClose}>
@@ -751,11 +526,11 @@ export default function GymWizardModal({
               className={`${btnPrimary} flex-1`}
               onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
             >
-              下一题（{STEPS[step + 1].short}） →
+              下一步（{STEPS[step + 1].title}） →
             </button>
           ) : (
             <button type="button" className={`${btnPrimary} flex-1`} onClick={saveAndClose}>
-              ✓ 完成并保存「{draft.name.trim() || "Gym"}」
+              ✓ 完成保存
             </button>
           )}
         </div>

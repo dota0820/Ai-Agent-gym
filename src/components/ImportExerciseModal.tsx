@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useRef, useState } from "react";
 import { fileToJpegDataUrl } from "@/lib/actions";
-import { addCustomExercise, getState, uid } from "@/lib/store";
+import { addCustomExercise, aiHeaders, uid } from "@/lib/store";
 import { GROUPS, SUBS, type CustomExercise, type Group, type Muscle } from "@/lib/types";
 import { btnGhost, btnPrimary, btnSoft, input } from "./ui";
 
@@ -60,10 +60,7 @@ export default function ImportExerciseModal({
     try {
       const res = await fetch("/api/exercise-import", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-app-passcode": getState().profile.passcode,
-        },
+        headers: aiHeaders(),
         body: JSON.stringify({
           input: rawInput.trim() || undefined,
           note: note.trim() || undefined,

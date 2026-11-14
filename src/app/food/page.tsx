@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import ProfileSwitchBar from "@/components/ProfileSwitchBar";
+import ProfileChip from "@/components/ProfileChip";
 import { fileToJpegDataUrl } from "@/lib/actions";
 import {
   computeNutritionTargets,
@@ -15,7 +15,15 @@ import {
   shiftDateKey,
   sumMealMacros,
 } from "@/lib/nutrition";
-import { addMealLog, getState, removeMealLog, setState, uid, useApp, useHydrated } from "@/lib/store";
+import {
+  addMealLog,
+  aiHeaders,
+  removeMealLog,
+  setState,
+  uid,
+  useApp,
+  useHydrated,
+} from "@/lib/store";
 import { MEAL_TYPES, type MealItem, type MealLog, type MealType } from "@/lib/types";
 import { useDictation } from "@/lib/voice";
 import { btnGhost, btnPrimary, btnSoft, Card, H1, input } from "@/components/ui";
@@ -132,10 +140,7 @@ function FoodContent() {
 
       const res = await fetch("/api/nutrition", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-app-passcode": getState().profile.passcode,
-        },
+        headers: aiHeaders(),
         body: JSON.stringify({
           text: text.trim() || undefined,
           image: photo?.full,
@@ -250,7 +255,7 @@ function FoodContent() {
 
   return (
     <div className="space-y-4">
-      <ProfileSwitchBar compact />
+      <ProfileChip />
       <div className="flex items-start justify-between gap-2">
         <H1 sub="拍照片或说一句话，AI 营养师帮你算热量、蛋白质、碳水和脂肪">饮食营养</H1>
         <div className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-card p-1 text-xs font-semibold">

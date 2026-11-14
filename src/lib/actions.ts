@@ -5,6 +5,7 @@ import { allExerciseNamesForPrompt, findExerciseById } from "./exercise-lookup";
 import { nutritionContextForCoach } from "./nutrition";
 import {
   addMealLog,
+  aiHeaders,
   getState,
   historyForCoach,
   lastPerformance,
@@ -318,10 +319,7 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
     const chatSnapshot = targetWs ? targetWs.chat : s.chat;
     const res = await fetch("/api/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-app-passcode": s.profile.passcode,
-      },
+      headers: aiHeaders(),
       body: JSON.stringify({
         messages: historyForApi(chatSnapshot.filter((m) => m.id !== aid)),
         context: initialContext,

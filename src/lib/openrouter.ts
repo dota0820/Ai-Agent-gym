@@ -45,9 +45,9 @@ async function post(body: Record<string, unknown>, model = OPENROUTER_MODEL): Pr
   return res;
 }
 
-function systemMessage(system: string, context: string): Msg {
+function systemMessage(system: string, context: string, model = OPENROUTER_MODEL): Msg {
   // Anthropic models cache the stable part of the prompt when marked.
-  if (OPENROUTER_MODEL.startsWith("anthropic/"))
+  if (model.startsWith("anthropic/"))
     return {
       role: "system",
       content: [
@@ -78,8 +78,9 @@ function cleanJsonSchema(raw: Record<string, unknown>): Record<string, unknown> 
 async function streamTurn(
   messages: Msg[],
   send: (ev: unknown) => void,
+  model = OPENROUTER_MODEL,
 ): Promise<{ text: string; calls: ToolCall[] }> {
-  const res = await post({ messages, tools, stream: true, max_tokens: 8000 });
+  const res = await post({ messages, tools, stream: true, max_tokens: 8000 }, model);
   const reader = res.body!.getReader();
   const dec = new TextDecoder();
   let buf = "";
@@ -144,11 +145,13 @@ export async function runOpenRouterChat(opts: {
   context: string;
   messages: { role: "user" | "assistant"; text: string }[];
   image?: string;
+  model?: string;
   send: (ev: unknown) => void;
 }) {
   const { send } = opts;
+  const model = opts.model || OPENROUTER_MODEL;
   const messages: Msg[] = [
-    systemMessage(opts.system, opts.context),
+    systemMessage(opts.system, opts.context, model),
     ...opts.messages.map((m, i): Msg => {
       if (opts.image && i === opts.messages.length - 1 && m.role === "user")
         return {
@@ -163,7 +166,7 @@ export async function runOpenRouterChat(opts: {
   ];
 
   for (let iter = 0; iter < 6; iter++) {
-    const { text, calls } = await streamTurn(messages, send);
+    const { text, calls } = await streamTurn(messages, send, model);
     if (!calls.length) return;
     messages.push({ role: "assistant", content: text || null, tool_calls: calls });
     for (const call of calls) {

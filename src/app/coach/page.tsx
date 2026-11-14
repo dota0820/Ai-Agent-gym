@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import MD from "@/components/MD";
 import PlanCard from "@/components/PlanCard";
-import ProfileSwitchBar from "@/components/ProfileSwitchBar";
+import ProfileChip from "@/components/ProfileChip";
 import { fileToJpegDataUrl, sendToCoach, useCoachBusy, visibleText } from "@/lib/actions";
 import { setState, useApp } from "@/lib/store";
 import { canSpeak, speak, stopSpeaking, useDictation } from "@/lib/voice";
@@ -82,7 +82,7 @@ function Coach() {
   return (
     <div className="flex flex-col">
       <div className="mb-3">
-        <ProfileSwitchBar compact />
+        <ProfileChip />
       </div>
       <header className="mb-3 flex items-center justify-between gap-2">
         <div>
