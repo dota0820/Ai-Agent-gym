@@ -62,7 +62,7 @@ function DumbbellRangeHelper({
     <div className="flex items-center gap-1.5 text-xs">
       <span className="shrink-0 text-sub">精确范围：每只</span>
       <input
-        className="w-16 rounded-lg border border-line bg-white px-2 py-1 text-center text-xs outline-none focus:border-primary"
+        className="w-16 rounded-lg border border-line bg-surface px-2 py-1 text-center text-xs outline-none focus:border-primary"
         inputMode="decimal"
         placeholder="最轻"
         value={minW}
@@ -70,7 +70,7 @@ function DumbbellRangeHelper({
       />
       <span className="text-sub">~</span>
       <input
-        className="w-16 rounded-lg border border-line bg-white px-2 py-1 text-center text-xs outline-none focus:border-primary"
+        className="w-16 rounded-lg border border-line bg-surface px-2 py-1 text-center text-xs outline-none focus:border-primary"
         inputMode="decimal"
         placeholder="最重"
         value={maxW}
@@ -276,7 +276,7 @@ export default function GymWizardModal({
           }}
         />
 
-        <div className="shrink-0 rounded-t-3xl border-b border-line bg-white px-5 pt-4 pb-3">
+        <div className="shrink-0 rounded-t-3xl border-b border-line bg-surface px-5 pt-4 pb-3">
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
@@ -319,7 +319,7 @@ export default function GymWizardModal({
               <label className="block">
                 <span className="text-xs font-semibold text-sub">场地名称</span>
                 <input
-                  className={`${input} mt-1 bg-white`}
+                  className={`${input} mt-1 bg-surface`}
                   placeholder="例如：Gym 1 · 公司旁边健身房"
                   value={draft.name}
                   onChange={(e) => setDraft({ ...draft, name: e.target.value })}
@@ -353,7 +353,7 @@ export default function GymWizardModal({
                       className={`flex w-full items-start gap-3 rounded-2xl border p-3.5 text-left transition ${
                         activeScene
                           ? "border-primary bg-primary/5 ring-1 ring-primary"
-                          : "border-line bg-white active:bg-bg"
+                          : "border-line bg-surface active:bg-bg"
                       }`}
                     >
                       <span className="text-2xl leading-none">{p.emoji}</span>
@@ -384,7 +384,7 @@ export default function GymWizardModal({
                 type="button"
                 disabled={busy}
                 onClick={() => fileRef.current?.click()}
-                className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/40 bg-white px-4 py-6 text-center active:bg-bg disabled:opacity-50"
+                className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/40 bg-surface px-4 py-6 text-center active:bg-bg disabled:opacity-50"
               >
                 <span className="text-2xl">{busy ? "⏳" : "📷"}</span>
                 <span className="text-sm font-bold text-primary">
@@ -410,7 +410,7 @@ export default function GymWizardModal({
               )}
 
               {pendingScan && (
-                <div className="space-y-3 rounded-2xl border-2 border-primary bg-white p-3.5">
+                <div className="space-y-3 rounded-2xl border-2 border-primary bg-surface p-3.5">
                   <div className="text-xs font-bold text-primary">
                     🧐 AI 认出了以下器械，请确认哪些要加入：
                   </div>
@@ -520,7 +520,7 @@ export default function GymWizardModal({
                           className={`flex flex-col items-start overflow-hidden rounded-2xl border text-left transition ${
                             on
                               ? "border-primary bg-primary text-white shadow-sm"
-                              : "border-line bg-white text-ink active:bg-bg"
+                              : "border-line bg-surface text-ink active:bg-bg"
                           }`}
                         >
                           {img && (
@@ -567,7 +567,7 @@ export default function GymWizardModal({
                     return (
                       <div
                         key={item}
-                        className="space-y-2 rounded-2xl border border-line bg-white p-3"
+                        className="space-y-2 rounded-2xl border border-line bg-surface p-3"
                       >
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-bold">
@@ -628,7 +628,7 @@ export default function GymWizardModal({
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="w-full rounded-xl border border-dashed border-line bg-white py-2.5 text-center text-xs font-semibold text-primary active:bg-bg"
+                className="w-full rounded-xl border border-dashed border-line bg-surface py-2.5 text-center text-xs font-semibold text-primary active:bg-bg"
               >
                 📷 不确定眼前这台机器叫什么？点这里拍照让 AI 帮你认
               </button>
@@ -637,7 +637,7 @@ export default function GymWizardModal({
 
           {currentStep.id === "confirm" && (
             <div className="space-y-4">
-              <div className="space-y-2 rounded-2xl border border-line bg-white p-3.5">
+              <div className="space-y-2 rounded-2xl border border-line bg-surface p-3.5">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-sub">
                     已选器械（{selected.length} 项，点一下移除）
@@ -700,7 +700,7 @@ export default function GymWizardModal({
                 </div>
               </div>
 
-              <label className="block rounded-2xl border border-line bg-white p-3.5">
+              <label className="block rounded-2xl border border-line bg-surface p-3.5">
                 <span className="text-xs font-bold text-sub">
                   补充说明（可选）
                 </span>
@@ -736,7 +736,7 @@ export default function GymWizardModal({
           )}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-white px-5 py-3">
+        <div className="flex shrink-0 items-center gap-2 border-t border-line bg-surface px-5 py-3">
           {step > 0 ? (
             <button
               type="button"

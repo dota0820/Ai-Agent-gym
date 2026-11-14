@@ -264,7 +264,7 @@ export default function WorkoutPage() {
                     aria-pressed={s.done}
                     onClick={() => toggleSet(i, k)}
                     className={`h-11 rounded-xl text-lg font-bold ${
-                      s.done ? "bg-mint text-white" : "border border-line bg-white text-line"
+                      s.done ? "bg-mint text-white" : "border border-line bg-surface text-line"
                     }`}
                   >
                     ✓
@@ -335,7 +335,7 @@ export default function WorkoutPage() {
                 +30 秒
               </button>
               <button
-                className="rounded-xl bg-white px-3 py-2 text-sm font-semibold text-ink"
+                className="rounded-xl bg-surface px-3 py-2 text-sm font-semibold text-ink"
                 onClick={() => setRestEnd(null)}
               >
                 跳过

@@ -85,7 +85,7 @@ export default function MeAiPage() {
           <button
             type="button"
             onClick={() => setShowKey((v) => !v)}
-            className="shrink-0 rounded-xl border border-line bg-white px-3 text-xs font-semibold text-sub"
+            className="shrink-0 rounded-xl border border-line bg-surface px-3 text-xs font-semibold text-sub"
           >
             {showKey ? "隐藏" : "显示"}
           </button>

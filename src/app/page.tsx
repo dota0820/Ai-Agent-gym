@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import PlanCard from "@/components/PlanCard";
 import ProfileChip from "@/components/ProfileChip";
-import { btnGhost, btnPrimary, Card, H1 } from "@/components/ui";
+import StartFlow from "@/components/StartFlow";
+import { btnGhost, btnPrimary, Card } from "@/components/ui";
 import { startFree } from "@/lib/actions";
 import { computeNutritionTargets, localDateKey, mealsForDate, sumMealMacros } from "@/lib/nutrition";
 import { durationMin, fmtDate, useApp, useHydrated } from "@/lib/store";
@@ -19,8 +20,6 @@ export default function Home() {
   const [now] = useState(() => new Date());
   const weekAgo = new Date(now.getTime() - 7 * 864e5).toISOString();
   const thisWeek = workouts.filter((w) => w.startedAt >= weekAgo).length;
-  const hour = now.getHours();
-  const hello = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
 
   const todayMeals = mealsForDate(meals, localDateKey(now));
   const todayMacros = sumMealMacros(todayMeals);
@@ -31,10 +30,10 @@ export default function Home() {
   return (
     <div className="space-y-4">
       <ProfileChip />
-      <H1 sub={`最近 7 天练了 ${thisWeek} 次 · 一共 ${workouts.length} 次`}>
-        {hello}
-        {profile.name ? `,${profile.name}` : ""} 👋
-      </H1>
+      <StartFlow name={profile.name} />
+      <p className="text-sm text-sub">
+        最近 7 天练了 {thisWeek} 次 · 一共 {workouts.length} 次
+      </p>
 
       {!profile.goal && (
         <Link href="/me" className="block">
@@ -58,18 +57,22 @@ export default function Home() {
       )}
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-sub">今天想练什么?让教练安排</h2>
-        <div className="grid grid-cols-4 gap-2">
-          {GROUPS.map((g) => (
+        <div className="grid grid-cols-2 gap-2">
+          {GROUPS.filter((g) => g.id === "cardio").map((g) => (
             <Link
               key={g.id}
-              href={`/coach?q=${encodeURIComponent(`今天想练${g.label},帮我安排一下`)}`}
-              className="flex flex-col items-center gap-1 rounded-2xl border border-line bg-card py-3 text-sm font-semibold active:scale-95"
+              href={`/coach?q=${encodeURIComponent(`今天想做${g.label},帮我安排一下`)}`}
+              className={btnGhost}
             >
-              <span className="text-2xl">{g.emoji}</span>
-              {g.label}
+              {g.emoji} 今天做{g.label}
             </Link>
           ))}
+          <Link
+            href={`/coach?q=${encodeURIComponent("今天想做拉伸和活动度放松,帮我安排一下")}`}
+            className={btnGhost}
+          >
+            🧘 拉伸放松
+          </Link>
         </div>
         <Link
           href={`/coach?q=${encodeURIComponent("我不知道今天该练什么,你根据我的记录帮我决定吧")}`}

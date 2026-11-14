@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import "./globals.css";
 import ClientOnly from "@/components/ClientOnly";
 import TabBar from "@/components/TabBar";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 export const metadata: Metadata = {
   title: "练练 · AI 健身教练",
@@ -14,13 +15,14 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#fbf6f1",
+  themeColor: "#060a13",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN" className="h-full antialiased">
+    <html lang="zh-CN" className="h-full antialiased" data-theme="tech" suppressHydrationWarning>
       <body className="min-h-full">
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
           <main className="flex-1 px-4 pt-5 pb-24">
             <ClientOnly>{children}</ClientOnly>

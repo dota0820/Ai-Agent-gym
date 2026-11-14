@@ -65,7 +65,7 @@ export default function MeProfilePage() {
                 className={`flex h-9 w-9 items-center justify-center rounded-full text-lg ${
                   (profile.avatar || "🙂") === av
                     ? "bg-primary/15 ring-2 ring-primary"
-                    : "border border-line bg-white"
+                    : "border border-line bg-surface"
                 }`}
               >
                 {av}
@@ -87,7 +87,7 @@ export default function MeProfilePage() {
                 className={`rounded-xl py-2.5 text-xs font-semibold ${
                   (profile.gender ?? "") === g.id
                     ? "bg-primary text-white"
-                    : "border border-line bg-white text-sub"
+                    : "border border-line bg-surface text-sub"
                 }`}
               >
                 {g.label}
@@ -120,7 +120,7 @@ export default function MeProfilePage() {
                     });
                   }}
                   className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
-                    on ? "bg-primary text-white" : "border border-line bg-white"
+                    on ? "bg-primary text-white" : "border border-line bg-surface"
                   }`}
                 >
                   {g}

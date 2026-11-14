@@ -2,8 +2,12 @@
 import Model, { type IExerciseData } from "react-body-highlighter";
 import { MUSCLE_LABEL, type Muscle } from "@/lib/types";
 
-const PRIMARY = "#e8615a";
-const SECONDARY = "#f6b8a8";
+import { useTheme } from "@/lib/theme";
+
+const COLORS = {
+  tech: { primary: "#35d8ff", secondary: "#1f6f93", body: "#24324f" },
+  warm: { primary: "#e8615a", secondary: "#f6b8a8", body: "#e6dfd8" },
+};
 
 /** Front + back body diagram with the target muscles coloured in. */
 export default function MuscleMap({
@@ -13,6 +17,7 @@ export default function MuscleMap({
   primary: Muscle[];
   secondary: Muscle[];
 }) {
+  const { primary: PRIMARY, secondary: SECONDARY, body: BODY } = COLORS[useTheme()];
   // The diagram colours by "frequency": 2 = primary, 1 = secondary.
   const data: IExerciseData[] = [
     { name: "primary", muscles: primary, frequency: 2 },
@@ -26,7 +31,7 @@ export default function MuscleMap({
             <Model
               type={type}
               data={data}
-              bodyColor="#e6dfd8"
+              bodyColor={BODY}
               highlightedColors={[SECONDARY, PRIMARY]}
               style={{ width: "100%", maxWidth: 150, margin: "0 auto", padding: 0 }}
               svgStyle={{ pointerEvents: "none" }}

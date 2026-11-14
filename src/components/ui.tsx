@@ -32,7 +32,7 @@ export const btnPrimary = `${btn} bg-primary text-white`;
 export const btnSoft = `${btn} bg-primary-soft text-primary`;
 export const btnGhost = `${btn} border border-line bg-card text-ink`;
 export const input =
-  "w-full rounded-xl border border-line bg-white px-3 py-2.5 outline-none focus:border-primary";
+  "w-full rounded-xl border border-line bg-surface px-3 py-2.5 outline-none focus:border-primary";
 
 export function Row({
   href,

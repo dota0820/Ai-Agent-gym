@@ -132,7 +132,7 @@ export default function Guide({
               <Link
                 key={w}
                 href={`/coach?q=${encodeURIComponent(`我做${lib.name}(${lib.nameEn || lib.name})的时候,${w}。是哪里做错了?怎么改?`)}`}
-                className="flex items-center justify-between gap-2 rounded-2xl border border-primary/40 bg-white px-3 py-3 text-[16px] font-semibold text-primary active:scale-[0.99]"
+                className="flex items-center justify-between gap-2 rounded-2xl border border-primary/40 bg-surface px-3 py-3 text-[16px] font-semibold text-primary active:scale-[0.99]"
               >
                 <span>{w}?</span>
                 <span className="shrink-0 text-sm">问教练 ›</span>

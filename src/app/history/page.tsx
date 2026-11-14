@@ -63,7 +63,7 @@ function HistoryContent() {
       <div
         role="tablist"
         aria-label="记录类型"
-        className="grid grid-cols-2 gap-1.5 rounded-2xl border border-line bg-white p-1"
+        className="grid grid-cols-2 gap-1.5 rounded-2xl border border-line bg-surface p-1"
       >
         <button
           type="button"
@@ -195,7 +195,7 @@ function HistoryContent() {
                 const over = dayTotals.calories > targets.calories * 1.05;
                 return (
                   <section key={dateKey} className="space-y-2">
-                    <div className="rounded-2xl border border-line bg-white px-3.5 py-2.5">
+                    <div className="rounded-2xl border border-line bg-surface px-3.5 py-2.5">
                       <div className="flex items-baseline justify-between gap-2">
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm font-bold">{fmtDateKey(dateKey)}</span>

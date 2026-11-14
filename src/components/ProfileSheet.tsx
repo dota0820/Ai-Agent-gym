@@ -66,7 +66,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
                 className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
                   current
                     ? "border-primary bg-primary/5 ring-1 ring-primary"
-                    : "border-line bg-white active:bg-soft"
+                    : "border-line bg-surface active:bg-soft"
                 }`}
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg text-xl">
@@ -106,7 +106,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
                       onClose();
                     }}
                     className={`rounded-xl px-3 py-1.5 text-xs font-bold ${
-                      isActive ? "bg-primary text-white" : "border border-line bg-white text-ink"
+                      isActive ? "bg-primary text-white" : "border border-line bg-surface text-ink"
                     }`}
                   >
                     {g.name}
@@ -121,7 +121,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
         {creating ? (
           <form
             onSubmit={handleCreate}
-            className="space-y-3 rounded-2xl border border-line bg-white p-3.5"
+            className="space-y-3 rounded-2xl border border-line bg-surface p-3.5"
           >
             <div className="flex flex-wrap gap-1.5">
               {AVATARS.map((av) => (

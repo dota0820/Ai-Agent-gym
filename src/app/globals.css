@@ -1,15 +1,57 @@
 @import "tailwindcss";
 
+/* ───────── Themes ─────────
+ * "tech" (default): dark, glowing, AI-console look.
+ * "warm": the original cream + coral look.
+ * Colours are CSS variables so every screen follows the active theme.
+ */
+:root,
+[data-theme="tech"] {
+  color-scheme: dark;
+  --c-bg: #060a13;
+  --c-card: #0d1526;
+  --c-surface: #121c31;
+  --c-ink: #e8f1ff;
+  --c-sub: #8696b4;
+  --c-line: #1e2b45;
+  --c-primary: #35d8ff;
+  --c-primary-soft: #0f2a40;
+  --c-mint: #3df0b0;
+  --c-mint-soft: #0e2c2a;
+  --c-on-accent: #04121f;
+  --c-body: #24324f;
+  --c-muscle: #35d8ff;
+  --c-muscle-2: #1f6f93;
+}
+[data-theme="warm"] {
+  color-scheme: light;
+  --c-bg: #fbf6f1;
+  --c-card: #ffffff;
+  --c-surface: #ffffff;
+  --c-ink: #2a2733;
+  --c-sub: #857f8f;
+  --c-line: #efe6de;
+  --c-primary: #e8615a;
+  --c-primary-soft: #fde9e5;
+  --c-mint: #2fa98c;
+  --c-mint-soft: #e2f5ef;
+  --c-on-accent: #ffffff;
+  --c-body: #e6dfd8;
+  --c-muscle: #e8615a;
+  --c-muscle-2: #f6b8a8;
+}
+
 @theme inline {
-  --color-bg: #fbf6f1;
-  --color-card: #ffffff;
-  --color-ink: #2a2733;
-  --color-sub: #857f8f;
-  --color-line: #efe6de;
-  --color-primary: #e8615a;
-  --color-primary-soft: #fde9e5;
-  --color-mint: #2fa98c;
-  --color-mint-soft: #e2f5ef;
+  --color-bg: var(--c-bg);
+  --color-card: var(--c-card);
+  --color-surface: var(--c-surface);
+  --color-ink: var(--c-ink);
+  --color-sub: var(--c-sub);
+  --color-line: var(--c-line);
+  --color-primary: var(--c-primary);
+  --color-primary-soft: var(--c-primary-soft);
+  --color-mint: var(--c-mint);
+  --color-mint-soft: var(--c-mint-soft);
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
     "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
 }
@@ -17,10 +59,11 @@
 html {
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  background: var(--c-bg);
 }
 body {
-  background: var(--color-bg);
-  color: var(--color-ink);
+  background: var(--c-bg);
+  color: var(--c-ink);
   font-family: var(--font-sans);
 }
 input,
@@ -30,4 +73,97 @@ select {
 }
 .safe-b {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ───────── Tech theme details ───────── */
+[data-theme="tech"] body {
+  background:
+    radial-gradient(900px 500px at 85% -10%, rgba(53, 216, 255, 0.13), transparent 60%),
+    radial-gradient(700px 480px at -10% 30%, rgba(124, 92, 255, 0.12), transparent 60%),
+    linear-gradient(rgba(120, 160, 255, 0.035) 1px, transparent 1px) 0 0 / 100% 28px,
+    linear-gradient(90deg, rgba(120, 160, 255, 0.035) 1px, transparent 1px) 0 0 / 28px 100%,
+    var(--c-bg);
+  background-attachment: fixed;
+}
+/* text on bright accent fills must be dark to stay readable */
+[data-theme="tech"] :is(.bg-primary, .bg-mint, .bg-ink).text-white,
+[data-theme="tech"] :is(.bg-primary, .bg-mint, .bg-ink) [class*="text-white"] {
+  color: var(--c-on-accent);
+}
+[data-theme="tech"] .bg-primary {
+  background-image: linear-gradient(135deg, #35d8ff, #6f8cff);
+  box-shadow: 0 0 18px rgba(53, 216, 255, 0.28);
+}
+[data-theme="tech"] .bg-card {
+  box-shadow:
+    inset 0 1px 0 rgba(140, 180, 255, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.25);
+}
+[data-theme="tech"] .bg-red-50 {
+  background: rgba(255, 90, 90, 0.14);
+}
+[data-theme="tech"] .text-red-600 {
+  color: #ff8a8a;
+}
+[data-theme="tech"] h1 {
+  background: linear-gradient(90deg, #e8f1ff, #9fdcff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+[data-theme="tech"] ::placeholder {
+  color: #5d6c8a;
+}
+
+/* ───────── Start-screen animation ───────── */
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+}
+@keyframes scan-sweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+.caret::after {
+  content: "";
+  display: inline-block;
+  width: 0.5ch;
+  height: 0.95em;
+  margin-left: 2px;
+  vertical-align: -0.1em;
+  background: var(--c-primary);
+  animation: caret-blink 0.9s steps(1) infinite;
+}
+.rise-in {
+  animation: rise-in 0.6s ease-out both;
+}
+.glow-text {
+  text-shadow: 0 0 22px color-mix(in srgb, var(--c-primary) 55%, transparent);
+}
+.scan-sweep {
+  animation: scan-sweep 3.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise-in,
+  .scan-sweep,
+  .caret::after {
+    animation: none;
+  }
 }

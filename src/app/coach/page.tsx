@@ -77,7 +77,7 @@ function Coach() {
   }
 
   const iconBtn =
-    "flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-line bg-white text-xl disabled:opacity-40";
+    "flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border border-line bg-surface text-xl disabled:opacity-40";
 
   return (
     <div className="flex flex-col">
@@ -260,7 +260,7 @@ function Coach() {
               rows={1}
               placeholder="跟教练说点什么…"
               aria-label="给教练发消息"
-              className="max-h-32 min-h-[46px] min-w-0 flex-1 resize-none rounded-2xl border border-line bg-white px-3 py-2.5 outline-none focus:border-primary"
+              className="max-h-32 min-h-[46px] min-w-0 flex-1 resize-none rounded-2xl border border-line bg-surface px-3 py-2.5 outline-none focus:border-primary"
             />
             <button
               onClick={() => submit()}

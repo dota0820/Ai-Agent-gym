@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { setTheme, useTheme } from "@/lib/theme";
 import ProfileSheet from "@/components/ProfileSheet";
 import { Card, H1, Row } from "@/components/ui";
 import { getProfileGyms, parseEquipmentList } from "@/lib/equipment";
@@ -9,6 +10,7 @@ import { useApp, useHydrated } from "@/lib/store";
 
 export default function Me() {
   const { profile, aiModel } = useApp();
+  const theme = useTheme();
   const ready = useHydrated();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -73,6 +75,29 @@ export default function Me() {
       <Card className="divide-y divide-line overflow-hidden p-0">
         <Row href="/me/ai" icon="🤖" title="AI 模型" value={modelLabel} />
         <Row href="/me/data" icon="🔐" title="口令与备份" />
+      </Card>
+
+      <Card>
+        <div className="text-sm font-bold">🎨 外观</div>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          {(
+            [
+              { id: "tech", label: "科技感(深色)" },
+              { id: "warm", label: "暖色(浅色)" },
+            ] as const
+          ).map((t) => (
+            <button
+              key={t.id}
+              aria-pressed={theme === t.id}
+              onClick={() => setTheme(t.id)}
+              className={`rounded-xl px-3 py-3 text-sm font-semibold ${
+                theme === t.id ? "bg-primary text-white" : "border border-line bg-surface text-ink"
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
       </Card>
 
       {sheetOpen && <ProfileSheet onClose={() => setSheetOpen(false)} />}
