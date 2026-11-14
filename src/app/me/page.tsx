@@ -63,9 +63,6 @@ export default function Me() {
     setState((s) => ({ ...s, profile: { ...s.profile, ...patch } }));
 
   const target = computeNutritionTargets(profile);
-  const otherProfilesWithEquipment = profiles.filter(
-    (ws) => ws.profile.id !== activeProfileId && ws.profile.equipment.trim().length > 0,
-  );
 
   const field = (key: keyof Profile, label: string, placeholder = "", mode?: "numeric") => (
     <label className="block">
@@ -361,7 +358,12 @@ export default function Me() {
         )}
       </Card>
 
-      {/* Active profile editor */}
+      {/* 1. Gym environment section (supports Gym 1, Gym 2 + popup guided wizard) */}
+      <Card>
+        <EquipmentSelector />
+      </Card>
+
+      {/* 2. Active profile editor */}
       <Card className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm font-bold">
@@ -517,30 +519,6 @@ export default function Me() {
             📋 看饮食历史记录
           </Link>
         </div>
-      </Card>
-
-      <Card className="space-y-3">
-        {otherProfilesWithEquipment.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-soft px-3 py-2 text-xs">
-            <span className="text-sub">和另一位用同一家健身房？</span>
-            <div className="flex flex-wrap gap-1.5">
-              {otherProfilesWithEquipment.map((other) => (
-                <button
-                  key={other.profile.id}
-                  type="button"
-                  onClick={() => set({ equipment: other.profile.equipment })}
-                  className="rounded-lg border border-line bg-white px-2.5 py-1 font-semibold text-primary active:bg-soft"
-                >
-                  复制「{other.profile.name || "其他人物"}」器械
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        <EquipmentSelector
-          value={profile.equipment}
-          onChange={(equipment) => set({ equipment })}
-        />
       </Card>
 
       <Card>

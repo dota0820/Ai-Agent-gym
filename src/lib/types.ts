@@ -240,6 +240,16 @@ export interface NutritionTargets {
 
 export type Gender = "female" | "male" | "";
 
+export interface GymEnvironment {
+  id: string;
+  name: string;
+  scene?: string;
+  equipment: string;
+  /** Per-equipment specs such as dumbbell weight range or cable attachments. */
+  details?: Record<string, string>;
+  notes?: string;
+}
+
 export interface Profile {
   id: string;
   avatar?: string;
@@ -250,6 +260,8 @@ export interface Profile {
   level: string;
   daysPerWeek: string;
   equipment: string;
+  gyms?: GymEnvironment[];
+  activeGymId?: string;
   injuries: string;
   heightCm: string;
   weightKg: string;

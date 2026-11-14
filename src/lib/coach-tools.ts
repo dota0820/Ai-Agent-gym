@@ -153,7 +153,15 @@ export const EquipmentScanSchema = z.object({
   extra_equipment: z
     .array(z.string())
     .describe("标准列表以外、在照片中额外看到的器械中文名（没有就空数组）"),
-  summary: z.string().describe("用一句话友好告诉用户你看到了哪些器械"),
+  details: z
+    .array(
+      z.object({
+        equipment: z.string().describe("对应的器械名，例如 哑铃 / 龙门架/拉索"),
+        spec: z.string().describe("照片中看到的重量范围或规格特点，例如 每只 2–20 kg、配有V把"),
+      }),
+    )
+    .describe("照片中明确可见的重量、规格或把手特点，看不清就返回空数组"),
+  summary: z.string().describe("用一句话友好告诉用户你看到了哪些器械与重量规格"),
 });
 
 export const ImportedExerciseSchema = z.object({

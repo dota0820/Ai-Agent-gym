@@ -1,5 +1,6 @@
 "use client";
 import { useSyncExternalStore } from "react";
+import { formatGymsContext } from "./equipment";
 import { allExerciseNamesForPrompt, findExerciseById } from "./exercise-lookup";
 import { nutritionContextForCoach } from "./nutrition";
 import {
@@ -112,7 +113,7 @@ function buildContext(): string {
     `经验: ${p.level || "(未填)"}`,
     `每周计划去健身房: ${p.daysPerWeek || "?"} 次`,
     `身高/体重: ${p.heightCm || "?"} cm / ${p.weightKg || "?"} kg`,
-    `健身房器械情况: ${p.equipment || "(未填,默认是器械齐全的商业健身房)"}`,
+    `健身房环境与器械:\n${formatGymsContext(p)}`,
     `伤病/注意事项: ${p.injuries || "(无)"}`,
     "",
     "## 你之前记住的事",

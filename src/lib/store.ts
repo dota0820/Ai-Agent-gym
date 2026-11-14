@@ -1,8 +1,10 @@
 "use client";
 import { useSyncExternalStore } from "react";
+import { getProfileGyms } from "./equipment";
 import type {
   AppState,
   CustomExercise,
+  GymEnvironment,
   MealLog,
   PersonWorkspace,
   Profile,
@@ -17,6 +19,16 @@ export const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 export function emptyProfile(id = "default", patch: Partial<Profile> = {}): Profile {
+  const baseEquipment = patch.equipment ?? "";
+  const gyms: GymEnvironment[] =
+    Array.isArray(patch.gyms) && patch.gyms.length > 0
+      ? patch.gyms
+      : [{ id: "gym-1", name: "Gym 1", scene: "", equipment: baseEquipment }];
+  const activeGymId =
+    patch.activeGymId && gyms.some((g) => g.id === patch.activeGymId)
+      ? patch.activeGymId
+      : gyms[0].id;
+  const activeEquip = gyms.find((g) => g.id === activeGymId)?.equipment ?? baseEquipment;
   return {
     id,
     avatar: "🙂",
@@ -26,7 +38,6 @@ export function emptyProfile(id = "default", patch: Partial<Profile> = {}): Prof
     goal: "",
     level: "新手(刚开始健身)",
     daysPerWeek: "3",
-    equipment: "",
     injuries: "",
     heightCm: "",
     weightKg: "",
@@ -34,6 +45,9 @@ export function emptyProfile(id = "default", patch: Partial<Profile> = {}): Prof
     passcode: "",
     speak: false,
     ...patch,
+    gyms,
+    activeGymId,
+    equipment: activeEquip,
   };
 }
 
@@ -89,13 +103,20 @@ const listeners = new Set<() => void>();
 function normalizeWorkspace(raw: any, fallbackId: string, sharedPasscode: string): PersonWorkspace {
   const base = emptyWorkspace(raw?.profile?.id || fallbackId);
   const p = raw?.profile ?? {};
+  const merged: Profile = {
+    ...base.profile,
+    ...p,
+    id: p.id || fallbackId,
+    memory: Array.isArray(p.memory) ? p.memory : [],
+    passcode: sharedPasscode || p.passcode || "",
+  };
+  const { gyms, activeGym } = getProfileGyms(merged);
   return {
     profile: {
-      ...base.profile,
-      ...p,
-      id: p.id || fallbackId,
-      memory: Array.isArray(p.memory) ? p.memory : [],
-      passcode: sharedPasscode || p.passcode || "",
+      ...merged,
+      gyms,
+      activeGymId: activeGym.id,
+      equipment: activeGym.equipment,
     },
     plan: raw?.plan ?? null,
     active: raw?.active ?? null,
@@ -226,11 +247,21 @@ export function switchProfile(profileId: string) {
 export function createProfile(patch: Partial<Profile>, copyEquipment = true): string {
   load();
   const id = `p-${uid()}`;
-  const activeEquip = viewState.profile.equipment;
+  const activeProfile = viewState.profile;
+  const activeEquip = activeProfile.equipment;
+  const copiedGyms =
+    copyEquipment && !patch.gyms
+      ? getProfileGyms(activeProfile).gyms.map((g) => ({
+          ...g,
+          details: g.details ? { ...g.details } : undefined,
+        }))
+      : patch.gyms;
   const ws = emptyWorkspace(id, {
     ...patch,
     id,
     equipment: copyEquipment && !patch.equipment ? activeEquip : (patch.equipment ?? ""),
+    gyms: copiedGyms,
+    activeGymId: copyEquipment && !patch.activeGymId ? activeProfile.activeGymId : patch.activeGymId,
     passcode: rootState.passcode,
   });
   commit({
@@ -239,6 +270,41 @@ export function createProfile(patch: Partial<Profile>, copyEquipment = true): st
     profiles: [...rootState.profiles, ws],
   });
   return id;
+}
+
+export function switchProfileGym(gymId: string) {
+  setState((s) => {
+    const { gyms } = getProfileGyms(s.profile);
+    const hit = gyms.find((g) => g.id === gymId);
+    if (!hit) return s;
+    return {
+      ...s,
+      profile: {
+        ...s.profile,
+        gyms,
+        activeGymId: hit.id,
+        equipment: hit.equipment,
+      },
+    };
+  });
+}
+
+export function saveProfileGyms(gyms: GymEnvironment[], activeGymId?: string) {
+  setState((s) => {
+    const normalized =
+      gyms.length > 0 ? gyms : [{ id: "gym-1", name: "Gym 1", scene: "", equipment: "" }];
+    const active =
+      normalized.find((g) => g.id === (activeGymId ?? s.profile.activeGymId)) ?? normalized[0];
+    return {
+      ...s,
+      profile: {
+        ...s.profile,
+        gyms: normalized,
+        activeGymId: active.id,
+        equipment: active.equipment,
+      },
+    };
+  });
 }
 
 export function deleteProfile(profileId: string) {
