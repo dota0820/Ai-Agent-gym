@@ -3,43 +3,94 @@ import { useEffect, useRef, useState } from "react";
 import { isDark, themeColors, type Theme } from "@/lib/theme";
 import type { Group as BodyGroup } from "@/lib/types";
 
-export type BodyPart = Exclude<BodyGroup, "cardio">;
+export type BodyPart = Exclude<BodyGroup, "cardio" | "mobility">;
 
 type V3 = [number, number, number];
-/** One clickable muscle pad: which group it belongs to, where it sits, how big it is. */
-interface Pad {
+/** A muscle zone painted onto the figure: which group, where it sits, how far it reaches. */
+interface Zone {
   part: BodyPart;
   pos: V3;
-  scale: V3;
+  r: V3;
 }
 
-// Figure is ~1.75 units tall, feet at y=0, facing +z. Left/right pads are mirrored below.
-const SIDE: Pad[] = [
-  { part: "chest", pos: [0.078, 1.3, 0.1], scale: [0.095, 0.072, 0.045] },
-  { part: "shoulders", pos: [0.222, 1.4, 0], scale: [0.072, 0.068, 0.075] },
-  { part: "arms", pos: [0.245, 1.23, 0.028], scale: [0.042, 0.095, 0.04] }, // biceps
-  { part: "arms", pos: [0.245, 1.23, -0.03], scale: [0.042, 0.1, 0.04] }, // triceps
-  { part: "arms", pos: [0.27, 0.99, 0], scale: [0.038, 0.115, 0.038] }, // forearm
-  { part: "core", pos: [0.128, 1.04, 0.05], scale: [0.04, 0.105, 0.06] }, // obliques
-  { part: "back", pos: [0.09, 1.2, -0.095], scale: [0.088, 0.145, 0.045] }, // lats
-  { part: "glutes", pos: [0.082, 0.87, -0.085], scale: [0.088, 0.085, 0.075] },
-  { part: "legs", pos: [0.095, 0.62, 0.048], scale: [0.066, 0.175, 0.05] }, // quads
-  { part: "legs", pos: [0.095, 0.62, -0.05], scale: [0.062, 0.165, 0.048] }, // hamstrings
-  { part: "legs", pos: [0.095, 0.3, -0.03], scale: [0.048, 0.115, 0.045] }, // calves
+// The figure is scaled to 1.75 units tall, feet at y=0, facing +z.
+// Zones are in that space; side zones are mirrored for left/right below.
+const SIDE: Zone[] = [
+  { part: "chest", pos: [0.08, 1.34, 0.1], r: [0.11, 0.085, 0.1] },
+  { part: "shoulders", pos: [0.18, 1.38, -0.01], r: [0.07, 0.07, 0.1] },
+  { part: "arms", pos: [0.2, 1.22, -0.03], r: [0.09, 0.14, 0.11] }, // upper arm
+  { part: "arms", pos: [0.225, 0.98, 0.02], r: [0.09, 0.15, 0.1] }, // forearm
+  { part: "core", pos: [0.1, 1.17, 0.02], r: [0.05, 0.09, 0.08] }, // obliques
+  { part: "back", pos: [0.09, 1.31, -0.08], r: [0.1, 0.1, 0.08] }, // lats
+  { part: "glutes", pos: [0.08, 1.0, -0.1], r: [0.11, 0.11, 0.1] },
+  { part: "legs", pos: [0.13, 0.75, -0.01], r: [0.14, 0.23, 0.15] }, // thigh
+  { part: "legs", pos: [0.15, 0.3, -0.02], r: [0.11, 0.21, 0.12] }, // lower leg
 ];
-const CENTER: Pad[] = [
-  { part: "core", pos: [0, 1.05, 0.1], scale: [0.085, 0.135, 0.04] }, // abs
-  { part: "back", pos: [0, 1.43, -0.065], scale: [0.13, 0.07, 0.045] }, // traps
-  { part: "back", pos: [0, 1.0, -0.095], scale: [0.092, 0.075, 0.04] }, // lower back
+const CENTER: Zone[] = [
+  { part: "core", pos: [0, 1.19, 0.08], r: [0.1, 0.1, 0.09] }, // abs
+  { part: "core", pos: [0, 1.03, 0.08], r: [0.1, 0.07, 0.07] }, // lower abs
+  { part: "back", pos: [0, 1.43, -0.07], r: [0.12, 0.06, 0.07] }, // traps
+  { part: "back", pos: [0, 1.17, -0.08], r: [0.1, 0.08, 0.07] }, // lower back
 ];
-const PADS: Pad[] = [
+const ZONES: Zone[] = [
   ...CENTER,
-  ...SIDE.flatMap((p) => [p, { ...p, pos: [-p.pos[0], p.pos[1], p.pos[2]] as V3 }]),
+  ...SIDE.flatMap((z) => [z, { ...z, pos: [-z.pos[0], z.pos[1], z.pos[2]] as V3 }]),
 ];
+const N = ZONES.length;
+
+/** Where to turn the figure and aim the camera when a part is chosen. */
+const FOCUS: Record<BodyPart, { rot: number; y: number }> = {
+  chest: { rot: 0.25, y: 1.34 },
+  core: { rot: -0.25, y: 1.17 },
+  shoulders: { rot: 0.7, y: 1.38 },
+  arms: { rot: 0.75, y: 1.12 },
+  back: { rot: Math.PI - 0.3, y: 1.3 },
+  glutes: { rot: Math.PI + 0.35, y: 1.0 },
+  legs: { rot: 0.45, y: 0.55 },
+};
+
+const VERT_DECL = /* glsl */ `
+varying vec3 vFig;
+uniform mat4 uInvFig;
+`;
+const VERT_BODY = /* glsl */ `
+vFig = (uInvFig * modelMatrix * vec4(transformed, 1.0)).xyz;
+`;
+const FRAG_DECL = /* glsl */ `
+varying vec3 vFig;
+uniform vec3 uC[${N}];
+uniform vec3 uR[${N}];
+uniform vec2 uW[${N}];
+uniform vec3 uGlow;
+uniform vec3 uPick;
+uniform vec3 uRim;
+uniform float uRimK;
+uniform float uEm;
+uniform float uReveal;
+`;
+// Runs just before lighting: paints zones onto the surface, adds an edge glow,
+// and "materialises" the figure from the feet up.
+const FRAG_BODY = /* glsl */ `
+if (vFig.y > uReveal) discard;
+{
+  float fres = pow(1.0 - clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), 2.2);
+  totalEmissiveRadiance += uRim * fres * uRimK;
+  for (int i = 0; i < ${N}; i++) {
+    float k = 1.0 - smoothstep(0.5, 1.0, length((vFig - uC[i]) / uR[i]));
+    vec3 col = mix(uGlow, uPick, uW[i].y);
+    float a = k * uW[i].x;
+    diffuseColor.rgb = mix(diffuseColor.rgb, col, clamp(a, 0.0, 0.92));
+    totalEmissiveRadiance += col * a * uEm;
+  }
+  float edge = smoothstep(uReveal - 0.06, uReveal, vFig.y);
+  totalEmissiveRadiance += uRim * edge * 2.5;
+}
+`;
 
 /**
- * A stylised 3D figure you can spin with a finger and tap to choose a body part.
- * Calls onPick with the tapped part; `selected` keeps that part lit.
+ * An animated 3D figure you can spin with a finger and tap to choose a body part.
+ * Muscle zones glow on the surface; choosing one turns the figure and moves the
+ * camera in. Calls onPick with the tapped part; `selected` keeps that part lit.
  */
 export default function Body3D({
   selected,
@@ -70,7 +121,10 @@ export default function Body3D({
     let cleanup = () => {};
 
     (async () => {
-      const THREE = await import("three");
+      const [THREE, { GLTFLoader }] = await Promise.all([
+        import("three"),
+        import("three/examples/jsm/loaders/GLTFLoader.js"),
+      ]);
       if (disposed) return;
       let renderer: import("three").WebGLRenderer;
       try {
@@ -79,126 +133,160 @@ export default function Body3D({
         onUnavailableRef.current?.();
         return;
       }
+      const gltf = await new GLTFLoader().loadAsync("/models/xbot.glb");
+      if (disposed) {
+        renderer.dispose();
+        return;
+      }
+
       const tc = themeColors();
-      const glow = isDark(theme);
-      const hex = (c: string) => new THREE.Color(c).getHex();
-      const colors = {
-        body: hex(tc.body),
-        wire: hex(glow ? tc.muscle2 : tc.line),
-        pad: hex(tc.muscle2),
-        hot: hex(tc.muscle),
-        pick: hex(glow ? tc.mint : tc.muscle),
-        ring: hex(tc.primary),
-      };
+      const dark = isDark(theme);
+      const col = (c: string) => new THREE.Color(c);
+
       const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 20);
-      camera.position.set(0, 0.98, 3.3);
-      camera.lookAt(0, 0.88, 0);
+      const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 30);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       el.appendChild(renderer.domElement);
-      renderer.domElement.style.touchAction = "pan-y";
-      renderer.domElement.style.display = "block";
+      const c = renderer.domElement;
+      c.style.touchAction = "pan-y";
+      c.style.display = "block";
+      c.style.cursor = "grab";
 
-      scene.add(new THREE.AmbientLight(0xffffff, glow ? 0.9 : 1.6));
-      const key = new THREE.DirectionalLight(0xffffff, glow ? 1.4 : 1.2);
-      key.position.set(1.5, 2.5, 3);
+      scene.add(new THREE.AmbientLight(0xffffff, dark ? 0.7 : 1.5));
+      const key = new THREE.DirectionalLight(0xffffff, dark ? 1.6 : 1.5);
+      key.position.set(1.5, 2.6, 3);
       scene.add(key);
-      const rim = new THREE.DirectionalLight(glow ? 0x6f8cff : 0xffffff, 0.9);
-      rim.position.set(-2, 1.5, -2.5);
+      const rim = new THREE.DirectionalLight(col(tc.primary), dark ? 2.2 : 0.8);
+      rim.position.set(-2, 1.6, -2.5);
       scene.add(rim);
 
+      // ── the figure ──
       const figure = new THREE.Group();
       scene.add(figure);
+      const model = gltf.scene;
+      const box = new THREE.Box3().setFromObject(model);
+      const scale = 1.75 / (box.max.y - box.min.y);
+      model.scale.setScalar(scale);
+      model.position.set(
+        -((box.min.x + box.max.x) / 2) * scale,
+        -box.min.y * scale,
+        -((box.min.z + box.max.z) / 2) * scale,
+      );
+      figure.add(model);
 
-      // ── base body: simple rounded shapes ──
-      const bodyMat = new THREE.MeshStandardMaterial({
-        color: colors.body,
-        roughness: 0.75,
-        metalness: glow ? 0.35 : 0,
-        transparent: glow,
-        opacity: glow ? 0.82 : 1,
-      });
-      const wireMat = new THREE.MeshBasicMaterial({
-        color: colors.wire,
-        wireframe: true,
-        transparent: true,
-        opacity: glow ? 0.22 : 0.12,
-      });
-      const sphere = new THREE.SphereGeometry(1, 20, 14);
-      const addBlob = (pos: V3, scale: V3) => {
-        for (const mat of [bodyMat, wireMat]) {
-          const m = new THREE.Mesh(sphere, mat);
-          m.position.set(...pos);
-          m.scale.set(...scale);
-          if (mat === wireMat) m.scale.multiplyScalar(1.01);
-          figure.add(m);
-        }
+      const uniforms = {
+        uInvFig: { value: new THREE.Matrix4() },
+        uC: { value: ZONES.map((z) => new THREE.Vector3(...z.pos)) },
+        uR: { value: ZONES.map((z) => new THREE.Vector3(...z.r)) },
+        uW: { value: ZONES.map(() => new THREE.Vector2(0, 0)) },
+        uGlow: { value: col(dark ? tc.muscle : tc.muscle2) },
+        uPick: { value: col(dark ? tc.mint : tc.muscle) },
+        uRim: { value: col(tc.primary) },
+        uRimK: { value: dark ? 1.1 : 0.25 },
+        uEm: { value: dark ? 0.9 : 0.12 },
+        uReveal: { value: 0 },
       };
-      addBlob([0, 1.63, 0], [0.1, 0.125, 0.11]); // head
-      addBlob([0, 1.49, 0], [0.05, 0.07, 0.05]); // neck
-      addBlob([0, 1.27, 0], [0.19, 0.2, 0.11]); // ribcage
-      addBlob([0, 1.03, 0], [0.15, 0.17, 0.095]); // waist
-      addBlob([0, 0.88, 0], [0.17, 0.12, 0.105]); // hips
-      for (const sx of [1, -1]) {
-        addBlob([0.245 * sx, 1.24, 0], [0.05, 0.16, 0.05]); // upper arm
-        addBlob([0.27 * sx, 0.99, 0], [0.04, 0.14, 0.04]); // forearm
-        addBlob([0.28 * sx, 0.8, 0], [0.035, 0.06, 0.03]); // hand
-        addBlob([0.095 * sx, 0.62, 0], [0.078, 0.22, 0.078]); // thigh
-        addBlob([0.095 * sx, 0.27, 0], [0.052, 0.2, 0.055]); // shin
-        addBlob([0.095 * sx, 0.04, 0.04], [0.05, 0.035, 0.1]); // foot
-      }
-
-      // ── clickable muscle pads ──
-      const pads: import("three").Mesh[] = [];
-      for (const p of PADS) {
+      const skinned: import("three").SkinnedMesh[] = [];
+      model.traverse((o) => {
+        const m = o as import("three").SkinnedMesh;
+        if (!m.isMesh) return;
+        const isJoint = /joint/i.test(m.name) || /joint/i.test((m.material as { name?: string }).name ?? "");
         const mat = new THREE.MeshStandardMaterial({
-          color: colors.pad,
-          emissive: colors.pad,
-          emissiveIntensity: glow ? 0.35 : 0,
-          roughness: 0.5,
-          transparent: true,
-          opacity: glow ? 0.9 : 1,
+          color: isJoint ? col(dark ? tc.muscle2 : tc.muscle2) : col(tc.body),
+          roughness: isJoint ? 0.35 : 0.55,
+          metalness: dark ? 0.55 : 0.1,
         });
-        const m = new THREE.Mesh(sphere, mat);
-        m.position.set(...p.pos);
-        m.scale.set(...p.scale);
-        m.userData.part = p.part;
-        figure.add(m);
-        pads.push(m);
-      }
-
-      // ── floor ring + scanning ring ──
-      const ringMat = new THREE.MeshBasicMaterial({
-        color: colors.ring,
-        transparent: true,
-        opacity: glow ? 0.55 : 0.25,
-        side: THREE.DoubleSide,
+        mat.onBeforeCompile = (shader) => {
+          Object.assign(shader.uniforms, uniforms);
+          shader.vertexShader = shader.vertexShader
+            .replace("#include <common>", `#include <common>\n${VERT_DECL}`)
+            .replace("#include <project_vertex>", `#include <project_vertex>\n${VERT_BODY}`);
+          shader.fragmentShader = shader.fragmentShader
+            .replace("#include <common>", `#include <common>\n${FRAG_DECL}`)
+            .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>\n${FRAG_BODY}`);
+        };
+        m.material = mat;
+        m.frustumCulled = false;
+        if (m.isSkinnedMesh) skinned.push(m);
       });
-      const floor = new THREE.Mesh(new THREE.RingGeometry(0.42, 0.45, 64), ringMat);
-      floor.rotation.x = -Math.PI / 2;
-      floor.position.y = 0.005;
-      scene.add(floor);
-      const floor2 = new THREE.Mesh(
-        new THREE.RingGeometry(0.56, 0.565, 64),
-        new THREE.MeshBasicMaterial({ ...ringMat, opacity: 0.25 } as never),
-      );
-      floor2.rotation.x = -Math.PI / 2;
-      scene.add(floor2);
-      const scan = new THREE.Mesh(
-        new THREE.TorusGeometry(0.36, 0.004, 8, 64),
-        new THREE.MeshBasicMaterial({ color: colors.ring, transparent: true, opacity: 0.7 }),
-      );
+
+      const mixer = new THREE.AnimationMixer(model);
+      const idle = gltf.animations.find((a) => a.name === "idle") ?? gltf.animations[0];
+      if (idle) mixer.clipAction(idle).play();
+      mixer.update(0);
+
+      // ── stage: rings, grid, floating particles, scan ring ──
+      const stage = new THREE.Group();
+      scene.add(stage);
+      const lineColor = col(tc.primary);
+      const ringMat = (opacity: number) =>
+        new THREE.MeshBasicMaterial({
+          color: lineColor,
+          transparent: true,
+          opacity,
+          side: THREE.DoubleSide,
+          depthWrite: false,
+        });
+      const dashRing = (r0: number, r1: number, parts: number, gap: number, opacity: number) => {
+        const g = new THREE.Group();
+        const arc = (Math.PI * 2) / parts;
+        for (let i = 0; i < parts; i++) {
+          const seg = new THREE.Mesh(new THREE.RingGeometry(r0, r1, 24, 1, i * arc, arc * (1 - gap)), ringMat(opacity));
+          g.add(seg);
+        }
+        g.rotation.x = -Math.PI / 2;
+        g.position.y = 0.004;
+        stage.add(g);
+        return g;
+      };
+      const ringA = dashRing(0.46, 0.485, 3, 0.18, dark ? 0.8 : 0.5);
+      const ringB = dashRing(0.6, 0.607, 24, 0.5, dark ? 0.55 : 0.3);
+      const ringC = dashRing(0.72, 0.724, 1, 0, dark ? 0.25 : 0.15);
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(0.46, 48), ringMat(dark ? 0.09 : 0.06));
+      disc.rotation.x = -Math.PI / 2;
+      stage.add(disc);
+
+      const scan = new THREE.Mesh(new THREE.TorusGeometry(0.34, 0.0035, 8, 72), ringMat(dark ? 0.8 : 0.45));
       scan.rotation.x = Math.PI / 2;
-      scan.visible = glow;
-      scene.add(scan);
+      stage.add(scan);
+
+      const P = 70;
+      const pPos = new Float32Array(P * 3);
+      const pSeed = new Float32Array(P);
+      for (let i = 0; i < P; i++) {
+        const a = Math.random() * Math.PI * 2;
+        const r = 0.45 + Math.random() * 0.45;
+        pPos.set([Math.cos(a) * r, Math.random() * 1.9, Math.sin(a) * r], i * 3);
+        pSeed[i] = 0.06 + Math.random() * 0.12;
+      }
+      const pGeo = new THREE.BufferGeometry();
+      pGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+      const particles = new THREE.Points(
+        pGeo,
+        new THREE.PointsMaterial({
+          color: lineColor,
+          size: 0.018,
+          transparent: true,
+          opacity: dark ? 0.75 : 0.4,
+          depthWrite: false,
+          blending: dark ? THREE.AdditiveBlending : THREE.NormalBlending,
+        }),
+      );
+      stage.add(particles);
+
+      // burst ring shown where a part is picked
+      const burst = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 48), ringMat(0));
+      scene.add(burst);
+      let burstT = 1;
 
       // ── sizing ──
       const resize = () => {
         const w = el.clientWidth;
         const h = el.clientHeight;
+        if (!w || !h) return;
         renderer.setSize(w, h, false);
-        renderer.domElement.style.width = "100%";
-        renderer.domElement.style.height = "100%";
+        c.style.width = "100%";
+        c.style.height = "100%";
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
       };
@@ -209,20 +297,43 @@ export default function Body3D({
       // ── interaction: drag to spin, tap to pick ──
       const ray = new THREE.Raycaster();
       const ndc = new THREE.Vector2();
+      const inv = new THREE.Matrix4();
+      const local = new THREE.Vector3();
       let hover: BodyPart | null = null;
       let dragging = false;
       let moved = 0;
       let lastX = 0;
       let velocity = 0;
       let touched = false;
-      let rotY = -0.5;
+      let rotY = -0.6;
+      let lastHover = 0;
 
-      const partAt = (e: PointerEvent): BodyPart | null => {
-        const r = renderer.domElement.getBoundingClientRect();
+      /** Which zone a figure-space point belongs to (nearest zone it falls inside). */
+      const zoneAt = (p: import("three").Vector3): BodyPart | null => {
+        let best: BodyPart | null = null;
+        let bestD = 1.15;
+        for (const z of ZONES) {
+          const d = Math.hypot((p.x - z.pos[0]) / z.r[0], (p.y - z.pos[1]) / z.r[1], (p.z - z.pos[2]) / z.r[2]);
+          if (d < bestD) {
+            bestD = d;
+            best = z.part;
+          }
+        }
+        return best;
+      };
+      const hitAt = (e: PointerEvent) => {
+        const r = c.getBoundingClientRect();
         ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
         ray.setFromCamera(ndc, camera);
-        const hit = ray.intersectObjects(pads, false)[0];
-        return hit ? (hit.object.userData.part as BodyPart) : null;
+        for (const m of skinned) {
+          m.computeBoundingSphere();
+          m.computeBoundingBox();
+        }
+        const hit = ray.intersectObjects(skinned, false)[0];
+        if (!hit) return null;
+        figure.updateMatrixWorld();
+        local.copy(hit.point).applyMatrix4(inv.copy(figure.matrixWorld).invert());
+        return { part: zoneAt(local), point: hit.point.clone() };
       };
       const down = (e: PointerEvent) => {
         dragging = true;
@@ -230,6 +341,7 @@ export default function Body3D({
         moved = 0;
         lastX = e.clientX;
         velocity = 0;
+        c.style.cursor = "grabbing";
       };
       const move = (e: PointerEvent) => {
         if (dragging) {
@@ -238,59 +350,130 @@ export default function Body3D({
           moved += Math.abs(dx);
           velocity = dx * 0.011;
           rotY += velocity;
-        } else if (e.pointerType === "mouse") {
-          hover = partAt(e);
-          renderer.domElement.style.cursor = hover ? "pointer" : "grab";
+          rotTarget = null;
+        } else if (e.pointerType === "mouse" && performance.now() - lastHover > 90) {
+          lastHover = performance.now();
+          hover = hitAt(e)?.part ?? null;
+          c.style.cursor = hover ? "pointer" : "grab";
         }
       };
       const up = (e: PointerEvent) => {
         if (!dragging) return;
         dragging = false;
+        c.style.cursor = "grab";
         if (moved < 8) {
-          const p = partAt(e);
-          if (p) onPickRef.current(p);
+          const h = hitAt(e);
+          if (h?.part) {
+            burst.position.copy(h.point);
+            burstT = 0;
+            onPickRef.current(h.part);
+          }
         }
       };
       const leave = () => {
         dragging = false;
         hover = null;
       };
-      const c = renderer.domElement;
       c.addEventListener("pointerdown", down);
       c.addEventListener("pointermove", move);
       c.addEventListener("pointerup", up);
       c.addEventListener("pointerleave", leave);
       c.addEventListener("pointercancel", leave);
 
+      // ── render loop (paused while off-screen) ──
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const hot = new THREE.Color(colors.hot);
-      const pick = new THREE.Color(colors.pick);
-      const base = new THREE.Color(colors.pad);
+      let visible = true;
+      const io = new IntersectionObserver(([en]) => (visible = en.isIntersecting));
+      io.observe(el);
+      let lastT = performance.now();
+      let t = 0;
+      let lastSel: BodyPart | null = null;
+      let rotTarget: number | null = null;
+      const cam = { y: 0.95, z: 4.1, lookY: 0.9 };
+      const camGoal = { y: 0.98, z: 3.5, lookY: 0.88 };
+      const weights = uniforms.uW.value;
       let raf = 0;
-      const t0 = performance.now();
-      const frame = (now: number) => {
+
+      const frame = () => {
         raf = requestAnimationFrame(frame);
-        const t = (now - t0) / 1000;
-        if (!dragging) {
-          // glide after a flick; idle spin until the first touch
-          rotY += velocity;
-          velocity *= 0.93;
-          if (!touched && !reduced) rotY += 0.006;
-        }
-        figure.rotation.y = rotY;
+        const nowT = performance.now();
+        const dt = Math.min((nowT - lastT) / 1000, 0.05);
+        lastT = nowT;
+        if (!visible || document.hidden) return;
+        t += dt;
+        if (!reduced) mixer.update(dt);
+
+        // selection changed: turn to show it and move the camera in
         const sel = selectedRef.current;
-        for (const m of pads) {
-          const mat = m.material as import("three").MeshStandardMaterial;
-          const part = m.userData.part as BodyPart;
-          const target = part === sel ? pick : part === hover ? hot : base;
-          mat.color.lerp(target, 0.2);
-          if (glow) {
-            mat.emissive.lerp(target, 0.2);
-            mat.emissiveIntensity =
-              part === sel ? 0.9 + Math.sin(t * 4) * 0.25 : part === hover ? 0.8 : 0.35;
+        if (sel !== lastSel) {
+          lastSel = sel;
+          if (sel) {
+            const f = FOCUS[sel];
+            // shortest way round to the target angle
+            const turns = Math.round((rotY - f.rot) / (Math.PI * 2));
+            rotTarget = f.rot + turns * Math.PI * 2;
+            // aim a little below the part so it sits in the upper half, above the question sheet
+            Object.assign(camGoal, { y: f.y - 0.05, z: 2.35, lookY: f.y - 0.28 });
+            velocity = 0;
+            touched = true;
+          } else {
+            rotTarget = null;
+            Object.assign(camGoal, { y: 0.98, z: 3.5, lookY: 0.88 });
           }
         }
-        scan.position.y = 0.9 + Math.sin(t * 0.9) * 0.8;
+        if (!dragging) {
+          if (rotTarget !== null) rotY += (rotTarget - rotY) * Math.min(1, dt * 4);
+          else {
+            rotY += velocity;
+            velocity *= 0.93;
+            if (!touched && !reduced) rotY += dt * 0.35;
+          }
+        }
+        figure.rotation.y = rotY;
+        figure.updateMatrixWorld();
+        uniforms.uInvFig.value.copy(figure.matrixWorld).invert();
+
+        const ease = Math.min(1, dt * 3.2);
+        cam.y += (camGoal.y - cam.y) * ease;
+        cam.z += (camGoal.z - cam.z) * ease;
+        cam.lookY += (camGoal.lookY - cam.lookY) * ease;
+        camera.position.set(0, cam.y, cam.z);
+        camera.lookAt(0, cam.lookY, 0);
+
+        // materialise from the feet up, then keep everything visible
+        uniforms.uReveal.value = reduced ? 9 : Math.min(9, uniforms.uReveal.value + dt * (uniforms.uReveal.value < 1.9 ? 1.5 : 20));
+
+        for (let i = 0; i < N; i++) {
+          const z = ZONES[i];
+          const isSel = z.part === sel;
+          const isHover = z.part === hover;
+          // idle: a soft wave travelling up the body hints that zones are tappable
+          const wave = 0.16 + 0.12 * Math.max(0, Math.sin(t * 1.6 - z.pos[1] * 4));
+          const goalW = isSel ? 0.85 + 0.12 * Math.sin(t * 5) : isHover ? 0.6 : sel ? 0.06 : wave;
+          weights[i].x += (goalW - weights[i].x) * Math.min(1, dt * 8);
+          weights[i].y += ((isSel ? 1 : 0) - weights[i].y) * Math.min(1, dt * 8);
+        }
+
+        ringA.rotation.z = t * 0.5;
+        ringB.rotation.z = -t * 0.25;
+        ringC.scale.setScalar(1 + 0.04 * Math.sin(t * 2));
+        scan.position.y = 0.92 + Math.sin(t * 0.9) * 0.86;
+        const pa = pGeo.attributes.position as import("three").BufferAttribute;
+        for (let i = 0; i < P; i++) {
+          let y = pa.getY(i) + pSeed[i] * dt;
+          if (y > 1.95) y = 0;
+          pa.setY(i, y);
+        }
+        pa.needsUpdate = true;
+        particles.rotation.y = t * 0.06;
+
+        if (burstT < 1) {
+          burstT += dt * 2.2;
+          const k = Math.min(1, burstT);
+          burst.scale.setScalar(0.03 + k * 0.22);
+          (burst.material as import("three").MeshBasicMaterial).opacity = (1 - k) * 0.9;
+          burst.lookAt(camera.position);
+        }
         renderer.render(scene, camera);
       };
       raf = requestAnimationFrame(frame);
@@ -299,24 +482,29 @@ export default function Body3D({
       cleanup = () => {
         cancelAnimationFrame(raf);
         ro.disconnect();
+        io.disconnect();
         c.removeEventListener("pointerdown", down);
         c.removeEventListener("pointermove", move);
         c.removeEventListener("pointerup", up);
         c.removeEventListener("pointerleave", leave);
         c.removeEventListener("pointercancel", leave);
+        mixer.stopAllAction();
         scene.traverse((o) => {
           const mesh = o as import("three").Mesh;
-          if (mesh.isMesh) {
+          if (mesh.isMesh || (o as import("three").Points).isPoints) {
             mesh.geometry.dispose();
             const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
             mats.forEach((m) => m.dispose());
           }
         });
         renderer.dispose();
-        renderer.domElement.remove();
+        c.remove();
       };
       if (disposed) cleanup();
-    })().catch(() => onUnavailableRef.current?.());
+    })().catch((err) => {
+      console.error("3D body failed", err);
+      onUnavailableRef.current?.();
+    });
 
     return () => {
       disposed = true;
@@ -332,7 +520,8 @@ export default function Body3D({
       aria-label="可以转动的 3D 人体模型,点一下身体部位来选择要练哪里"
     >
       {loading && (
-        <div className="absolute inset-0 flex items-center justify-center text-sm text-sub">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-sub">
+          <span className="h-8 w-8 animate-spin rounded-full border-2 border-line border-t-primary" />
           正在加载 3D 模型…
         </div>
       )}

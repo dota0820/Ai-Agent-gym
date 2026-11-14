@@ -159,7 +159,7 @@ export default function StartFlow({ name }: { name: string }) {
             </p>
           )}
           <div className="flex gap-2 overflow-x-auto px-3 pb-3">
-            {GROUPS.filter((g) => g.id !== "cardio").map((g) => (
+            {GROUPS.filter((g) => g.id !== "cardio" && g.id !== "mobility").map((g) => (
               <button
                 key={g.id}
                 onClick={() => pick(g.id as BodyPart)}
