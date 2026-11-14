@@ -4,7 +4,15 @@ import { z } from "zod";
 import { COACH_SYSTEM } from "@/lib/coach-prompt";
 import { COACH_TOOLS } from "@/lib/coach-tools";
 import { runOpenRouterChat } from "@/lib/openrouter";
-import { anthropic, apiErrorMessage, guard, MODEL, requestedModel, viaOpenRouter } from "@/lib/server";
+import {
+  anthropic,
+  apiErrorMessage,
+  guard,
+  MODEL,
+  requestedModel,
+  resolveOpenRouterKey,
+  viaOpenRouter,
+} from "@/lib/server";
 
 export const maxDuration = 300;
 
@@ -32,6 +40,7 @@ export async function POST(req: Request) {
     return Response.json({ error: "请求格式不对" }, { status: 400 });
   const { messages, context, image } = parsed.data;
   const model = requestedModel(req);
+  const apiKey = resolveOpenRouterKey(req);
 
   const enc = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -39,9 +48,17 @@ export async function POST(req: Request) {
       const send = (obj: unknown) =>
         controller.enqueue(enc.encode(JSON.stringify(obj) + "\n"));
 
-      if (viaOpenRouter()) {
+      if (viaOpenRouter(req)) {
         try {
-          await runOpenRouterChat({ system: COACH_SYSTEM, context, messages, image, model, send });
+          await runOpenRouterChat({
+            system: COACH_SYSTEM,
+            context,
+            messages,
+            image,
+            model,
+            apiKey,
+            send,
+          });
           send({ type: "done" });
         } catch (err) {
           console.error("chat error", err);

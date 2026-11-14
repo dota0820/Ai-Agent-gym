@@ -305,4 +305,5 @@ export interface AppState {
   customExercises: CustomExercise[];
   meals: MealLog[];
   aiModel: string;
+  openRouterKey: string;
 }

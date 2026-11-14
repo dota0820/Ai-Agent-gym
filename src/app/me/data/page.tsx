@@ -76,6 +76,11 @@ export default function MeDataPage() {
             setState((s) => ({ ...s, profile: { ...s.profile, passcode: e.target.value } }))
           }
         />
+        {profile.passcode.trim().startsWith("sk-or-") && (
+          <p className="rounded-xl bg-mint-soft px-3 py-2 text-xs text-mint">
+            ✓ 检测到你填入的是 OpenRouter API Key，已自动为你启用 AI 功能！（也可在「我的 → AI 模型」查看）
+          </p>
+        )}
       </Card>
 
       <Card className="space-y-2.5">

@@ -28,11 +28,16 @@ type Msg =
   | { role: "assistant"; content: string | null; tool_calls?: ToolCall[] }
   | { role: "tool"; tool_call_id: string; content: string };
 
-async function post(body: Record<string, unknown>, model = OPENROUTER_MODEL): Promise<Response> {
+async function post(
+  body: Record<string, unknown>,
+  model = OPENROUTER_MODEL,
+  apiKey?: string,
+): Promise<Response> {
+  const key = apiKey || process.env.OPENROUTER_API_KEY;
   const res = await fetch(ENDPOINT, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+      Authorization: `Bearer ${key}`,
       "Content-Type": "application/json",
       "X-Title": "Gym Coach",
     },
@@ -79,8 +84,9 @@ async function streamTurn(
   messages: Msg[],
   send: (ev: unknown) => void,
   model = OPENROUTER_MODEL,
+  apiKey?: string,
 ): Promise<{ text: string; calls: ToolCall[] }> {
-  const res = await post({ messages, tools, stream: true, max_tokens: 8000 }, model);
+  const res = await post({ messages, tools, stream: true, max_tokens: 8000 }, model, apiKey);
   const reader = res.body!.getReader();
   const dec = new TextDecoder();
   let buf = "";
@@ -146,6 +152,7 @@ export async function runOpenRouterChat(opts: {
   messages: { role: "user" | "assistant"; text: string }[];
   image?: string;
   model?: string;
+  apiKey?: string;
   send: (ev: unknown) => void;
 }) {
   const { send } = opts;
@@ -166,7 +173,7 @@ export async function runOpenRouterChat(opts: {
   ];
 
   for (let iter = 0; iter < 6; iter++) {
-    const { text, calls } = await streamTurn(messages, send, model);
+    const { text, calls } = await streamTurn(messages, send, model, opts.apiKey);
     if (!calls.length) return;
     messages.push({ role: "assistant", content: text || null, tool_calls: calls });
     for (const call of calls) {
@@ -212,6 +219,7 @@ export async function structuredOpenRouter<T>(opts: {
   image?: string;
   maxTokens?: number;
   model?: string;
+  apiKey?: string;
 }): Promise<T | null> {
   const model = opts.model || OPENROUTER_VISION_MODEL;
   const max_tokens = opts.maxTokens ?? 1800;
@@ -241,6 +249,7 @@ export async function structuredOpenRouter<T>(opts: {
         messages: buildMessages("\n只输出符合 schema 的 JSON。"),
       },
       model,
+      opts.apiKey,
     );
   } catch (err) {
     // Fallback if a specific OpenRouter upstream rejects strict json_schema.
@@ -253,6 +262,7 @@ export async function structuredOpenRouter<T>(opts: {
           ),
         },
         model,
+        opts.apiKey,
       );
     } else {
       throw err;

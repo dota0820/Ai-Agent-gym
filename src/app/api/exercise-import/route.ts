@@ -2,7 +2,7 @@ import { z } from "zod";
 import { runStructuredAI } from "@/lib/ai-structured";
 import { ImportedExerciseSchema } from "@/lib/coach-tools";
 import { extractLinkInfo } from "@/lib/link-extract";
-import { apiErrorMessage, guard, requestedModel } from "@/lib/server";
+import { apiErrorMessage, guard, requestedModel, resolveOpenRouterKey } from "@/lib/server";
 import { MUSCLE_LABEL, SUBS, type Group, type Muscle } from "@/lib/types";
 
 export const maxDuration = 120;
@@ -82,6 +82,7 @@ export async function POST(req: Request) {
     .join("\n");
 
   const model = requestedModel(req);
+  const apiKey = resolveOpenRouterKey(req);
   try {
     const out = await runStructuredAI({
       schema: ImportedExerciseSchema,
@@ -91,6 +92,7 @@ export async function POST(req: Request) {
       maxTokens: 2500,
       effort: "medium",
       model,
+      apiKey,
     });
 
     if (!out) {

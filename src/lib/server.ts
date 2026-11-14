@@ -4,8 +4,18 @@ import { OpenRouterError } from "./openrouter";
 
 export const MODEL = "claude-opus-5-5";
 
-/** OpenRouter is used when its key is set; otherwise the Anthropic API directly. */
-export const viaOpenRouter = () => !!process.env.OPENROUTER_API_KEY;
+/** Resolve OpenRouter API key from request header (or sk-or- in passcode) or server env. */
+export function resolveOpenRouterKey(req?: Request): string | undefined {
+  const headerKey = req?.headers.get("x-openrouter-key")?.trim();
+  if (headerKey) return headerKey;
+  const passKey = req?.headers.get("x-app-passcode")?.trim();
+  if (passKey && passKey.startsWith("sk-or-")) return passKey;
+  const envKey = process.env.OPENROUTER_API_KEY?.trim();
+  return envKey || undefined;
+}
+
+/** OpenRouter is used when its key is set (in env or request); otherwise the Anthropic API directly. */
+export const viaOpenRouter = (req?: Request) => !!resolveOpenRouterKey(req);
 
 /** Client-requested model; returns undefined if absent or not allowlisted. */
 export function requestedModel(req: Request): string | undefined {
@@ -22,14 +32,14 @@ export function anthropic() {
 /** Returns an error Response if the request may not use the AI, else null. */
 export function guard(req: Request): Response | null {
   if (
-    !process.env.OPENROUTER_API_KEY &&
+    !resolveOpenRouterKey(req) &&
     !process.env.ANTHROPIC_API_KEY &&
     !process.env.ANTHROPIC_AUTH_TOKEN
   ) {
     return Response.json(
       {
         error:
-          "服务器还没有配置 API key(OPENROUTER_API_KEY 或 ANTHROPIC_API_KEY),AI 教练暂时不能用。",
+          "还没有配置 API Key。请到「我的 → AI 模型」粘贴你的 OpenRouter Key，或在 Vercel 环境变量配置后重新部署。",
       },
       { status: 503 },
     );

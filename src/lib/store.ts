@@ -68,6 +68,7 @@ interface RootStore {
   customExercises: CustomExercise[];
   passcode: string;
   aiModel: string;
+  openRouterKey: string;
 }
 
 const DEFAULT_ROOT: RootStore = {
@@ -76,6 +77,7 @@ const DEFAULT_ROOT: RootStore = {
   customExercises: [],
   passcode: "",
   aiModel: "",
+  openRouterKey: "",
 };
 
 function project(root: RootStore): AppState {
@@ -92,6 +94,7 @@ function project(root: RootStore): AppState {
     customExercises: root.customExercises,
     meals: activeWs.meals,
     aiModel: root.aiModel,
+    openRouterKey: root.openRouterKey,
   };
 }
 
@@ -147,6 +150,7 @@ function parseRootData(p: any): RootStore | null {
       customExercises: Array.isArray(p.customExercises) ? p.customExercises : [],
       passcode,
       aiModel: typeof p.aiModel === "string" ? p.aiModel : "",
+      openRouterKey: typeof p.openRouterKey === "string" ? p.openRouterKey : "",
     };
   }
 
@@ -160,6 +164,7 @@ function parseRootData(p: any): RootStore | null {
       customExercises: Array.isArray(p.customExercises) ? p.customExercises : [],
       passcode,
       aiModel: typeof p.aiModel === "string" ? p.aiModel : "",
+      openRouterKey: typeof p.openRouterKey === "string" ? p.openRouterKey : "",
     };
   }
 
@@ -229,6 +234,7 @@ export function setState(fn: (s: AppState) => AppState) {
     customExercises: next.customExercises,
     passcode,
     aiModel: next.aiModel,
+    openRouterKey: next.openRouterKey,
   });
 }
 
@@ -237,13 +243,21 @@ export function setAiModel(id: string) {
   commit({ ...rootState, aiModel: id });
 }
 
+export function setOpenRouterKey(key: string) {
+  load();
+  commit({ ...rootState, openRouterKey: key.trim() });
+}
+
 /** Shared headers for all /api/* AI endpoints. */
 export function aiHeaders(): Record<string, string> {
   const s = getState();
+  const pass = s.profile.passcode.trim();
+  const orKey = s.openRouterKey.trim() || (pass.startsWith("sk-or-") ? pass : "");
   return {
     "Content-Type": "application/json",
-    "x-app-passcode": s.profile.passcode,
+    "x-app-passcode": pass,
     ...(s.aiModel ? { "x-ai-model": s.aiModel } : {}),
+    ...(orKey ? { "x-openrouter-key": orKey } : {}),
   };
 }
 

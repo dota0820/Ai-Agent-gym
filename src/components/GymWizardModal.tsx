@@ -4,6 +4,7 @@ import { fileToJpegDataUrl } from "@/lib/actions";
 import {
   EQUIPMENT_CATEGORIES,
   EQUIPMENT_DETAIL_PROMPTS,
+  EQUIPMENT_HINTS,
   EQUIPMENT_PRESETS,
   formatEquipmentList,
   mergeEquipmentItems,
@@ -15,14 +16,22 @@ import type { GymEnvironment } from "@/lib/types";
 import { btnGhost, btnPrimary, btnSoft, input } from "./ui";
 
 const STEPS = [
-  { id: "scene", title: "基本" },
+  { id: "scene", title: "基本场景" },
+  { id: "photo", title: "拍照确认" },
   { id: "free", title: "自由重量" },
-  { id: "cable", title: "绳索与拉力" },
+  { id: "cable", title: "拉索与背" },
   { id: "upper", title: "上肢器械" },
-  { id: "lower", title: "下肢与臀腿" },
+  { id: "lower", title: "下肢臀腿" },
   { id: "cardio", title: "有氧与小工具" },
-  { id: "confirm", title: "确认" },
+  { id: "confirm", title: "最终确认" },
 ] as const;
+
+interface PendingScanResult {
+  summary: string;
+  candidates: string[];
+  checked: Record<string, boolean>;
+  details: Record<string, string>;
+}
 
 function DumbbellRangeHelper({
   value,
@@ -89,7 +98,9 @@ export default function GymWizardModal({
   });
   const [customItem, setCustomItem] = useState("");
   const [busy, setBusy] = useState(false);
-  const [scanMsg, setScanMsg] = useState("");
+  const [scanError, setScanError] = useState("");
+  const [scanNotice, setScanNotice] = useState("");
+  const [pendingScan, setPendingScan] = useState<PendingScanResult | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const selected = parseEquipmentList(draft.equipment);
@@ -125,7 +136,9 @@ export default function GymWizardModal({
 
   async function onScanPhoto(file: File) {
     setBusy(true);
-    setScanMsg("");
+    setScanError("");
+    setScanNotice("");
+    setPendingScan(null);
     try {
       const image = await fileToJpegDataUrl(file);
       const res = await fetch("/api/equipment", {
@@ -135,38 +148,61 @@ export default function GymWizardModal({
       });
       const j = await res.json();
       if (!res.ok) {
-        setScanMsg(j.error ?? "识别失败，可以换个角度拍或手动点选。");
+        setScanError(j.error ?? "识别失败，可以换个角度拍或手动点选。");
         return;
       }
       if (!j.is_gym_photo) {
-        setScanMsg("照片里没太看清健身器械，可以靠近一点再拍一张。");
+        setScanError("照片里没太看清健身器械，可以走近一点再拍一张。");
         return;
       }
-      const found: string[] = [...(j.matched ?? []), ...(j.extra ?? [])];
-      const detectedDetails: { equipment: string; spec: string }[] = Array.isArray(j.details)
-        ? j.details
-        : [];
-      setDraft((prev) => {
-        const nextDetails = { ...(prev.details ?? {}) };
-        for (const d of detectedDetails) {
-          if (d.equipment && d.spec) nextDetails[d.equipment] = d.spec;
-        }
-        return {
-          ...prev,
-          equipment: found.length ? mergeEquipmentItems(prev.equipment, found) : prev.equipment,
-          details: nextDetails,
-        };
-      });
-      setScanMsg(
-        found.length > 0
-          ? `✓ 已识别并加入 ${found.length} 项：${found.join("、")}`
-          : j.summary || "没认出具体器械名称，可以在下一步手动点选。",
+      const candidates = Array.from(
+        new Set<string>([...(j.matched ?? []), ...(j.extra ?? [])].filter(Boolean)),
       );
+      const detectedMap: Record<string, string> = {};
+      if (Array.isArray(j.details)) {
+        for (const d of j.details) {
+          if (d?.equipment && d?.spec) detectedMap[d.equipment] = d.spec;
+        }
+      }
+      if (candidates.length === 0) {
+        setScanError(j.summary || "没认出具体器械名称，请换个角度再拍一张，或在下一步手动勾选。");
+        return;
+      }
+      const checked: Record<string, boolean> = {};
+      for (const c of candidates) checked[c] = true;
+      setPendingScan({
+        summary: j.summary || `AI 在照片里认出了 ${candidates.length} 项器械`,
+        candidates,
+        checked,
+        details: detectedMap,
+      });
     } catch {
-      setScanMsg("识别出错了，请再试一次。");
+      setScanError("识别出错了，请再试一次。");
     } finally {
       setBusy(false);
     }
+  }
+
+  function confirmPendingScan() {
+    if (!pendingScan) return;
+    const chosen = pendingScan.candidates.filter((c) => pendingScan.checked[c]);
+    setDraft((prev) => {
+      const nextDetails = { ...(prev.details ?? {}) };
+      for (const item of chosen) {
+        if (pendingScan.details[item]) nextDetails[item] = pendingScan.details[item];
+      }
+      return {
+        ...prev,
+        equipment: chosen.length ? mergeEquipmentItems(prev.equipment, chosen) : prev.equipment,
+        details: nextDetails,
+      };
+    });
+    setScanNotice(
+      chosen.length > 0
+        ? `✓ 已确认并加入 ${chosen.length} 项：${chosen.join("、")}（可继续拍下一张，或点下一步）`
+        : "已取消本次识别结果。",
+    );
+    setPendingScan(null);
   }
 
   const currentStep = STEPS[step];
@@ -204,6 +240,18 @@ export default function GymWizardModal({
         role="dialog"
         aria-label="Gym 环境配置"
       >
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void onScanPhoto(f);
+            e.target.value = "";
+          }}
+        />
+
         <div className="shrink-0 rounded-t-3xl border-b border-line bg-white px-5 pt-4 pb-3">
           <div className="flex items-center justify-between gap-2">
             <button type="button" className="text-xs font-semibold text-sub" onClick={onClose}>
@@ -279,28 +327,104 @@ export default function GymWizardModal({
                   );
                 })}
               </div>
+            </div>
+          )}
 
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) void onScanPhoto(f);
-                  e.target.value = "";
-                }}
-              />
+          {currentStep.id === "photo" && (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-base font-bold">不确定器械叫什么？拍照让 AI 帮你确认</h2>
+                <p className="mt-1 text-xs leading-relaxed text-sub">
+                  对着不认识的机器或健身房角落拍一张照，AI 会认出名字和用途，列出来让你打勾确认后再加入。都认识的话可以直接点「下一步」。
+                </p>
+              </div>
+
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => fileRef.current?.click()}
-                className={`${btnSoft} w-full text-xs`}
+                className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/40 bg-white px-4 py-6 text-center active:bg-bg disabled:opacity-50"
               >
-                {busy ? "AI 正在识别器械…" : "📷 拍照自动识别器械"}
+                <span className="text-2xl">{busy ? "⏳" : "📷"}</span>
+                <span className="text-sm font-bold text-primary">
+                  {busy ? "AI 正在识别照片里的器械…" : "拍照 / 从相册选图让 AI 识别"}
+                </span>
+                <span className="text-xs text-sub">识别后会先给你看清单，你点确认才会加入</span>
               </button>
-              {scanMsg && (
-                <p className="rounded-xl bg-mint-soft px-3 py-2 text-xs text-mint">{scanMsg}</p>
+
+              {scanError && (
+                <div className="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">
+                  {scanError}
+                </div>
+              )}
+
+              {scanNotice && (
+                <div className="rounded-xl bg-mint-soft px-3 py-2 text-xs text-mint">
+                  {scanNotice}
+                </div>
+              )}
+
+              {pendingScan && (
+                <div className="space-y-3 rounded-2xl border-2 border-primary bg-white p-3.5">
+                  <div className="text-xs font-bold text-primary">
+                    🧐 AI 认出了以下器械，请确认哪些要加入：
+                  </div>
+                  <p className="text-xs text-sub">{pendingScan.summary}</p>
+                  <div className="space-y-1.5">
+                    {pendingScan.candidates.map((item) => {
+                      const on = !!pendingScan.checked[item];
+                      const hint = EQUIPMENT_HINTS[item];
+                      const spec = pendingScan.details[item];
+                      return (
+                        <button
+                          key={item}
+                          type="button"
+                          onClick={() =>
+                            setPendingScan((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    checked: { ...prev.checked, [item]: !on },
+                                  }
+                                : null,
+                            )
+                          }
+                          className={`flex w-full items-start gap-2.5 rounded-xl border p-2.5 text-left text-xs ${
+                            on ? "border-primary bg-primary/5" : "border-line bg-bg opacity-60"
+                          }`}
+                        >
+                          <span className="mt-0.5 text-sm font-bold text-primary">
+                            {on ? "☑" : "☐"}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-bold text-ink">
+                              {item}
+                              {spec ? ` (${spec})` : ""}
+                            </div>
+                            {hint && <div className="mt-0.5 text-[11px] text-sub">{hint}</div>}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className={`${btnGhost} flex-1 py-2 text-xs`}
+                      onClick={() => setPendingScan(null)}
+                    >
+                      重拍 / 取消
+                    </button>
+                    <button
+                      type="button"
+                      className={`${btnPrimary} flex-1 py-2 text-xs`}
+                      onClick={confirmPendingScan}
+                    >
+                      ✓ 确认加入 (
+                      {pendingScan.candidates.filter((c) => pendingScan.checked[c]).length} 项)
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
@@ -309,11 +433,14 @@ export default function GymWizardModal({
             <div className="space-y-4">
               {activeCategories.map((cat) => (
                 <div key={cat.id} className="space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold">{cat.label}</span>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <div>
+                      <div className="text-sm font-bold">{cat.label}</div>
+                      <div className="mt-0.5 text-xs text-sub">{cat.question}</div>
+                    </div>
                     <button
                       type="button"
-                      className="text-xs font-semibold text-primary underline"
+                      className="shrink-0 text-xs font-semibold text-primary underline"
                       onClick={() => selectAllInItems(cat.items)}
                     >
                       全选
@@ -324,6 +451,7 @@ export default function GymWizardModal({
                     {cat.items.map((item) => {
                       const on = selectedSet.has(item);
                       const spec = details[item];
+                      const hint = EQUIPMENT_HINTS[item];
                       return (
                         <button
                           key={item}
@@ -340,8 +468,19 @@ export default function GymWizardModal({
                             {on ? "✓ " : ""}
                             {item}
                           </span>
+                          {hint && (
+                            <span
+                              className={`mt-1 text-[11px] leading-snug ${
+                                on ? "text-white/85" : "text-sub"
+                              }`}
+                            >
+                              {hint}
+                            </span>
+                          )}
                           {on && spec && (
-                            <span className="mt-1 text-[11px] opacity-90">{spec}</span>
+                            <span className="mt-1 rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold">
+                              📌 {spec}
+                            </span>
                           )}
                         </button>
                       );
@@ -413,6 +552,14 @@ export default function GymWizardModal({
                   })}
                 </div>
               )}
+
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="w-full rounded-xl border border-dashed border-line bg-white py-2.5 text-center text-xs font-semibold text-primary active:bg-bg"
+              >
+                📷 不确定眼前这台机器叫什么？点这里拍照让 AI 帮你认
+              </button>
             </div>
           )}
 

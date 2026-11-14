@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { runStructuredAI } from "@/lib/ai-structured";
 import { NutritionSchema } from "@/lib/coach-tools";
-import { apiErrorMessage, guard, requestedModel } from "@/lib/server";
+import { apiErrorMessage, guard, requestedModel, resolveOpenRouterKey } from "@/lib/server";
 
 export const maxDuration = 120;
 
@@ -42,6 +42,7 @@ export async function POST(req: Request) {
     .join("\n");
 
   const model = requestedModel(req);
+  const apiKey = resolveOpenRouterKey(req);
   try {
     const out = await runStructuredAI({
       schema: NutritionSchema,
@@ -51,6 +52,7 @@ export async function POST(req: Request) {
       maxTokens: 2000,
       effort: "low",
       model,
+      apiKey,
     });
     if (!out) {
       return Response.json({ error: "没能分析出这餐的营养成分，请换张图或补几个字再试。" }, { status: 422 });
