@@ -313,6 +313,9 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
   const fail = (msg: string) =>
     patchTargetMsg((m) => ({ ...m, text: (m.text ? m.text + "\n\n" : "") + `⚠️ ${msg}` }));
 
+  // Which step failed decides what we tell the user.
+  let stage: "send" | "stream" = "send";
+  let received = false;
   try {
     const s = getState();
     const targetWs = s.profiles.find((p) => p.profile.id === targetProfileId);
@@ -328,39 +331,59 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
     });
     if (!res.ok || !res.body) {
       const j = await res.json().catch(() => null);
-      fail(j?.error ?? `请求失败(${res.status})`);
+      fail(
+        j?.error ??
+          (res.status === 413
+            ? "照片或内容太大了,换一张小一点的照片再试。"
+            : res.status === 504 || res.status === 408
+              ? "教练想得太久,服务器超时了。请再发一次,或把问题说短一点。"
+              : `服务器出错了(${res.status}),请稍后再试。`),
+      );
       return;
     }
+    stage = "stream";
     const reader = res.body.getReader();
     const dec = new TextDecoder();
     let buf = "";
     const handle = (line: string) => {
       if (!line.trim()) return;
-      const ev = JSON.parse(line);
-      if (ev.type === "text") {
-        patchTargetMsg((m) => ({ ...m, text: m.text + ev.text }));
-      } else if (ev.type === "plan") {
-        const plan = toPlan(ev.plan);
-        setStateForProfile(targetProfileId, (ws) => ({ ...ws, plan }));
-        patchTargetMsg((m) => ({ ...m, plan }));
-      } else if (ev.type === "workout") {
-        const w = toWorkout(ev.workout);
-        setStateForProfile(targetProfileId, (ws) => ({ ...ws, workouts: [...ws.workouts, w] }));
-        patchTargetMsg((m) => ({ ...m, logged: w.title }));
-      } else if (ev.type === "meal") {
-        const meal = toMeal(ev.meal);
-        addMealLog(meal, targetProfileId);
-        patchTargetMsg((m) => ({
-          ...m,
-          mealLogged: `${meal.summary} (${meal.calories} kcal · 蛋白 ${meal.protein}g)`,
-        }));
-      } else if (ev.type === "memory") {
-        setStateForProfile(targetProfileId, (ws) => ({
-          ...ws,
-          profile: { ...ws.profile, memory: [...ws.profile.memory, ev.note] },
-        }));
-      } else if (ev.type === "error") {
-        fail(ev.error);
+      let ev;
+      try {
+        ev = JSON.parse(line);
+      } catch {
+        return; // a cut-off line at the end of a broken stream
+      }
+      received = true;
+      try {
+        if (ev.type === "text") {
+          patchTargetMsg((m) => ({ ...m, text: m.text + ev.text }));
+        } else if (ev.type === "plan") {
+          const plan = toPlan(ev.plan);
+          setStateForProfile(targetProfileId, (ws) => ({ ...ws, plan }));
+          patchTargetMsg((m) => ({ ...m, plan }));
+        } else if (ev.type === "workout") {
+          const w = toWorkout(ev.workout);
+          setStateForProfile(targetProfileId, (ws) => ({ ...ws, workouts: [...ws.workouts, w] }));
+          patchTargetMsg((m) => ({ ...m, logged: w.title }));
+        } else if (ev.type === "meal") {
+          const meal = toMeal(ev.meal);
+          addMealLog(meal, targetProfileId);
+          patchTargetMsg((m) => ({
+            ...m,
+            mealLogged: `${meal.summary} (${meal.calories} kcal · 蛋白 ${meal.protein}g)`,
+          }));
+        } else if (ev.type === "memory") {
+          setStateForProfile(targetProfileId, (ws) => ({
+            ...ws,
+            profile: { ...ws.profile, memory: [...ws.profile.memory, ev.note] },
+          }));
+        } else if (ev.type === "error") {
+          fail(ev.error);
+        }
+      } catch (err) {
+        // one bad event must not throw away the rest of the reply
+        console.error("coach event failed", ev?.type, err);
+        if (ev.type !== "text") fail("教练的这一步没能保存到 App,请让教练再做一次。");
       }
     };
     for (;;) {
@@ -374,8 +397,16 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
       }
     }
     handle(buf);
-  } catch {
-    fail("网络断了,请再发一次。");
+  } catch (err) {
+    console.error("coach request failed", stage, err);
+    const detail = err instanceof Error && err.message ? `(${err.message.slice(0, 80)})` : "";
+    if (typeof navigator !== "undefined" && navigator.onLine === false)
+      fail("手机现在没有网络,连上网后再发一次。");
+    else if (stage === "send")
+      fail(`连不上 App 的服务器,消息没有发出去。请检查网络后再发一次。${detail}`);
+    else if (received)
+      fail("回复传到一半断了(可能是网络不稳,或教练想得太久超时)。上面是已经收到的部分,请再发一次。");
+    else fail(`服务器没有回应就断开了,请再发一次。${detail}`);
   } finally {
     patchTargetMsg((m) => {
       const choices = extractChoices(m.text);

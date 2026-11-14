@@ -4,11 +4,21 @@ import { OpenRouterError } from "./openrouter";
 
 export const MODEL = "claude-opus-5-5";
 
+/** The passcode header, URL-decoded (the app encodes it so non-Latin characters survive). */
+function passcodeOf(req?: Request): string {
+  const raw = req?.headers.get("x-app-passcode")?.trim() ?? "";
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 /** Resolve OpenRouter API key from request header (or sk-or- in passcode) or server env. */
 export function resolveOpenRouterKey(req?: Request): string | undefined {
   const headerKey = req?.headers.get("x-openrouter-key")?.trim();
   if (headerKey) return headerKey;
-  const passKey = req?.headers.get("x-app-passcode")?.trim();
+  const passKey = passcodeOf(req);
   if (passKey && passKey.startsWith("sk-or-")) return passKey;
   const envKey = process.env.OPENROUTER_API_KEY?.trim();
   return envKey || undefined;
@@ -45,7 +55,7 @@ export function guard(req: Request): Response | null {
     );
   }
   const pass = process.env.APP_PASSCODE;
-  if (pass && req.headers.get("x-app-passcode") !== pass) {
+  if (pass && passcodeOf(req) !== pass.trim()) {
     return Response.json(
       { error: "口令不对。请到「我的」页面填写正确的访问口令。" },
       { status: 401 },

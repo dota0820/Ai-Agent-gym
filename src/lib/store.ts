@@ -252,11 +252,15 @@ export function setOpenRouterKey(key: string) {
 export function aiHeaders(): Record<string, string> {
   const s = getState();
   const pass = s.profile.passcode.trim();
-  const orKey = s.openRouterKey.trim() || (pass.startsWith("sk-or-") ? pass : "");
+  // API keys are plain ASCII; drop stray spaces, line breaks or invisible
+  // characters picked up when pasting (they make the browser reject the request).
+  const ascii = (v: string) => v.replace(/[^\x21-\x7E]/g, "");
+  const orKey = ascii(s.openRouterKey) || (pass.startsWith("sk-or-") ? ascii(pass) : "");
   return {
     "Content-Type": "application/json",
-    "x-app-passcode": pass,
-    ...(s.aiModel ? { "x-ai-model": s.aiModel } : {}),
+    // header values must be Latin-1, so a passcode with Chinese characters is URL-encoded
+    "x-app-passcode": encodeURIComponent(pass),
+    ...(s.aiModel ? { "x-ai-model": ascii(s.aiModel) } : {}),
     ...(orKey ? { "x-openrouter-key": orKey } : {}),
   };
 }
