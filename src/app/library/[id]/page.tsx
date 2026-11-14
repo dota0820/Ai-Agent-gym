@@ -55,7 +55,7 @@ function Detail() {
       <ExerciseCover exerciseId={e.id} name={e.name} />
 
       <Card>
-        <Guide guide={e} name={e.name} nameEn={e.nameEn} showAnim={false} />
+        <Guide guide={e} name={e.name} nameEn={e.nameEn} showAnim={false} showMuscles={false} />
       </Card>
 
       <Card>

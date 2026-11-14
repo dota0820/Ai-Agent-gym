@@ -7,6 +7,7 @@ import { getState, useApp } from "@/lib/store";
 import type { CustomExercise, Exercise, Guide as G } from "@/lib/types";
 import AttachmentTip from "./AttachmentTip";
 import ExerciseCover from "./ExerciseCover";
+import MuscleMap from "./MuscleMap";
 
 export function guideFor(
   item: { exerciseId?: string; custom?: G },
@@ -28,12 +29,15 @@ export default function Guide({
   name,
   nameEn,
   showAnim = true,
+  showMuscles = true,
 }: {
   guide: G;
   name: string;
   nameEn?: string;
   /** Show the looping demo photos / custom cover when the guide is a library exercise. */
   showAnim?: boolean;
+  /** Show the body diagram of the muscles this exercise works. */
+  showMuscles?: boolean;
 }) {
   const { customExercises } = useApp();
   const lib: Exercise | CustomExercise | undefined =
@@ -62,6 +66,15 @@ export default function Guide({
               </li>
             ))}
           </ol>
+        </div>
+      )}
+
+      {showMuscles && lib && lib.primary?.length > 0 && (
+        <div>
+          <Label>练到身体哪里</Label>
+          <div className="mt-2 rounded-2xl border border-line p-3">
+            <MuscleMap primary={lib.primary} secondary={lib.secondary ?? []} />
+          </div>
         </div>
       )}
 

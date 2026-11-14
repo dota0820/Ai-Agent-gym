@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { startFromPlan } from "@/lib/actions";
 import { useApp } from "@/lib/store";
-import type { Plan } from "@/lib/types";
+import { MUSCLE_LABEL, type Muscle, type Plan } from "@/lib/types";
 import Guide, { guideFor } from "./Guide";
 import { btnPrimary } from "./ui";
 
@@ -21,6 +21,10 @@ export default function PlanCard({ plan }: { plan: Plan }) {
       <ul>
         {plan.items.map((it, i) => {
           const g = guideFor(it, customExercises);
+          const target = ((g as { primary?: Muscle[] } | null)?.primary ?? [])
+            .map((m) => MUSCLE_LABEL[m]?.split("(")[0])
+            .filter(Boolean)
+            .join("、");
           return (
             <li key={i} className="border-t border-line">
               <button
@@ -38,6 +42,11 @@ export default function PlanCard({ plan }: { plan: Plan }) {
                     {it.sets} 组 × {it.reps}
                     {it.weight ? ` · ${it.weight}` : ""}
                   </span>
+                  {target && (
+                    <span className="mt-0.5 block text-xs font-semibold text-primary">
+                      练到:{target}
+                    </span>
+                  )}
                 </span>
                 <span className="text-xs text-sub">{open === i ? "收起" : "怎么做"}</span>
               </button>
