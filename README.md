@@ -16,7 +16,7 @@
 ## 本地运行
 
 ```bash
-cp .env.example .env.local   # 填入 ANTHROPIC_API_KEY
+cp .env.example .env.local   # 填入 OPENROUTER_API_KEY 或 ANTHROPIC_API_KEY
 npm install
 npm run dev                  # http://localhost:3000
 ```
@@ -24,13 +24,14 @@ npm run dev                  # http://localhost:3000
 ## 部署(Vercel)
 
 1. 在 vercel.com 导入这个 GitHub 仓库。
-2. 在 Environment Variables 里添加 `ANTHROPIC_API_KEY`,建议同时设置 `APP_PASSCODE`。
+2. 在 Environment Variables 里添加 `OPENROUTER_API_KEY`(或 `ANTHROPIC_API_KEY`),建议同时设置 `APP_PASSCODE`。用 OpenRouter 时可用 `OPENROUTER_MODEL` 换模型,默认 `anthropic/claude-sonnet-5.5`。
 3. 部署后用手机打开网址 →「添加到主屏幕」,在「我的」页填入口令。
 
 ## 代码结构
 
 - `src/lib/exercises.ts` — 动作库内容
 - `src/lib/coach-prompt.ts` — 教练的系统提示词
-- `src/app/api/chat/route.ts` — AI 教练(Claude + 工具:保存计划 / 记录训练 / 记住信息)
+- `src/app/api/chat/route.ts` — AI 教练(工具:保存计划 / 记录训练 / 记住信息)
+- `src/lib/openrouter.ts` — OpenRouter 接入;`src/lib/coach-tools.ts` — 两种接入共用的工具定义
 - `src/app/api/watch/route.ts` — 手表截图识别
 - `src/lib/store.ts`, `src/lib/actions.ts` — 本地数据与聊天逻辑
