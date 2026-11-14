@@ -915,7 +915,7 @@ const BASE: Base[] = [
   {
     id: "wall-slide",
     name: "靠墙天使肩胛激活",
-    nameEn: "Wall Slide",
+    nameEn: "Wall Angel",
     group: "mobility",
     equipment: "一面平墙",
     startWeight: "自重(8–12 次)",
@@ -1253,28 +1253,24 @@ export function videoUrl(name: string, nameEn?: string) {
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
 }
 
-/** Map exercises without dedicated local photos to their closest visual reference in /public/exercises. */
+/** Exercises that are the same movement as another one and can share its photos. */
 const IMAGE_ALIAS: Record<string, string> = {
-  "worlds-greatest-stretch": "lunge",
-  "cat-cow": "plank",
-  "thoracic-open-book": "russian-twist",
-  "hip-90-90": "hip-abduction",
-  "wall-slide": "db-shoulder-press",
   "ankle-pry-squat": "goblet-squat",
-  "band-monster-walk": "hip-abduction",
-  "foam-roll-back": "glute-bridge",
-  "bulgarian-split-squat": "lunge",
-  "sumo-squat": "goblet-squat",
-  "cable-pull-through": "db-rdl",
-  "single-leg-glute-bridge": "glute-bridge",
-  "chest-supported-row": "db-row",
-  "prone-ytw": "superman",
-  "band-external-rotation": "face-pull",
-  "preacher-curl": "db-curl",
-  "bird-dog": "dead-bug",
-  "pallof-press": "russian-twist",
-  "farmers-walk": "db-shrug",
 };
+
+/**
+ * Exercises we have no correct demo photos for. They show a "watch the video"
+ * card instead of borrowing photos of a different exercise.
+ */
+const NO_IMAGES = new Set([
+  "wall-slide",
+  "thoracic-open-book",
+  "hip-90-90",
+  "prone-ytw",
+  "bird-dog",
+]);
+
+export const hasExerciseImages = (id: string) => !NO_IMAGES.has(id);
 
 /** The two demo photos (start / end position) for an exercise. */
 export function exerciseImages(id: string): [string, string] {

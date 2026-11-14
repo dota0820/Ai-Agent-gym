@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 import { useEffect, useState } from "react";
-import { exerciseImages } from "@/lib/exercises";
+import { EX_BY_ID, exerciseImages, hasExerciseImages, videoUrl } from "@/lib/exercises";
 
 /**
  * Loops between the start and end position photos of an exercise.
@@ -30,6 +30,24 @@ export default function ExerciseAnim({
   }, [playing]);
 
   if (failed) return null;
+
+  // No correct photos for this exercise: point to a video rather than show the wrong movement.
+  if (!hasExerciseImages(id)) {
+    return (
+      <figure className="rounded-2xl border border-line bg-bg p-4 text-center">
+        <p className="text-sm text-sub">这个动作暂时没有示范照片</p>
+        {note && <p className="mt-2 text-left text-[15px] leading-relaxed">{note}</p>}
+        <a
+          href={videoUrl(name, EX_BY_ID[id]?.nameEn)}
+          target="_blank"
+          rel="noreferrer"
+          className="mt-3 inline-block rounded-xl bg-primary px-4 py-2.5 text-[15px] font-semibold text-white"
+        >
+          ▶ 看示范视频
+        </a>
+      </figure>
+    );
+  }
 
   return (
     <figure>
