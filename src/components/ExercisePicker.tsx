@@ -1,7 +1,10 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import { useState } from "react";
-import { EXERCISES } from "@/lib/exercises";
-import { GROUPS, type Group } from "@/lib/types";
+import { exerciseImages, listExercises, subLabel, type LibGroup } from "@/lib/exercises";
+import { GROUPS } from "@/lib/types";
+
+const TABS: { id: LibGroup; label: string }[] = [{ id: "shape", label: "✨ 女生塑形" }, ...GROUPS];
 import { btnSoft, input } from "./ui";
 
 export default function ExercisePicker({
@@ -11,7 +14,7 @@ export default function ExercisePicker({
   onPick: (e: { exerciseId?: string; name: string; nameEn?: string }) => void;
   onClose: () => void;
 }) {
-  const [g, setG] = useState<Group>("back");
+  const [g, setG] = useState<LibGroup>("back");
   const [custom, setCustom] = useState("");
   return (
     <div className="fixed inset-0 z-40 flex items-end bg-black/40" onClick={onClose}>
@@ -28,7 +31,7 @@ export default function ExercisePicker({
           </button>
         </div>
         <div className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4">
-          {GROUPS.map((x) => (
+          {TABS.map((x) => (
             <button
               key={x.id}
               onClick={() => setG(x.id)}
@@ -41,14 +44,26 @@ export default function ExercisePicker({
           ))}
         </div>
         <ul className="space-y-2">
-          {EXERCISES.filter((e) => e.group === g).map((e) => (
+          {listExercises(g).map((e) => (
             <li key={e.id}>
               <button
-                className="w-full rounded-xl border border-line bg-card px-4 py-3 text-left"
+                className="flex w-full items-center gap-3 rounded-xl border border-line bg-card p-2 pr-3 text-left active:scale-[0.99]"
                 onClick={() => onPick({ exerciseId: e.id, name: e.name, nameEn: e.nameEn })}
               >
-                <div className="font-semibold">{e.name}</div>
-                <div className="text-xs text-sub">{e.nameEn}</div>
+                <img
+                  src={exerciseImages(e.id)[1]}
+                  alt=""
+                  loading="lazy"
+                  className="h-[60px] w-[90px] shrink-0 rounded-lg bg-[#141418] object-cover"
+                />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[16px] font-semibold">{e.name}</span>
+                  <span className="block truncate text-xs text-sub">
+                    {e.nameEn}
+                    {subLabel(e, g) ? ` · ${subLabel(e, g)}` : ""}
+                  </span>
+                </span>
+                <span className="text-lg font-bold text-primary">+</span>
               </button>
             </li>
           ))}

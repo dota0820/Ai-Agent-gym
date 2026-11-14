@@ -47,13 +47,12 @@ function Detail() {
       <ExerciseAnim id={e.id} name={e.name} note={e.imageNote} />
 
       <Card>
-        <h2 className="mb-3 text-sm font-bold">练到哪里</h2>
-        <MuscleMap primary={e.primary} secondary={e.secondary} />
+        <Guide guide={e} name={e.name} nameEn={e.nameEn} showAnim={false} />
       </Card>
 
       <Card>
-        <h2 className="mb-3 text-sm font-bold">标准动作</h2>
-        <Guide guide={e} name={e.name} nameEn={e.nameEn} showAnim={false} />
+        <h2 className="mb-3 text-base font-bold">练到哪里</h2>
+        <MuscleMap primary={e.primary} secondary={e.secondary} />
       </Card>
 
       {last && (

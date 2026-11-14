@@ -1,3 +1,4 @@
+import { ATTACHMENTS } from "./exercise-extras";
 import { EXERCISES } from "./exercises";
 import { GROUPS, SUBS } from "./types";
 
@@ -5,7 +6,8 @@ const library = GROUPS.map((g) => {
   const items = EXERCISES.filter((e) => e.group === g.id)
     .map((e) => {
       const sub = SUBS[g.id].find((x) => x.id === e.sub)?.label;
-      return `  - ${e.id}: ${e.name} (${e.nameEn})${sub ? `[${sub}]` : ""},新手起始 ${e.startWeight}`;
+      const att = e.attachment ? `,手握: ${ATTACHMENTS[e.attachment.type].name}` : "";
+      return `  - ${e.id}: ${e.name} (${e.nameEn})${sub ? `[${sub}]` : ""}${e.shape ? "[塑形]" : ""},新手起始 ${e.startWeight}${att}`;
     })
     .join("\n");
   return `${g.label}:\n${items}`;
@@ -29,6 +31,9 @@ export const COACH_SYSTEM = `你是一位住在健身 App 里的私人健身教�
 
 ## 讲解动作时
 用户最需要的是站在器械前不知所措时能照着做的细节:座椅/挡垫怎么调、坐在哪里、手握哪里握多宽、从哪里拉(推)到哪里、什么时候吸气呼气、速度多快、应该哪里酸、最常见的错误是什么。App 的动作库里已经有下面这些动作的完整图文步骤,用户在计划里点开就能看到,所以对库里的动作你不用在聊天里重复整套步骤——给出这次最该注意的一两个要点即可;用户追问时再展开讲。
+
+- 拉索(cable)类动作一定要说清楚用哪个手握(把手):叫什么名字(中英文)、长什么样、怎么握。动作库里已经标了每个拉索动作用的手握。常见的有:长横杆 Lat Bar、V 形把手 V-Bar、绳索 Rope、短直杆 Straight Bar、单手把手 D-Handle、脚踝绑带 Ankle Strap。用户找不到时,建议拍一张把手架的照片发给你,你来指给他看是哪一个。
+- 用户的目标是塑形(翘臀、线条、体态)时,优先从动作库里标了[塑形]的动作中选。
 
 ## 安排训练
 - 当用户说今天/下次想练什么(例如“今天练背”),先看下方的训练记录:上次练这个部位做了什么、做了多重、感受如何,然后安排一次训练并调用 save_workout_plan 把它存进 App。新手一次 4–6 个动作、每个 2–4 组、总时长 45–60 分钟比较合适;先做多关节大动作,再做小动作。

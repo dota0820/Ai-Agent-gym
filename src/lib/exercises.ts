@@ -1,7 +1,11 @@
+import { CUES, EXERCISE_ATTACHMENT, SHAPE, SHAPE_GOALS } from "./exercise-extras";
 import { EXERCISE_META } from "./exercise-meta";
-import type { Exercise } from "./types";
+import { SUBS, type Exercise, type Group } from "./types";
 
-type Base = Omit<Exercise, "sub" | "alsoIn" | "primary" | "secondary" | "imageNote">;
+type Base = Omit<
+  Exercise,
+  "sub" | "alsoIn" | "primary" | "secondary" | "imageNote" | "cues" | "attachment" | "shape"
+>;
 
 const BASE: Base[] = [
   // ───────── 背 ─────────
@@ -781,7 +785,47 @@ const BASE: Base[] = [
   },
 ];
 
-export const EXERCISES: Exercise[] = BASE.map((e) => ({ ...e, ...EXERCISE_META[e.id] }));
+export const EXERCISES: Exercise[] = BASE.map((e) => ({
+  ...e,
+  ...EXERCISE_META[e.id],
+  cues: CUES[e.id] ?? [],
+  attachment: EXERCISE_ATTACHMENT[e.id],
+  shape: SHAPE[e.id],
+}));
+
+/** A body part, or the curated "shaping" collection. */
+export type LibGroup = Group | "shape";
+
+export function subsFor(g: LibGroup): { id: string; label: string }[] {
+  return g === "shape" ? SHAPE_GOALS : SUBS[g];
+}
+
+/** Exercises in a group (and optional sub-category), including cross-listed ones. */
+export function listExercises(g: LibGroup, sub = ""): Exercise[] {
+  if (g === "shape") {
+    // SHAPE is written goal by goal, most important exercise first
+    const order = Object.keys(SHAPE);
+    return EXERCISES.filter((e) => e.shape && (!sub || e.shape === sub)).sort(
+      (a, b) => order.indexOf(a.id) - order.indexOf(b.id),
+    );
+  }
+  return EXERCISES.filter((e) =>
+    sub
+      ? (e.group === g && e.sub === sub) || e.alsoIn.includes(`${g}/${sub}`)
+      : e.group === g || e.alsoIn.some((t) => t.startsWith(`${g}/`)),
+  );
+}
+
+/** Label of the sub-category an exercise is listed under within `g`. */
+export function subLabel(e: Exercise, g: LibGroup): string | undefined {
+  const id =
+    g === "shape"
+      ? e.shape
+      : e.group === g
+        ? e.sub
+        : e.alsoIn.find((t) => t.startsWith(`${g}/`))?.split("/")[1];
+  return subsFor(g).find((x) => x.id === id)?.label;
+}
 
 
 export const EX_BY_ID: Record<string, Exercise> = Object.fromEntries(

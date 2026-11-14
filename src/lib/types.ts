@@ -121,6 +121,15 @@ export interface Exercise extends Guide {
   secondary: Muscle[];
   /** Shown under the demo photos when they differ slightly from the described version. */
   imageNote?: string;
+  /** The three things to remember, shown large. */
+  cues: string[];
+  /** Cable attachment to use and how to hold it. */
+  attachment?: {
+    type: "lat-bar" | "v-bar" | "rope" | "straight-bar" | "d-handle" | "ankle-strap";
+    grip: string;
+  };
+  /** Goal id when the exercise is part of the "shaping" collection. */
+  shape?: string;
 }
 
 export interface PlanItem {
