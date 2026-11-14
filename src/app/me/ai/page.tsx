@@ -1,7 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, input, SubPage } from "@/components/ui";
-import { AI_MODELS } from "@/lib/models";
+import {
+  AI_MODELS,
+  fetchLiveModels,
+  fmtPrice,
+  MODEL_GROUPS,
+  type LiveModel,
+} from "@/lib/models";
 import { setAiModel, setOpenRouterKey, useApp, useHydrated } from "@/lib/store";
 
 interface ServerConfig {
@@ -14,6 +20,19 @@ export default function MeAiPage() {
   const ready = useHydrated();
   const [cfg, setCfg] = useState<ServerConfig | null>(null);
   const [showKey, setShowKey] = useState(false);
+  const [live, setLive] = useState<LiveModel[] | null>(null);
+  const [liveState, setLiveState] = useState<"idle" | "loading" | "error">("idle");
+  const [query, setQuery] = useState("");
+
+  async function loadLive() {
+    setLiveState("loading");
+    try {
+      setLive(await fetchLiveModels());
+      setLiveState("idle");
+    } catch {
+      setLiveState("error");
+    }
+  }
 
   useEffect(() => {
     fetch("/api/config")
@@ -96,30 +115,128 @@ export default function MeAiPage() {
           </div>
         </button>
 
-        {AI_MODELS.map((m) => {
-          const active = aiModel === m.id;
-          return (
-            <button
-              key={m.id}
-              type="button"
-              disabled={disabled}
-              onClick={() => setAiModel(m.id)}
-              className="flex w-full items-start gap-3 px-4 py-3.5 text-left active:bg-bg disabled:cursor-not-allowed"
-            >
-              <span className={`mt-0.5 text-base ${active ? "text-primary" : "text-sub"}`}>
-                {active ? "◉" : "○"}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="font-semibold">{m.label}</div>
-                <div className="text-xs text-sub">{m.note}</div>
-              </div>
-            </button>
-          );
-        })}
       </Card>
 
+      {aiModel && !AI_MODELS.some((m) => m.id === aiModel) && (
+        <div className="rounded-2xl border border-primary/40 bg-primary-soft px-4 py-3 text-sm">
+          <div className="font-semibold text-primary">◉ 正在使用</div>
+          <div className="break-all font-mono text-xs">{aiModel}</div>
+        </div>
+      )}
+
+      {MODEL_GROUPS.map((g) => {
+        const models = AI_MODELS.filter((m) => m.group === g.id);
+        return (
+          <section key={g.id} className={disabled ? "opacity-50" : ""}>
+            <h2 className="mb-1.5 px-1 text-sm font-bold">
+              {g.label}
+              {g.hint && <span className="ml-2 text-xs font-normal text-sub">{g.hint}</span>}
+            </h2>
+            <Card className="divide-y divide-line overflow-hidden p-0">
+              {models.map((m) => {
+                const active = aiModel === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    disabled={disabled}
+                    aria-pressed={active}
+                    onClick={() => setAiModel(m.id)}
+                    className="flex w-full items-start gap-3 px-4 py-3 text-left active:bg-bg disabled:cursor-not-allowed"
+                  >
+                    <span className={`mt-0.5 text-base ${active ? "text-primary" : "text-sub"}`}>
+                      {active ? "◉" : "○"}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold">{m.label}</div>
+                      <div className="text-xs text-sub">{m.note}</div>
+                    </div>
+                    <span className="shrink-0 pt-0.5 text-right text-[11px] tabular-nums text-sub">
+                      {fmtPrice(m.price)}
+                    </span>
+                  </button>
+                );
+              })}
+            </Card>
+          </section>
+        );
+      })}
+
+      <section className={disabled ? "opacity-50" : ""}>
+        <h2 className="mb-1.5 px-1 text-sm font-bold">
+          全部模型
+          <span className="ml-2 text-xs font-normal text-sub">OpenRouter 上所有能当教练的模型</span>
+        </h2>
+        <Card className="space-y-3">
+          {!live && (
+            <>
+              <p className="text-xs leading-relaxed text-sub">
+                从 OpenRouter 读取最新的完整列表(只显示既能看照片、又能帮你存计划的模型)。
+              </p>
+              <button
+                type="button"
+                disabled={disabled || liveState === "loading"}
+                onClick={loadLive}
+                className="w-full rounded-xl bg-primary-soft px-4 py-3 text-[15px] font-semibold text-primary disabled:opacity-50"
+              >
+                {liveState === "loading" ? "正在读取…" : "显示全部模型"}
+              </button>
+              {liveState === "error" && (
+                <p className="text-xs text-red-600">读取失败,请检查网络后再点一次。</p>
+              )}
+            </>
+          )}
+          {live && (
+            <>
+              <input
+                className={input}
+                placeholder={`在 ${live.length} 个模型里搜索,例如 gemini、claude、qwen`}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="搜索模型"
+              />
+              <ul className="max-h-[420px] divide-y divide-line overflow-y-auto rounded-xl border border-line">
+                {live
+                  .filter((m) =>
+                    `${m.id} ${m.name}`.toLowerCase().includes(query.trim().toLowerCase()),
+                  )
+                  .map((m) => {
+                    const active = aiModel === m.id;
+                    return (
+                      <li key={m.id}>
+                        <button
+                          type="button"
+                          disabled={disabled}
+                          aria-pressed={active}
+                          onClick={() => setAiModel(m.id)}
+                          className={`flex w-full items-start gap-2 px-3 py-2.5 text-left ${
+                            active ? "bg-primary-soft" : "active:bg-bg"
+                          }`}
+                        >
+                          <span className={`text-sm ${active ? "text-primary" : "text-sub"}`}>
+                            {active ? "◉" : "○"}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-sm font-semibold">{m.name}</span>
+                            <span className="block break-all font-mono text-[11px] text-sub">
+                              {m.id}
+                            </span>
+                          </span>
+                          <span className="shrink-0 text-[11px] tabular-nums text-sub">
+                            {fmtPrice(m.price)}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+              </ul>
+            </>
+          )}
+        </Card>
+      </section>
+
       <p className="px-1 text-xs leading-relaxed text-sub">
-        所有 AI 功能（教练、饮食分析、器械识别、导入动作）都会使用这里选中的模型。
+        所有 AI 功能（教练、饮食分析、器械识别、导入动作）都会使用这里选中的模型。价格是每百万 token 的美元价(输入 / 输出),以 OpenRouter 网站为准。
       </p>
     </SubPage>
   );
