@@ -143,6 +143,30 @@ function historyForApi(chat: ChatMsg[]) {
   return msgs;
 }
 
+const CHOICES_RE = /<choices>([\s\S]*?)<\/choices>/gi;
+
+/** Text with the coach's <choices> line (complete or still streaming) removed. */
+export function visibleText(raw: string): string {
+  let t = raw.replace(CHOICES_RE, "");
+  const open = t.search(/<choices/i);
+  if (open >= 0) t = t.slice(0, open);
+  // a tag that has only partly arrived, e.g. "<cho"
+  const m = /<[a-z]{0,7}$/i.exec(t);
+  if (m && "<choices".startsWith(m[0].toLowerCase())) t = t.slice(0, m.index);
+  return t.trim();
+}
+
+function extractChoices(raw: string): string[] {
+  const all = [...raw.matchAll(CHOICES_RE)];
+  const last = all[all.length - 1];
+  if (!last) return [];
+  return last[1]
+    .split(/[|｜\n]/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+}
+
 function patchMsg(id: string, fn: (m: ChatMsg) => ChatMsg) {
   setState((s) => ({ ...s, chat: s.chat.map((m) => (m.id === id ? fn(m) : m)) }));
 }
@@ -283,10 +307,15 @@ export async function sendToCoach(text: string) {
   } catch {
     fail("网络断了,请再发一次。");
   } finally {
-    patchMsg(aid, (m) => ({
-      ...m,
-      text: m.text.trim() || (m.plan || m.logged ? "" : "⚠️ 教练没有回复,请再试一次。"),
-    }));
+    patchMsg(aid, (m) => {
+      const choices = extractChoices(m.text);
+      return {
+        ...m,
+        choices: choices.length ? choices : undefined,
+        text:
+          visibleText(m.text) || (m.plan || m.logged ? "" : "⚠️ 教练没有回复,请再试一次。"),
+      };
+    });
     setBusy(false);
   }
 }

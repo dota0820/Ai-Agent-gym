@@ -3,7 +3,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import MD from "@/components/MD";
 import PlanCard from "@/components/PlanCard";
-import { sendToCoach, useCoachBusy } from "@/lib/actions";
+import { sendToCoach, useCoachBusy, visibleText } from "@/lib/actions";
 import { setState, useApp, useHydrated } from "@/lib/store";
 
 const STARTERS = [
@@ -83,7 +83,9 @@ function Coach() {
 
       <div className="space-y-3 pb-24">
         {chat.map((m, i) => {
-          const streaming = busy && i === chat.length - 1 && m.role === "assistant";
+          const isLast = i === chat.length - 1;
+          const streaming = busy && isLast && m.role === "assistant";
+          const shown = m.role === "assistant" ? visibleText(m.text) : m.text;
           return m.role === "user" ? (
             <div key={m.id} className="flex justify-end">
               <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] text-white">
@@ -92,10 +94,10 @@ function Coach() {
             </div>
           ) : (
             <div key={m.id} className="space-y-2">
-              {(m.text || streaming) && (
+              {(shown || streaming) && (
                 <div className="max-w-[92%] rounded-2xl rounded-bl-md bg-card px-4 py-2.5">
-                  {m.text ? (
-                    <MD text={m.text} />
+                  {shown ? (
+                    <MD text={shown} />
                   ) : (
                     <span className="animate-pulse text-sm text-sub">教练正在想…</span>
                   )}
@@ -105,6 +107,20 @@ function Coach() {
               {m.logged && (
                 <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
                   ✓ 已记录:{m.logged}
+                </div>
+              )}
+              {isLast && !busy && m.choices && m.choices.length > 0 && (
+                <div className="flex flex-col gap-2 pt-1" role="group" aria-label="快捷回复">
+                  {m.choices.map((c) => (
+                    <button
+                      key={c}
+                      onClick={() => void sendToCoach(c)}
+                      className="w-full rounded-2xl border border-primary/40 bg-primary-soft px-4 py-3 text-left text-[15px] font-semibold text-primary active:scale-[0.99]"
+                    >
+                      {c}
+                    </button>
+                  ))}
+                  <p className="text-center text-xs text-sub">点一下就能回答,也可以自己打字</p>
                 </div>
               )}
             </div>

@@ -112,6 +112,7 @@ export interface ChatMsg {
   text: string;
   plan?: Plan;
   logged?: string;
+  choices?: string[];
   ts: string;
 }
 
