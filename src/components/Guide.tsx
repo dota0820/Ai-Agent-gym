@@ -1,5 +1,6 @@
 import { EX_BY_ID, videoUrl } from "@/lib/exercises";
 import type { Guide as G } from "@/lib/types";
+import ExerciseAnim from "./ExerciseAnim";
 
 export function guideFor(item: {
   exerciseId?: string;
@@ -14,13 +15,20 @@ export default function Guide({
   guide,
   name,
   nameEn,
+  showAnim = true,
 }: {
   guide: G;
   name: string;
   nameEn?: string;
+  /** Show the looping demo photos when the guide is a library exercise. */
+  showAnim?: boolean;
 }) {
+  const lib = "id" in guide ? EX_BY_ID[(guide as { id: string }).id] : undefined;
   return (
     <div className="space-y-3 text-[14px] leading-relaxed">
+      {showAnim && lib && (
+        <ExerciseAnim id={lib.id} name={lib.name} note={lib.imageNote} compact />
+      )}
       <Row label="器械">{guide.equipment}</Row>
       <Row label="怎么准备">{guide.setup}</Row>
       <div>

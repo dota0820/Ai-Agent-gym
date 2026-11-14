@@ -120,12 +120,23 @@ export async function runOpenRouterChat(opts: {
   system: string;
   context: string;
   messages: { role: "user" | "assistant"; text: string }[];
+  image?: string;
   send: (ev: unknown) => void;
 }) {
   const { send } = opts;
   const messages: Msg[] = [
     systemMessage(opts.system, opts.context),
-    ...opts.messages.map((m): Msg => ({ role: m.role, content: m.text })),
+    ...opts.messages.map((m, i): Msg => {
+      if (opts.image && i === opts.messages.length - 1 && m.role === "user")
+        return {
+          role: "user",
+          content: [
+            { type: "image_url", image_url: { url: opts.image } },
+            { type: "text", text: m.text },
+          ],
+        };
+      return { role: m.role, content: m.text };
+    }),
   ];
 
   for (let iter = 0; iter < 6; iter++) {

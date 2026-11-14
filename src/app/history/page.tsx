@@ -1,16 +1,37 @@
 "use client";
 import Link from "next/link";
-import { Card, H1 } from "@/components/ui";
+import { useRouter } from "next/navigation";
+import { btnSoft, Card, H1 } from "@/components/ui";
+import { startFree } from "@/lib/actions";
 import { durationMin, fmtDate, useApp, useHydrated, volume } from "@/lib/store";
 
 export default function History() {
-  const { workouts } = useApp();
+  const { workouts, active } = useApp();
+  const router = useRouter();
   const ready = useHydrated();
   if (!ready) return null;
   const sorted = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
   return (
     <div>
       <H1 sub={`一共 ${workouts.length} 次训练`}>训练记录</H1>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <button
+          className={btnSoft}
+          onClick={() => {
+            if (active && !confirm("有一次训练还没结束,要放弃它重新开始记录吗?")) return;
+            startFree();
+            router.push("/workout");
+          }}
+        >
+          ✍️ 自己添加记录
+        </button>
+        <Link
+          href={`/coach?q=${encodeURIComponent("我想补记一次训练,你来问我做了什么,帮我记录下来")}`}
+          className={btnSoft}
+        >
+          💬 让教练帮我记
+        </Link>
+      </div>
       {sorted.length === 0 && (
         <Card>
           <p className="text-sm text-sub">

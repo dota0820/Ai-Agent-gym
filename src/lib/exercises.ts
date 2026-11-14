@@ -1,6 +1,9 @@
+import { EXERCISE_META } from "./exercise-meta";
 import type { Exercise } from "./types";
 
-export const EXERCISES: Exercise[] = [
+type Base = Omit<Exercise, "sub" | "alsoIn" | "primary" | "secondary" | "imageNote">;
+
+const BASE: Base[] = [
   // ───────── 背 ─────────
   {
     id: "lat-pulldown",
@@ -609,7 +612,177 @@ export const EXERCISES: Exercise[] = [
     mistakes: ["驼背趴在扶手上。", "脚尖踮着踩。"],
     feel: "全身微微发热,对膝盖比跑步友好。",
   },
+  // ───────── 补充动作 ─────────
+  {
+    id: "db-shrug",
+    name: "哑铃耸肩",
+    nameEn: "Dumbbell Shrug",
+    group: "back",
+    equipment: "一对哑铃",
+    startWeight: "每只 6–10 kg",
+    setup: "站直,双脚与髋同宽,双手各拿一只哑铃垂在身体两侧,掌心朝向大腿。手臂全程伸直放松。",
+    steps: [
+      "挺胸,眼睛平视,手臂像两根绳子一样挂着哑铃。",
+      "把肩膀笔直地往耳朵方向耸起,耸到最高,呼气。手肘不要弯。",
+      "顶端停 1–2 秒,感觉脖子两侧到上背收紧。",
+      "慢慢放下到肩膀完全下沉,吸气。",
+    ],
+    mistakes: ["肩膀转圈(没有用,还磨肩)。", "弯手肘用手臂提。", "头往前伸。"],
+    feel: "脖子后方到上背(斜方肌上部)。",
+  },
+  {
+    id: "straight-arm-pulldown",
+    name: "直臂下压",
+    nameEn: "Straight-arm Pulldown",
+    group: "back",
+    equipment: "龙门架拉索(滑轮调到最高)+ 直杆或绳索",
+    startWeight: "7.5–12.5 kg",
+    setup: "滑轮调到最高,面向器械站立,后退一步。双手与肩同宽握住直杆,手臂伸直(手肘微弯并锁住这个角度),身体稍微前倾,屁股往后坐一点。",
+    steps: [
+      "挺胸,肩膀下沉,核心收紧。",
+      "手臂保持伸直,像画一个大弧线一样把杆从头前上方压到大腿前面,呼气。",
+      "到大腿时停 1 秒,用力夹紧腋下。",
+      "慢慢让杆回到额头高度,感觉背部两侧被拉长,吸气。",
+    ],
+    mistakes: ["弯手肘(变成练三头)。", "用身体上下起伏去压。", "耸肩。"],
+    feel: "腋下后方的背阔肌。很适合找不到“背发力感觉”的新手。",
+  },
+  {
+    id: "superman",
+    name: "超人式",
+    nameEn: "Superman",
+    group: "back",
+    equipment: "瑜伽垫",
+    startWeight: "自重",
+    setup: "趴在垫子上,双臂向前伸直,双腿伸直并拢,额头轻轻贴近地面,眼睛看地板。",
+    steps: [
+      "收紧臀部和下背。",
+      "同时把双臂、胸口和双腿抬离地面几厘米,像超人飞行,呼气。",
+      "顶端停 2 秒,不用抬很高。",
+      "慢慢放回地面,吸气。",
+    ],
+    mistakes: ["抬头看前方(压迫脖子)。", "用甩的、抬得过高折腰。"],
+    feel: "下背和臀部收紧。",
+  },
+  {
+    id: "decline-db-press",
+    name: "下斜哑铃卧推",
+    nameEn: "Decline Dumbbell Bench Press",
+    group: "chest",
+    equipment: "一对哑铃 + 下斜凳(头低脚高,约 15–30 度)",
+    startWeight: "每只 4–7 kg",
+    setup: "先把脚勾在下斜凳的挡垫里固定好,哑铃放在大腿上,再慢慢躺下,把哑铃带到下胸两侧。第一次做建议请人帮忙递哑铃。",
+    steps: [
+      "肩胛骨夹紧贴住凳面,手肘和身体约 45–60 度。",
+      "垂直向上推起,到手臂接近伸直,呼气。",
+      "慢慢下放到哑铃在下胸两侧,吸气。",
+      "做完后把哑铃收到胸口,用腹部力量坐起来,或请人接走哑铃。",
+    ],
+    mistakes: ["脚没勾稳就开始做。", "下放位置太靠近脖子。", "头低时间太长头晕——组间坐起来休息。"],
+    feel: "胸部下半部分(下胸沿)。",
+  },
+  {
+    id: "cable-fly-high",
+    name: "高位拉索夹胸",
+    nameEn: "High-to-low Cable Fly",
+    group: "chest",
+    equipment: "龙门架两侧拉索(滑轮调到高于肩膀)+ 单手把手",
+    startWeight: "每边 5–7.5 kg",
+    setup: "两边滑轮调到最高。先握住一边把手,再去握另一边,走到正中间向前跨一步,双脚前后站稳,身体稍微前倾。",
+    steps: [
+      "手臂向两侧打开,手肘微弯并保持角度,胸有拉伸感。",
+      "双手沿弧线向下向中间合拢,在肚脐前方相碰,呼气。",
+      "停 1 秒夹紧胸部下沿。",
+      "慢慢打开回到起始位置,吸气。",
+    ],
+    mistakes: ["手肘越弯越多(变成推)。", "肩膀往前顶、耸肩。", "打开时手超过肩膀后方太多。"],
+    feel: "胸部下沿和中缝。",
+  },
+  {
+    id: "cable-fly-low",
+    name: "低位拉索夹胸",
+    nameEn: "Low-to-high Cable Fly",
+    group: "chest",
+    equipment: "龙门架两侧拉索(滑轮调到最低)+ 单手把手",
+    startWeight: "每边 2.5–5 kg",
+    setup: "两边滑轮调到最低。握住两边把手站到中间,向前跨一步,掌心朝前朝上,手在大腿两侧。",
+    steps: [
+      "挺胸,手肘微弯。",
+      "双手沿弧线向上向中间捧起,在胸口到下巴的高度相碰,呼气。",
+      "停 1 秒,感觉上胸收紧。",
+      "慢慢放回大腿两侧,吸气。",
+    ],
+    mistakes: ["耸肩、用肩膀前侧抬。", "重量太重身体后仰。"],
+    feel: "胸部上半部分(靠近锁骨)。",
+  },
+  {
+    id: "front-raise",
+    name: "哑铃前平举",
+    nameEn: "Front Dumbbell Raise",
+    group: "shoulders",
+    equipment: "一对轻哑铃",
+    startWeight: "每只 2–3 kg",
+    setup: "站直,双手各拿一只哑铃放在大腿前面,掌心朝向大腿。",
+    steps: [
+      "核心收紧,身体不要晃。",
+      "手臂伸直(手肘微弯),把哑铃向正前方抬到与肩同高,呼气。可以两手一起,也可以左右交替。",
+      "顶端停一下,慢慢放下(2–3 秒),吸气。",
+    ],
+    mistakes: ["身体后仰甩上去。", "抬得比肩膀高很多。", "耸肩。"],
+    feel: "肩膀前侧。",
+  },
+  {
+    id: "hammer-curl",
+    name: "锤式弯举",
+    nameEn: "Hammer Curl",
+    group: "arms",
+    equipment: "一对哑铃",
+    startWeight: "每只 3–5 kg",
+    setup: "站直,双手各拿一只哑铃垂在身体两侧,掌心相对(像握锤子),手肘贴着身体。",
+    steps: [
+      "大臂固定不动,保持掌心相对。",
+      "弯手肘把哑铃举向肩膀,呼气。",
+      "顶端收紧 1 秒,慢慢放下到手臂伸直,吸气。",
+    ],
+    mistakes: ["身体前后晃。", "手肘往前跑。", "举的时候手腕转动。"],
+    feel: "大臂前外侧和小臂。",
+  },
+  {
+    id: "russian-twist",
+    name: "俄罗斯转体",
+    nameEn: "Russian Twist",
+    group: "core",
+    equipment: "瑜伽垫(可加一只轻哑铃或药球)",
+    startWeight: "自重 → 2–4 kg",
+    setup: "坐在垫子上,膝盖弯曲,脚跟着地(进阶可抬脚)。上半身向后倾约 45 度,背挺直,双手在胸前合拢。",
+    steps: [
+      "收紧肚子,背不要驼。",
+      "上半身带着双手一起转向右边,手碰一下身体右侧的地面,呼气。",
+      "回到中间,再转向左边。左右各一次算 1 次。",
+    ],
+    mistakes: ["只动手臂、身体没转。", "驼背。", "速度太快。"],
+    feel: "腰两侧(腹斜肌)。",
+  },
+  {
+    id: "hip-adduction",
+    name: "坐姿髋内收",
+    nameEn: "Hip Adduction Machine",
+    group: "legs",
+    equipment: "髋内收机(坐着把腿向内夹的器械)",
+    startWeight: "15–25 kg",
+    setup: "坐下,背贴靠垫,膝盖内侧抵住两边的挡垫。用拨杆把起始位置调到双腿打开、大腿内侧有轻微拉伸感的宽度。",
+    steps: [
+      "握住把手,上身坐直。",
+      "双腿用力向中间夹拢,直到两边垫子相碰,停 1 秒,呼气。",
+      "慢慢打开回到起始位置(2–3 秒),吸气。",
+    ],
+    mistakes: ["起始位置调得太开拉伤内侧。", "靠弹力快速开合。"],
+    feel: "大腿内侧。",
+  },
 ];
+
+export const EXERCISES: Exercise[] = BASE.map((e) => ({ ...e, ...EXERCISE_META[e.id] }));
+
 
 export const EX_BY_ID: Record<string, Exercise> = Object.fromEntries(
   EXERCISES.map((e) => [e.id, e]),
@@ -618,4 +791,9 @@ export const EX_BY_ID: Record<string, Exercise> = Object.fromEntries(
 export function videoUrl(name: string, nameEn?: string) {
   const q = `${nameEn ?? name} proper form tutorial`;
   return `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+}
+
+/** The two demo photos (start / end position) for an exercise. */
+export function exerciseImages(id: string): [string, string] {
+  return [`/exercises/${id}-0.jpg`, `/exercises/${id}-1.jpg`];
 }

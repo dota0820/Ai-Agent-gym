@@ -9,7 +9,8 @@
 - **训练中** — 每个动作显示「上次做了多少」、详细做法(器械怎么调、坐哪里、拉到哪里、哪里该酸)、组间休息倒计时。
 - **记录** — 每次训练的明细,每个动作和上一次的对比;一键让教练点评。
 - **手表数据** — 上传荣耀/华为运动健康、Apple Watch 等的运动截图,AI 自动读出时长、卡路里、心率;也可手填。
-- **动作库** — 35 个新手常用动作的详细图文步骤。
+- **动作库** — 45 个新手常用动作,按部位细分(背 › 上背/中背/下背/后肩,胸 › 上/中/下…),每个动作有动图示范、目标肌肉图和详细步骤。
+- **语音和拍照** — 聊天里可以语音输入、让教练朗读回复、拍照发给教练(认器械、看动作、读手表截图)。
 
 数据保存在手机浏览器本地(「我的」页可导出/导入备份)。
 
@@ -35,3 +36,8 @@ npm run dev                  # http://localhost:3000
 - `src/lib/openrouter.ts` — OpenRouter 接入;`src/lib/coach-tools.ts` — 两种接入共用的工具定义
 - `src/app/api/watch/route.ts` — 手表截图识别
 - `src/lib/store.ts`, `src/lib/actions.ts` — 本地数据与聊天逻辑
+
+## 素材来源
+
+- 动作示范照片:[free-exercise-db](https://github.com/yuhonas/free-exercise-db)(公共领域 / Unlicense),放在 `public/exercises/`。
+- 肌肉示意图:[react-body-highlighter](https://github.com/giavinh79/react-body-highlighter)(MIT)。

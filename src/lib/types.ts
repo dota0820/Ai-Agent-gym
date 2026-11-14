@@ -27,12 +27,100 @@ export interface Guide {
   feel: string;
 }
 
+export type Muscle =
+  | "trapezius"
+  | "upper-back"
+  | "lower-back"
+  | "chest"
+  | "biceps"
+  | "triceps"
+  | "forearm"
+  | "back-deltoids"
+  | "front-deltoids"
+  | "abs"
+  | "obliques"
+  | "adductor"
+  | "abductors"
+  | "hamstring"
+  | "quadriceps"
+  | "calves"
+  | "gluteal";
+
+export const MUSCLE_LABEL: Record<Muscle, string> = {
+  trapezius: "斜方肌(上背/颈后)",
+  "upper-back": "背阔肌·中背",
+  "lower-back": "下背(竖脊肌)",
+  chest: "胸大肌",
+  biceps: "肱二头肌(大臂前侧)",
+  triceps: "肱三头肌(大臂后侧)",
+  forearm: "前臂",
+  "back-deltoids": "三角肌后束(后肩)",
+  "front-deltoids": "三角肌前束/中束(肩)",
+  abs: "腹直肌",
+  obliques: "腹斜肌(侧腹)",
+  adductor: "大腿内侧",
+  abductors: "臀中肌(臀外侧)",
+  hamstring: "腘绳肌(大腿后侧)",
+  quadriceps: "股四头肌(大腿前侧)",
+  calves: "小腿",
+  gluteal: "臀大肌",
+};
+
+/** Sub-categories inside each body part, e.g. back → upper / middle / lower / rear shoulder. */
+export const SUBS: Record<Group, { id: string; label: string }[]> = {
+  back: [
+    { id: "upper", label: "上背" },
+    { id: "middle", label: "中背·背阔" },
+    { id: "lower", label: "下背" },
+    { id: "rear", label: "后肩" },
+  ],
+  chest: [
+    { id: "upper", label: "上胸" },
+    { id: "middle", label: "中胸" },
+    { id: "lower", label: "下胸" },
+  ],
+  legs: [
+    { id: "front", label: "大腿前侧" },
+    { id: "back", label: "大腿后侧" },
+    { id: "inner", label: "大腿内侧" },
+    { id: "calves", label: "小腿" },
+  ],
+  glutes: [
+    { id: "main", label: "臀大肌" },
+    { id: "side", label: "臀外侧" },
+  ],
+  shoulders: [
+    { id: "front", label: "前束" },
+    { id: "side", label: "中束" },
+    { id: "rear", label: "后束" },
+  ],
+  arms: [
+    { id: "biceps", label: "二头(前侧)" },
+    { id: "triceps", label: "三头(后侧)" },
+  ],
+  core: [
+    { id: "upper", label: "上腹" },
+    { id: "lower", label: "下腹" },
+    { id: "obliques", label: "侧腹" },
+    { id: "deep", label: "深层稳定" },
+  ],
+  cardio: [],
+};
+
 export interface Exercise extends Guide {
   id: string;
   name: string;
   nameEn: string;
   group: Group;
   startWeight: string;
+  /** Sub-category id within `group` (see SUBS). */
+  sub: string;
+  /** Extra "group/sub" placements, e.g. face pull also lives under back/rear. */
+  alsoIn: string[];
+  primary: Muscle[];
+  secondary: Muscle[];
+  /** Shown under the demo photos when they differ slightly from the described version. */
+  imageNote?: string;
 }
 
 export interface PlanItem {
@@ -104,12 +192,16 @@ export interface Profile {
   weightKg: string;
   memory: string[];
   passcode: string;
+  /** Read the coach's replies aloud. */
+  speak: boolean;
 }
 
 export interface ChatMsg {
   id: string;
   role: "user" | "assistant";
   text: string;
+  /** Small thumbnail (data URL) of a photo the user sent. */
+  image?: string;
   plan?: Plan;
   logged?: string;
   choices?: string[];

@@ -136,6 +136,7 @@ function historyForApi(chat: ChatMsg[]) {
           .map((i) => `${i.name} ${i.sets}×${i.reps}`)
           .join(";")}]`;
       if (m.logged) text += `\n[已记录训练: ${m.logged}]`;
+      if (m.image !== undefined) text += "\n[用户在这条消息里发了一张照片]";
       return { role: m.role, text: text.trim() };
     })
     .filter((m) => m.text);
@@ -233,8 +234,10 @@ function toWorkout(w: any): Workout {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-export async function sendToCoach(text: string) {
-  text = text.trim();
+const MAX_THUMBS = 8;
+
+export async function sendToCoach(text: string, photo?: { full: string; thumb: string }) {
+  text = text.trim() || (photo ? "帮我看看这张照片" : "");
   if (!text || busy) return;
   setBusy(true);
   const ts = new Date().toISOString();
@@ -243,10 +246,22 @@ export async function sendToCoach(text: string) {
     ...s,
     chat: [
       ...s.chat,
-      { id: uid(), role: "user", text, ts },
+      { id: uid(), role: "user", text, ts, image: photo?.thumb },
       { id: aid, role: "assistant", text: "", ts },
     ],
   }));
+  if (photo) {
+    // keep storage small: only the most recent photos keep their thumbnail
+    setState((s) => {
+      let kept = 0;
+      const chat = [...s.chat].reverse().map((m) => {
+        if (!m.image) return m;
+        kept++;
+        return kept > MAX_THUMBS ? { ...m, image: "" } : m;
+      });
+      return { ...s, chat: chat.reverse() };
+    });
+  }
   const fail = (msg: string) =>
     patchMsg(aid, (m) => ({ ...m, text: (m.text ? m.text + "\n\n" : "") + `⚠️ ${msg}` }));
 
@@ -261,6 +276,7 @@ export async function sendToCoach(text: string) {
       body: JSON.stringify({
         messages: historyForApi(s.chat.filter((m) => m.id !== aid)),
         context: buildContext(),
+        image: photo?.full,
       }),
     });
     if (!res.ok || !res.body) {

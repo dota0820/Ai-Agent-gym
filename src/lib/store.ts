@@ -16,6 +16,7 @@ export const EMPTY: AppState = {
     weightKg: "",
     memory: [],
     passcode: "",
+    speak: false,
   },
   plan: null,
   active: null,
