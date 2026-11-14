@@ -1,14 +1,16 @@
 "use client";
 import { useSyncExternalStore } from "react";
-import { EX_BY_ID } from "./exercises";
+import { allExerciseNamesForPrompt, findExerciseById } from "./exercise-lookup";
+import { nutritionContextForCoach } from "./nutrition";
 import {
+  addMealLog,
   getState,
   historyForCoach,
   lastPerformance,
   setState,
   uid,
 } from "./store";
-import type { ChatMsg, Guide, Plan, Workout, WorkoutExercise } from "./types";
+import type { ChatMsg, Guide, MealLog, Plan, Workout, WorkoutExercise } from "./types";
 
 // ───────── workouts ─────────
 
@@ -122,6 +124,12 @@ function buildContext(): string {
     "",
     "## 最近的训练记录(新的在前)",
     historyForCoach(s.workouts),
+    "",
+    "## 用户自定义的动作库",
+    allExerciseNamesForPrompt(s.customExercises),
+    "",
+    "## 今日饮食与营养师参考目标",
+    nutritionContextForCoach(s.meals, p),
   ];
   return lines.join("\n");
 }
@@ -136,6 +144,7 @@ function historyForApi(chat: ChatMsg[]) {
           .map((i) => `${i.name} ${i.sets}×${i.reps}`)
           .join(";")}]`;
       if (m.logged) text += `\n[已记录训练: ${m.logged}]`;
+      if (m.mealLogged) text += `\n[已记录饮食: ${m.mealLogged}]`;
       if (m.image !== undefined) text += "\n[用户在这条消息里发了一张照片]";
       return { role: m.role, text: text.trim() };
     })
@@ -174,6 +183,7 @@ function patchMsg(id: string, fn: (m: ChatMsg) => ChatMsg) {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function toPlan(p: any): Plan {
+  const customExercises = getState().customExercises;
   return {
     id: uid(),
     title: p.title,
@@ -181,7 +191,7 @@ function toPlan(p: any): Plan {
     note: p.note,
     createdAt: new Date().toISOString(),
     items: (p.exercises ?? []).map((e: any) => {
-      const lib = EX_BY_ID[e.exercise_id];
+      const lib = findExerciseById(e.exercise_id, customExercises);
       const c = e.custom_instructions;
       return {
         exerciseId: lib ? lib.id : undefined,
@@ -208,6 +218,7 @@ function toPlan(p: any): Plan {
 }
 
 function toWorkout(w: any): Workout {
+  const customExercises = getState().customExercises;
   const d = /^\d{4}-\d{2}-\d{2}$/.test(w.date) ? new Date(`${w.date}T12:00:00`) : new Date();
   const iso = (isNaN(d.getTime()) ? new Date() : d).toISOString();
   return {
@@ -218,7 +229,7 @@ function toWorkout(w: any): Workout {
     endedAt: iso,
     notes: w.notes,
     exercises: (w.exercises ?? []).map((e: any) => {
-      const lib = EX_BY_ID[e.exercise_id];
+      const lib = findExerciseById(e.exercise_id, customExercises);
       return {
         exerciseId: lib?.id,
         name: lib ? lib.name : e.name,
@@ -230,6 +241,33 @@ function toWorkout(w: any): Workout {
         })),
       };
     }),
+  };
+}
+
+function toMeal(m: any): MealLog {
+  const calories = Math.max(0, Math.round(Number(m.calories) || 0));
+  const protein = Math.max(0, Math.round((Number(m.protein) || 0) * 10) / 10);
+  const carbs = Math.max(0, Math.round((Number(m.carbs) || 0) * 10) / 10);
+  const fat = Math.max(0, Math.round((Number(m.fat) || 0) * 10) / 10);
+  return {
+    id: uid(),
+    loggedAt: new Date().toISOString(),
+    mealType: m.meal_type ?? "snack",
+    summary: m.summary || "一餐饮食",
+    calories,
+    protein,
+    carbs,
+    fat,
+    items: [
+      {
+        name: m.summary || "一餐饮食",
+        calories,
+        protein,
+        carbs,
+        fat,
+      },
+    ],
+    advice: m.advice,
   };
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
@@ -300,6 +338,13 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
         const w = toWorkout(ev.workout);
         setState((st) => ({ ...st, workouts: [...st.workouts, w] }));
         patchMsg(aid, (m) => ({ ...m, logged: w.title }));
+      } else if (ev.type === "meal") {
+        const meal = toMeal(ev.meal);
+        addMealLog(meal);
+        patchMsg(aid, (m) => ({
+          ...m,
+          mealLogged: `${meal.summary} (${meal.calories} kcal · 蛋白 ${meal.protein}g)`,
+        }));
       } else if (ev.type === "memory") {
         setState((st) => ({
           ...st,

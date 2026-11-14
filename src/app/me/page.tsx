@@ -1,5 +1,6 @@
 "use client";
 import { useRef } from "react";
+import EquipmentSelector from "@/components/EquipmentSelector";
 import { btnGhost, Card, H1, input } from "@/components/ui";
 import { EMPTY, getState, setState, useApp, useHydrated } from "@/lib/store";
 import type { Profile } from "@/lib/types";
@@ -7,7 +8,7 @@ import type { Profile } from "@/lib/types";
 const GOALS = ["减脂", "增肌塑形", "练翘臀", "改善体态", "保持健康"];
 
 export default function Me() {
-  const { profile, workouts } = useApp();
+  const { profile, workouts, customExercises, meals } = useApp();
   const ready = useHydrated();
   const fileRef = useRef<HTMLInputElement>(null);
   if (!ready) return null;
@@ -21,7 +22,7 @@ export default function Me() {
         className={`${input} mt-1`}
         placeholder={placeholder}
         inputMode={mode}
-        value={profile[key] as string}
+        value={(profile[key] as string) ?? ""}
         onChange={(e) => set({ [key]: e.target.value })}
       />
     </label>
@@ -42,7 +43,13 @@ export default function Me() {
       if (!Array.isArray(data.workouts) || !data.profile) throw new Error("bad");
       if (!confirm(`导入会覆盖现在的数据(备份里有 ${data.workouts.length} 次训练)。继续吗?`))
         return;
-      setState(() => ({ ...EMPTY, ...data, profile: { ...EMPTY.profile, ...data.profile } }));
+      setState(() => ({
+        ...EMPTY,
+        ...data,
+        profile: { ...EMPTY.profile, ...data.profile },
+        customExercises: Array.isArray(data.customExercises) ? data.customExercises : [],
+        meals: Array.isArray(data.meals) ? data.meals : [],
+      }));
       alert("导入成功");
     } catch {
       alert("这个文件不是有效的备份文件。");
@@ -51,7 +58,7 @@ export default function Me() {
 
   return (
     <div className="space-y-4">
-      <H1 sub="教练会根据这些信息来安排训练,填完自动保存">我的</H1>
+      <H1 sub="教练和营养师会根据这些信息来帮你安排,填完自动保存">我的</H1>
 
       <Card className="space-y-3">
         {field("name", "怎么称呼你", "例如:小美")}
@@ -97,8 +104,14 @@ export default function Me() {
           {field("heightCm", "身高 cm", "", "numeric")}
           {field("weightKg", "体重 kg", "", "numeric")}
         </div>
-        {field("equipment", "健身房有什么器械", "例如:器械齐全 / 只有哑铃和跑步机")}
         {field("injuries", "伤病或要注意的地方", "例如:右膝旧伤、腰不太好;没有就留空")}
+      </Card>
+
+      <Card>
+        <EquipmentSelector
+          value={profile.equipment}
+          onChange={(equipment) => set({ equipment })}
+        />
       </Card>
 
       <Card>
@@ -133,7 +146,7 @@ export default function Me() {
 
       <Card className="space-y-3">
         <div className="text-sm font-semibold">🔑 访问口令</div>
-        <p className="text-sm text-sub">如果部署时设置了口令,在这里填一次,AI 教练才能用。</p>
+        <p className="text-sm text-sub">如果部署时设置了口令,在这里填一次,AI 教练和营养师才能用。</p>
         <input
           className={input}
           type="password"
@@ -146,7 +159,7 @@ export default function Me() {
       <Card className="space-y-2">
         <div className="text-sm font-semibold">💾 数据备份</div>
         <p className="text-sm text-sub">
-          所有记录({workouts.length} 次训练)都只保存在这台手机的浏览器里。换手机或清理浏览器数据前,记得先导出备份。
+          所有记录({workouts.length} 次训练 · {meals.length} 条饮食 · {customExercises.length} 个自导入动作)都只保存在这台手机的浏览器里。换手机或清理浏览器数据前,记得先导出备份。
         </p>
         <div className="flex gap-2">
           <button className={`${btnGhost} flex-1`} onClick={exportData}>

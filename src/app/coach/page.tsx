@@ -165,6 +165,11 @@ function Coach() {
                   ✓ 已记录:{m.logged}
                 </div>
               )}
+              {m.mealLogged && (
+                <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                  🥗 已记录饮食:{m.mealLogged}
+                </div>
+              )}
               {isLast && !busy && m.choices && m.choices.length > 0 && (
                 <div className="flex flex-col gap-2 pt-1" role="group" aria-label="快捷回复">
                   {m.choices.map((c) => (

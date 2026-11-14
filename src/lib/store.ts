@@ -1,8 +1,9 @@
 "use client";
 import { useSyncExternalStore } from "react";
-import type { AppState, Workout, WorkoutExercise } from "./types";
+import type { AppState, CustomExercise, MealLog, Workout, WorkoutExercise } from "./types";
 
 const KEY = "gymcoach:v1";
+const MAX_MEAL_THUMBS = 12;
 
 export const EMPTY: AppState = {
   profile: {
@@ -22,6 +23,8 @@ export const EMPTY: AppState = {
   active: null,
   workouts: [],
   chat: [],
+  customExercises: [],
+  meals: [],
 };
 
 let state: AppState = EMPTY;
@@ -35,7 +38,15 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const p = JSON.parse(raw);
-      state = { ...EMPTY, ...p, profile: { ...EMPTY.profile, ...p.profile } };
+      state = {
+        ...EMPTY,
+        ...p,
+        profile: { ...EMPTY.profile, ...(p.profile ?? {}) },
+        workouts: Array.isArray(p.workouts) ? p.workouts : [],
+        chat: Array.isArray(p.chat) ? p.chat : [],
+        customExercises: Array.isArray(p.customExercises) ? p.customExercises : [],
+        meals: Array.isArray(p.meals) ? p.meals : [],
+      };
     }
   } catch {
     // corrupted or unavailable storage: start fresh
@@ -56,6 +67,40 @@ export function setState(fn: (s: AppState) => AppState) {
     // storage full / unavailable — keep in memory
   }
   listeners.forEach((l) => l());
+}
+
+export function addCustomExercise(ex: CustomExercise) {
+  setState((s) => ({
+    ...s,
+    customExercises: [ex, ...s.customExercises.filter((x) => x.id !== ex.id)],
+  }));
+}
+
+export function removeCustomExercise(id: string) {
+  setState((s) => ({
+    ...s,
+    customExercises: s.customExercises.filter((x) => x.id !== id),
+  }));
+}
+
+export function addMealLog(meal: MealLog) {
+  setState((s) => {
+    const next = [...s.meals, meal];
+    let kept = 0;
+    const pruned = [...next].reverse().map((m) => {
+      if (!m.image) return m;
+      kept++;
+      return kept > MAX_MEAL_THUMBS ? { ...m, image: undefined } : m;
+    });
+    return { ...s, meals: pruned.reverse() };
+  });
+}
+
+export function removeMealLog(id: string) {
+  setState((s) => ({
+    ...s,
+    meals: s.meals.filter((x) => x.id !== id),
+  }));
 }
 
 function subscribe(l: () => void) {

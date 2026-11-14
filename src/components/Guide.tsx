@@ -1,12 +1,21 @@
+"use client";
 import Link from "next/link";
 import { wrongFeel } from "@/lib/exercise-extras";
-import { EX_BY_ID, videoUrl } from "@/lib/exercises";
-import type { Exercise, Guide as G } from "@/lib/types";
+import { findExerciseById, isCustomExercise } from "@/lib/exercise-lookup";
+import { videoUrl } from "@/lib/exercises";
+import { getState, useApp } from "@/lib/store";
+import type { CustomExercise, Exercise, Guide as G } from "@/lib/types";
 import AttachmentTip from "./AttachmentTip";
-import ExerciseAnim from "./ExerciseAnim";
+import ExerciseCover from "./ExerciseCover";
 
-export function guideFor(item: { exerciseId?: string; custom?: G }): G | null {
-  if (item.exerciseId && EX_BY_ID[item.exerciseId]) return EX_BY_ID[item.exerciseId];
+export function guideFor(
+  item: { exerciseId?: string; custom?: G },
+  customExercises: CustomExercise[] = getState().customExercises,
+): G | null {
+  if (item.exerciseId) {
+    const hit = findExerciseById(item.exerciseId, customExercises);
+    if (hit) return hit;
+  }
   return item.custom ?? null;
 }
 
@@ -23,18 +32,19 @@ export default function Guide({
   guide: G;
   name: string;
   nameEn?: string;
-  /** Show the looping demo photos when the guide is a library exercise. */
+  /** Show the looping demo photos / custom cover when the guide is a library exercise. */
   showAnim?: boolean;
 }) {
-  const lib: Exercise | undefined =
-    "id" in guide ? EX_BY_ID[(guide as { id: string }).id] : undefined;
+  const { customExercises } = useApp();
+  const lib: Exercise | CustomExercise | undefined =
+    "id" in guide ? findExerciseById((guide as { id: string }).id, customExercises) : undefined;
   const hasCues = !!lib && lib.cues.length > 0;
+  const sourceUrl = lib && isCustomExercise(lib) ? lib.sourceUrl : undefined;
+  const sourcePlatform = lib && isCustomExercise(lib) ? lib.sourcePlatform : undefined;
 
   return (
     <div className="space-y-4">
-      {showAnim && lib && (
-        <ExerciseAnim id={lib.id} name={lib.name} note={lib.imageNote} compact />
-      )}
+      {showAnim && lib && <ExerciseCover exerciseId={lib.id} name={lib.name} compact />}
 
       {hasCues && (
         <div>
@@ -108,7 +118,7 @@ export default function Guide({
             {wrongFeel(lib).map((w) => (
               <Link
                 key={w}
-                href={`/coach?q=${encodeURIComponent(`我做${lib.name}(${lib.nameEn})的时候,${w}。是哪里做错了?怎么改?`)}`}
+                href={`/coach?q=${encodeURIComponent(`我做${lib.name}(${lib.nameEn || lib.name})的时候,${w}。是哪里做错了?怎么改?`)}`}
                 className="flex items-center justify-between gap-2 rounded-2xl border border-primary/40 bg-white px-3 py-3 text-[16px] font-semibold text-primary active:scale-[0.99]"
               >
                 <span>{w}?</span>
@@ -119,14 +129,26 @@ export default function Guide({
         </div>
       )}
 
-      <a
-        href={videoUrl(name, nameEn)}
-        target="_blank"
-        rel="noreferrer"
-        className="inline-block text-[15px] font-semibold text-primary underline underline-offset-2"
-      >
-        ▶ 看示范视频
-      </a>
+      <div className="flex flex-wrap gap-4">
+        {sourceUrl && (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-block text-[15px] font-semibold text-primary underline underline-offset-2"
+          >
+            ▶ 打开原视频 ({sourcePlatform || "来源"})
+          </a>
+        )}
+        <a
+          href={videoUrl(name, nameEn)}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-block text-[15px] font-semibold text-primary underline underline-offset-2"
+        >
+          ▶ YouTube 搜示范视频
+        </a>
+      </div>
     </div>
   );
 }

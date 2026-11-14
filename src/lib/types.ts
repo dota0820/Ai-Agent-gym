@@ -132,6 +132,14 @@ export interface Exercise extends Guide {
   shape?: string;
 }
 
+export interface CustomExercise extends Exercise {
+  isCustom: true;
+  sourceUrl?: string;
+  sourcePlatform?: string;
+  imageUrl?: string;
+  createdAt: string;
+}
+
 export interface PlanItem {
   exerciseId?: string;
   name: string;
@@ -190,6 +198,46 @@ export interface Workout {
   watch?: WatchData;
 }
 
+export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+
+export const MEAL_TYPES: { id: MealType; label: string; emoji: string }[] = [
+  { id: "breakfast", label: "早餐", emoji: "🌅" },
+  { id: "lunch", label: "午餐", emoji: "☀️" },
+  { id: "dinner", label: "晚餐", emoji: "🌙" },
+  { id: "snack", label: "加餐", emoji: "🍎" },
+];
+
+export interface MealItem {
+  name: string;
+  portion?: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+export interface MealLog {
+  id: string;
+  loggedAt: string;
+  mealType: MealType;
+  summary: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  items: MealItem[];
+  advice?: string;
+  image?: string;
+  note?: string;
+}
+
+export interface NutritionTargets {
+  calories?: number | null;
+  protein?: number | null;
+  carbs?: number | null;
+  fat?: number | null;
+}
+
 export interface Profile {
   name: string;
   goal: string;
@@ -203,6 +251,7 @@ export interface Profile {
   passcode: string;
   /** Read the coach's replies aloud. */
   speak: boolean;
+  nutritionTarget?: NutritionTargets;
 }
 
 export interface ChatMsg {
@@ -213,6 +262,7 @@ export interface ChatMsg {
   image?: string;
   plan?: Plan;
   logged?: string;
+  mealLogged?: string;
   choices?: string[];
   ts: string;
 }
@@ -223,4 +273,6 @@ export interface AppState {
   active: Workout | null;
   workouts: Workout[];
   chat: ChatMsg[];
+  customExercises: CustomExercise[];
+  meals: MealLog[];
 }

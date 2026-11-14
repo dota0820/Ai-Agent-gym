@@ -2,19 +2,19 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
-import ExerciseAnim from "@/components/ExerciseAnim";
+import ExerciseCover from "@/components/ExerciseCover";
 import Guide from "@/components/Guide";
 import MuscleMap from "@/components/MuscleMap";
-import { btnPrimary, btnSoft, Card } from "@/components/ui";
-import { EX_BY_ID } from "@/lib/exercises";
-import { fmtDate, lastPerformance, setsSummary, useApp } from "@/lib/store";
+import { btnGhost, btnPrimary, btnSoft, Card } from "@/components/ui";
+import { findExerciseById, isCustomExercise } from "@/lib/exercise-lookup";
+import { fmtDate, lastPerformance, removeCustomExercise, setsSummary, useApp } from "@/lib/store";
 import { GROUPS, SUBS } from "@/lib/types";
 
 function Detail() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { workouts } = useApp();
-  const e = EX_BY_ID[id];
+  const { workouts, customExercises } = useApp();
+  const e = findExerciseById(id, customExercises);
   if (!e)
     return (
       <div className="pt-20 text-center">
@@ -27,6 +27,7 @@ function Detail() {
   const group = GROUPS.find((x) => x.id === e.group)!;
   const sub = SUBS[e.group].find((x) => x.id === e.sub);
   const last = lastPerformance(workouts, { exerciseId: e.id, name: e.name });
+  const custom = isCustomExercise(e);
 
   return (
     <div className="space-y-3">
@@ -34,17 +35,24 @@ function Detail() {
         ‹ 返回
       </button>
       <header>
-        <div className="text-xs font-semibold text-primary">
-          {group.label}
-          {sub ? ` › ${sub.label}` : ""}
+        <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+          <span>
+            {group.label}
+            {sub ? ` › ${sub.label}` : ""}
+          </span>
+          {custom && (
+            <span className="rounded-full bg-mint-soft px-2 py-0.5 text-[11px] text-mint">
+              {e.sourcePlatform ? `🔗 ${e.sourcePlatform}` : "自定义动作"}
+            </span>
+          )}
         </div>
         <h1 className="text-2xl font-bold tracking-tight">{e.name}</h1>
         <p className="text-sm text-sub">
-          {e.nameEn} · 新手起始 {e.startWeight}
+          {e.nameEn ? `${e.nameEn} · ` : ""}新手起始 {e.startWeight}
         </p>
       </header>
 
-      <ExerciseAnim id={e.id} name={e.name} note={e.imageNote} />
+      <ExerciseCover exerciseId={e.id} name={e.name} />
 
       <Card>
         <Guide guide={e} name={e.name} nameEn={e.nameEn} showAnim={false} />
@@ -65,11 +73,26 @@ function Detail() {
       )}
 
       <Link
-        href={`/coach?q=${encodeURIComponent(`${e.name}(${e.nameEn})我有点不确定动作对不对,能再仔细讲讲要点吗?`)}`}
+        href={`/coach?q=${encodeURIComponent(`${e.name}${e.nameEn ? `(${e.nameEn})` : ""}我有点不确定动作对不对,能再仔细讲讲要点吗?`)}`}
         className={`${btnSoft} w-full`}
       >
         💬 还是不懂?问教练
       </Link>
+
+      {custom && (
+        <button
+          type="button"
+          className={`${btnGhost} w-full text-sub`}
+          onClick={() => {
+            if (confirm(`确定从我的动作库删除「${e.name}」吗?`)) {
+              removeCustomExercise(e.id);
+              router.replace("/library?g=custom");
+            }
+          }}
+        >
+          删除这个自定义动作
+        </button>
+      )}
     </div>
   );
 }

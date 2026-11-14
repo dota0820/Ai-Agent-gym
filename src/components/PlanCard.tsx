@@ -10,7 +10,7 @@ import { btnPrimary } from "./ui";
 export default function PlanCard({ plan }: { plan: Plan }) {
   const [open, setOpen] = useState<number | null>(null);
   const router = useRouter();
-  const { active } = useApp();
+  const { active, customExercises } = useApp();
   return (
     <div className="rounded-2xl border border-line bg-card">
       <div className="p-4 pb-2">
@@ -20,7 +20,7 @@ export default function PlanCard({ plan }: { plan: Plan }) {
       </div>
       <ul>
         {plan.items.map((it, i) => {
-          const g = guideFor(it);
+          const g = guideFor(it, customExercises);
           return (
             <li key={i} className="border-t border-line">
               <button

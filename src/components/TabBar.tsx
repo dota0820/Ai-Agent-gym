@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/", label: "今天", icon: "🏠" },
   { href: "/coach", label: "教练", icon: "💬" },
+  { href: "/food", label: "饮食", icon: "🥗" },
   { href: "/history", label: "记录", icon: "📒" },
   { href: "/library", label: "动作", icon: "📖" },
   { href: "/me", label: "我的", icon: "🙂" },
@@ -27,7 +28,7 @@ export default function TabBar() {
                   on ? "font-semibold text-primary" : "text-sub"
                 }`}
               >
-                <span className={`text-xl ${on ? "" : "opacity-60 grayscale"}`}>
+                <span className={`text-lg ${on ? "" : "opacity-60 grayscale"}`}>
                   {t.icon}
                 </span>
                 {t.label}

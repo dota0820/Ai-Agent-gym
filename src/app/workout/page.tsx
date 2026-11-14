@@ -2,12 +2,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ExerciseCover from "@/components/ExerciseCover";
 import ExercisePicker from "@/components/ExercisePicker";
 import Guide, { guideFor } from "@/components/Guide";
 import NumInput from "@/components/NumInput";
 import WatchForm from "@/components/WatchForm";
 import { btnGhost, btnPrimary, btnSoft, Card, input } from "@/components/ui";
 import { newExercise } from "@/lib/actions";
+import { findExerciseById, isCustomExercise } from "@/lib/exercise-lookup";
 import {
   fmtDate,
   lastPerformance,
@@ -30,11 +32,12 @@ const mmss = (sec: number) =>
 const FEELINGS = ["😵", "😮‍💨", "🙂", "😄", "🔥"];
 
 export default function WorkoutPage() {
-  const { active, workouts } = useApp();
+  const { active, workouts, customExercises } = useApp();
   const ready = useHydrated();
   const router = useRouter();
   const [now, setNow] = useState(() => Date.now());
   const [openGuide, setOpenGuide] = useState<number | null>(null);
+  const [hiddenImgs, setHiddenImgs] = useState<Record<number, boolean>>({});
   const [picker, setPicker] = useState(false);
   const [finishing, setFinishing] = useState(false);
   const [restEnd, setRestEnd] = useState<number | null>(null);
@@ -149,8 +152,12 @@ export default function WorkoutPage() {
       )}
 
       {active.exercises.map((ex, i) => {
-        const guide = guideFor(ex);
+        const guide = guideFor(ex, customExercises);
         const last = lastPerformance(workouts, ex);
+        const libEx = findExerciseById(ex.exerciseId, customExercises);
+        const hasBigVisual =
+          !!libEx && (!isCustomExercise(libEx) || !!libEx.imageUrl || !!libEx.sourceUrl);
+        const imgShown = hasBigVisual && !hiddenImgs[i];
         return (
           <Card key={i} className="p-0">
             <div className="p-4 pb-2">
@@ -162,16 +169,32 @@ export default function WorkoutPage() {
                     {ex.target ? `${ex.nameEn ? " · " : ""}目标 ${ex.target}` : ""}
                   </div>
                 </div>
-                <button
-                  className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                    openGuide === i ? "bg-primary text-white" : "bg-primary-soft text-primary"
-                  }`}
-                  onClick={() => setOpenGuide(openGuide === i ? null : i)}
-                  aria-expanded={openGuide === i}
-                >
-                  {openGuide === i ? "收起" : "怎么做?"}
-                </button>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {hasBigVisual && (
+                    <button
+                      type="button"
+                      className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs font-semibold text-sub"
+                      onClick={() => setHiddenImgs((m) => ({ ...m, [i]: !m[i] }))}
+                    >
+                      {imgShown ? "收起图" : "大图"}
+                    </button>
+                  )}
+                  <button
+                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                      openGuide === i ? "bg-primary text-white" : "bg-primary-soft text-primary"
+                    }`}
+                    onClick={() => setOpenGuide(openGuide === i ? null : i)}
+                    aria-expanded={openGuide === i}
+                  >
+                    {openGuide === i ? "收起" : "怎么做?"}
+                  </button>
+                </div>
               </div>
+              {imgShown && (
+                <div className="mt-3">
+                  <ExerciseCover exerciseId={ex.exerciseId} name={ex.name} compact />
+                </div>
+              )}
               <div className="mt-2 rounded-lg bg-bg px-3 py-1.5 text-xs text-sub">
                 {last ? (
                   <>
@@ -190,7 +213,7 @@ export default function WorkoutPage() {
               {openGuide === i && (
                 <div className="mt-3 border-t border-line pt-3">
                   {guide ? (
-                    <Guide guide={guide} name={ex.name} nameEn={ex.nameEn} />
+                    <Guide guide={guide} name={ex.name} nameEn={ex.nameEn} showAnim={!imgShown} />
                   ) : (
                     <p className="text-sm text-sub">这个动作没有内置教程,点右上角“问教练”问问看。</p>
                   )}

@@ -5,11 +5,12 @@ import { useState } from "react";
 import PlanCard from "@/components/PlanCard";
 import { btnGhost, btnPrimary, Card, H1 } from "@/components/ui";
 import { startFree } from "@/lib/actions";
+import { computeNutritionTargets, localDateKey, mealsForDate, sumMealMacros } from "@/lib/nutrition";
 import { durationMin, fmtDate, useApp, useHydrated } from "@/lib/store";
 import { GROUPS } from "@/lib/types";
 
 export default function Home() {
-  const { profile, plan, active, workouts } = useApp();
+  const { profile, plan, active, workouts, meals } = useApp();
   const ready = useHydrated();
   const router = useRouter();
   const sorted = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
@@ -19,6 +20,10 @@ export default function Home() {
   const thisWeek = workouts.filter((w) => w.startedAt >= weekAgo).length;
   const hour = now.getHours();
   const hello = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
+
+  const todayMeals = mealsForDate(meals, localDateKey(now));
+  const todayMacros = sumMealMacros(todayMeals);
+  const targets = computeNutritionTargets(profile);
 
   if (!ready) return null;
 
@@ -92,6 +97,25 @@ export default function Home() {
           ✍️ 不用计划,自己记录一次训练
         </button>
       )}
+
+      <Link href="/food" className="block">
+        <Card className="flex items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold text-mint">🥗 今日饮食营养</div>
+            <div className="mt-0.5 text-sm font-bold tabular-nums">
+              {todayMacros.calories} / {targets.calories} kcal · 蛋白 {Math.round(todayMacros.protein)}/{targets.protein}g
+            </div>
+            <div className="text-xs text-sub">
+              {todayMeals.length > 0
+                ? `已记 ${todayMeals.length} 餐 · 碳水 ${Math.round(todayMacros.carbs)}g`
+                : "拍食物照片，AI 帮你算蛋白质、碳水和热量"}
+            </div>
+          </div>
+          <span className="shrink-0 rounded-full bg-mint-soft px-3 py-1.5 text-xs font-semibold text-mint">
+            记一餐 ›
+          </span>
+        </Card>
+      </Link>
 
       {last && (
         <section>

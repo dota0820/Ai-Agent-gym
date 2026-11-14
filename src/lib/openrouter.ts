@@ -1,9 +1,13 @@
 import { z } from "zod";
-import { COACH_TOOLS, WATCH_PROMPT, WatchSchema } from "./coach-tools";
+import { COACH_TOOLS } from "./coach-tools";
 
 const ENDPOINT = `${process.env.OPENROUTER_BASE_URL || "https://openrouter.ai/api/v1"}/chat/completions`;
+
 export const OPENROUTER_MODEL =
-  process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-5.5";
+  process.env.OPENROUTER_MODEL || "google/gemini-2.5-flash";
+
+export const OPENROUTER_VISION_MODEL =
+  process.env.OPENROUTER_VISION_MODEL || OPENROUTER_MODEL;
 
 export class OpenRouterError extends Error {
   constructor(
@@ -24,7 +28,7 @@ type Msg =
   | { role: "assistant"; content: string | null; tool_calls?: ToolCall[] }
   | { role: "tool"; tool_call_id: string; content: string };
 
-async function post(body: Record<string, unknown>): Promise<Response> {
+async function post(body: Record<string, unknown>, model = OPENROUTER_MODEL): Promise<Response> {
   const res = await fetch(ENDPOINT, {
     method: "POST",
     headers: {
@@ -32,7 +36,7 @@ async function post(body: Record<string, unknown>): Promise<Response> {
       "Content-Type": "application/json",
       "X-Title": "Gym Coach",
     },
-    body: JSON.stringify({ model: OPENROUTER_MODEL, ...body }),
+    body: JSON.stringify({ model, ...body }),
   });
   if (!res.ok) {
     const j = await res.json().catch(() => null);
@@ -59,9 +63,16 @@ const tools = COACH_TOOLS.map((t) => ({
   function: {
     name: t.name,
     description: t.description,
-    parameters: z.toJSONSchema(t.schema),
+    parameters: cleanJsonSchema(z.toJSONSchema(t.schema) as Record<string, unknown>),
   },
 }));
+
+/** Remove top-level `$schema` metadata that some OpenRouter providers reject. */
+function cleanJsonSchema(raw: Record<string, unknown>): Record<string, unknown> {
+  const copy = { ...raw };
+  delete copy.$schema;
+  return copy;
+}
 
 /** One streamed model turn: forwards text, returns the text and any tool calls. */
 async function streamTurn(
@@ -84,12 +95,20 @@ async function streamTurn(
       throw new OpenRouterError(chunk.error.code ?? 502, chunk.error.message ?? "");
     const delta = chunk.choices?.[0]?.delta;
     if (!delta) return;
-    if (delta.content) {
+    if (typeof delta.content === "string" && delta.content) {
       text += delta.content;
       send({ type: "text", text: delta.content });
     }
     for (const tc of delta.tool_calls ?? []) {
-      const i = tc.index ?? 0;
+      let i = tc.index as number | undefined;
+      if (i == null) {
+        if (tc.id) {
+          const found = calls.findIndex((c) => c?.id === tc.id);
+          i = found >= 0 ? found : calls.length;
+        } else {
+          i = Math.max(0, calls.length - 1);
+        }
+      }
       if (!calls[i]) {
         calls[i] = { id: "", type: "function", function: { name: "", arguments: "" } };
       }
@@ -113,7 +132,11 @@ async function streamTurn(
     }
   }
   handle(buf.trim());
-  return { text, calls: calls.filter(Boolean) };
+  const cleanCalls = calls.filter(Boolean).map((c, idx) => ({
+    ...c,
+    id: c.id || `call_${idx}_${Date.now()}`,
+  }));
+  return { text, calls: cleanCalls };
 }
 
 export async function runOpenRouterChat(opts: {
@@ -169,31 +192,72 @@ export async function runOpenRouterChat(opts: {
   }
 }
 
-export async function readWatchWithOpenRouter(imageDataUrl: string) {
-  const res = await post({
-    max_tokens: 1000,
-    response_format: {
-      type: "json_schema",
-      json_schema: { name: "watch_summary", strict: true, schema: z.toJSONSchema(WatchSchema) },
-    },
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "image_url", image_url: { url: imageDataUrl } },
-          { type: "text", text: `${WATCH_PROMPT}\n只输出 JSON。` },
-        ],
-      },
-    ],
-  });
-  const j = await res.json();
-  const raw: string = j.choices?.[0]?.message?.content ?? "";
+function extractJsonObject(raw: string): unknown {
   const m = /\{[\s\S]*\}/.exec(raw);
   if (!m) return null;
   try {
-    const parsed = WatchSchema.safeParse(JSON.parse(m[0]));
-    return parsed.success ? parsed.data : null;
+    return JSON.parse(m[0]);
   } catch {
     return null;
   }
+}
+
+export async function structuredOpenRouter<T>(opts: {
+  schema: z.ZodType<T>;
+  schemaName: string;
+  prompt: string;
+  image?: string;
+  maxTokens?: number;
+  model?: string;
+}): Promise<T | null> {
+  const model = opts.model || OPENROUTER_VISION_MODEL;
+  const max_tokens = opts.maxTokens ?? 1800;
+  const jsonSchema = cleanJsonSchema(z.toJSONSchema(opts.schema) as Record<string, unknown>);
+
+  const buildMessages = (extraSuffix = ""): Msg[] => [
+    {
+      role: "user",
+      content: opts.image
+        ? [
+            { type: "image_url", image_url: { url: opts.image } },
+            { type: "text", text: `${opts.prompt}${extraSuffix}` },
+          ]
+        : `${opts.prompt}${extraSuffix}`,
+    },
+  ];
+
+  let res: Response;
+  try {
+    res = await post(
+      {
+        max_tokens,
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: opts.schemaName, strict: true, schema: jsonSchema },
+        },
+        messages: buildMessages("\n只输出符合 schema 的 JSON。"),
+      },
+      model,
+    );
+  } catch (err) {
+    // Fallback if a specific OpenRouter upstream rejects strict json_schema.
+    if (err instanceof OpenRouterError && (err.status === 400 || err.status === 422)) {
+      res = await post(
+        {
+          max_tokens,
+          messages: buildMessages(
+            `\n\n请严格只输出一个合法的 JSON 对象（不要用 markdown 代码块包裹，也不要附加说明文字），结构示例参考:\n${JSON.stringify(jsonSchema)}`,
+          ),
+        },
+        model,
+      );
+    } else {
+      throw err;
+    }
+  }
+
+  const j = await res.json();
+  const raw: string = j.choices?.[0]?.message?.content ?? "";
+  const parsed = opts.schema.safeParse(extractJsonObject(raw));
+  return parsed.success ? parsed.data : null;
 }
