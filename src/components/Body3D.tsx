@@ -29,19 +29,27 @@ export default function Body3D({
   onPick,
   theme,
   onUnavailable,
+  recovery,
+  recoveryHours = 48,
 }: {
   selected: BodyPart | null;
   onPick: (p: BodyPart) => void;
   theme: Theme;
   onUnavailable?: () => void;
+  /** Hours since each part was last trained; recently trained parts are tinted as recovering. */
+  recovery?: Partial<Record<BodyPart, number>>;
+  /** How many hours a part stays tinted. */
+  recoveryHours?: number;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const selectedRef = useRef(selected);
+  const recoveryRef = useRef(recovery);
   const onPickRef = useRef(onPick);
   const onUnavailableRef = useRef(onUnavailable);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     selectedRef.current = selected;
+    recoveryRef.current = recovery;
     onPickRef.current = onPick;
     onUnavailableRef.current = onUnavailable;
   });
@@ -78,6 +86,8 @@ export default function Body3D({
       const MUSCLE = col(dark ? "#b8463c" : "#c24c40");
       const MUSCLE_DIM = col(dark ? "#5a2a2a" : "#dcb0a8");
       const HOVER = col("#f08a6e");
+      const RECOVERING = col(dark ? "#8f97a8" : "#aab0bd");
+      const base = new THREE.Color();
       const PICK = col(dark ? tc.mint : tc.muscle);
 
       const scene = new THREE.Scene();
@@ -370,7 +380,11 @@ export default function Body3D({
           const part = m.userData.part as BodyPart;
           const isSel = part === sel;
           const isHover = part === hover && !isSel;
-          m.material.color.lerp(isSel ? PICK : isHover ? HOVER : sel ? MUSCLE_DIM : MUSCLE, k);
+          // recently trained parts fade from the "recovering" colour back to normal
+          const h = recoveryRef.current?.[part];
+          const rest = h === undefined ? 1 : Math.min(1, h / recoveryHours);
+          base.copy(RECOVERING).lerp(MUSCLE, rest * rest);
+          m.material.color.lerp(isSel ? PICK : isHover ? HOVER : sel ? MUSCLE_DIM : base, k);
           m.material.emissive.lerp(isSel ? PICK : black, k);
           m.material.emissiveIntensity = isSel ? (dark ? 0.55 : 0.18) + Math.sin(t * 5) * 0.12 : 0;
         }
@@ -430,7 +444,7 @@ export default function Body3D({
       disposed = true;
       cleanup();
     };
-  }, [theme]);
+  }, [theme, recoveryHours]);
 
   return (
     <div

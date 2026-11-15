@@ -82,6 +82,23 @@ export function startFree() {
   }));
 }
 
+/** Starts a new session with the same exercises as an earlier one (weights prefilled from it). */
+export function repeatWorkout(w: Workout) {
+  const next: Workout = {
+    id: uid(),
+    title: w.title,
+    focus: w.focus,
+    startedAt: new Date().toISOString(),
+    exercises: w.exercises.map((e) =>
+      newExercise(
+        { exerciseId: e.exerciseId, name: e.name, nameEn: e.nameEn, custom: e.custom },
+        { sets: e.sets.filter((s) => s.done).length || e.sets.length, restSec: e.restSec },
+      ),
+    ),
+  };
+  setState((s) => ({ ...s, active: next }));
+}
+
 // ───────── coach chat ─────────
 
 let busy = false;

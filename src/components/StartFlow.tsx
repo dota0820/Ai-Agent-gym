@@ -1,7 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { repeatWorkout } from "@/lib/actions";
 import { subsFor } from "@/lib/exercises";
+import { hoursSinceTrained, RECOVERY_HOURS, todaySuggestion, weekDots } from "@/lib/recovery";
+import { useApp } from "@/lib/store";
 import { isDark, useTheme } from "@/lib/theme";
 import { GROUPS } from "@/lib/types";
 import Body3D, { type BodyPart } from "./Body3D";
@@ -55,6 +58,15 @@ export default function StartFlow({ name }: { name: string }) {
       clearTimeout(b);
     };
   }, [animate, line1.done]);
+
+  const { workouts, customExercises, active } = useApp();
+  const [now] = useState(() => Date.now());
+  const recovery = hoursSinceTrained(workouts, customExercises, now);
+  const tip = todaySuggestion(workouts, customExercises, now);
+  const dots = weekDots(workouts, now);
+  const weekCount = dots.filter((d) => d.done).length;
+  const lastWorkout = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+  const hasRecovering = Object.values(recovery).some((h) => h !== undefined && h < RECOVERY_HOURS);
 
   const [no3d, setNo3d] = useState(false);
   const [part, setPart] = useState<BodyPart | null>(null);
@@ -135,6 +147,43 @@ export default function StartFlow({ name }: { name: string }) {
       </div>
 
       {bodyOn && (
+        <div className={`mt-2 space-y-2 ${animate ? "rise-in" : ""}`}>
+          <div
+            className="flex items-center gap-1.5"
+            role="img"
+            aria-label={`本周已经练了 ${weekCount} 天`}
+          >
+            {dots.map((d) => (
+              <span
+                key={d.label}
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${
+                  d.done
+                    ? "bg-primary text-white"
+                    : d.today
+                      ? "border-2 border-primary text-primary"
+                      : "border border-line text-sub"
+                } ${d.future ? "opacity-50" : ""}`}
+              >
+                {d.done ? "✓" : d.label}
+              </span>
+            ))}
+            <span className="ml-1 text-xs text-sub">本周 {weekCount} 天</span>
+          </div>
+
+          <button
+            type="button"
+            disabled={!tip.part}
+            onClick={() => tip.part && pick(tip.part)}
+            className="flex w-full items-center gap-2 rounded-2xl border border-line bg-card px-3 py-2.5 text-left text-sm"
+          >
+            <span aria-hidden>💡</span>
+            <span className="min-w-0 flex-1 leading-snug">{tip.text}</span>
+            {tip.part && <span className="shrink-0 font-semibold text-primary">就练这个 ›</span>}
+          </button>
+        </div>
+      )}
+
+      {bodyOn && (
         <div
           className={`relative mt-2 overflow-hidden rounded-3xl border border-line bg-card ${
             animate ? "rise-in" : ""
@@ -157,7 +206,21 @@ export default function StartFlow({ name }: { name: string }) {
                 onPick={pick}
                 theme={theme}
                 onUnavailable={() => setNo3d(true)}
+                recovery={recovery}
+                recoveryHours={RECOVERY_HOURS}
               />
+            </div>
+          )}
+          {!no3d && hasRecovering && (
+            <div className="flex items-center justify-center gap-4 pb-1 text-[11px] text-sub">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#aab0bd]" />
+                灰色 = 恢复中({RECOVERY_HOURS} 小时内练过)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#c24c40]" />
+                红色 = 可以练
+              </span>
             </div>
           )}
           {no3d && (
@@ -195,6 +258,20 @@ export default function StartFlow({ name }: { name: string }) {
             ))}
           </div>
         </div>
+      )}
+
+      {bodyOn && lastWorkout && !active && lastWorkout.exercises.length > 0 && (
+        <button
+          type="button"
+          onClick={() => {
+            repeatWorkout(lastWorkout);
+            router.push("/workout");
+          }}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-line bg-card px-3 py-2.5 text-sm font-semibold"
+        >
+          <span aria-hidden>↻</span>
+          <span className="truncate">再练一次上次的「{lastWorkout.title}」</span>
+        </button>
       )}
 
       {part && group && (
