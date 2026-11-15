@@ -16,6 +16,12 @@ import {
 } from "@/lib/store";
 import type { WatchData, WorkoutExercise } from "@/lib/types";
 
+/** YYYY-MM-DD in the phone's own time zone (what a date input expects). */
+function localDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 const FEELINGS = ["😵", "😮‍💨", "🙂", "😄", "🔥"];
 
 function best(e: WorkoutExercise) {
@@ -64,6 +70,27 @@ function Detail() {
       </div>
     );
 
+  // Move the session to another day, keeping its time of day and duration.
+  const moveToDate = (ymd: string) => {
+    const [y, mo, d] = ymd.split("-").map(Number);
+    const start = new Date(w.startedAt);
+    const shifted = new Date(start);
+    shifted.setFullYear(y, mo - 1, d);
+    const delta = shifted.getTime() - start.getTime();
+    if (!delta || isNaN(delta)) return;
+    setState((s) => ({
+      ...s,
+      workouts: s.workouts.map((x) =>
+        x.id === w.id
+          ? {
+              ...x,
+              startedAt: shifted.toISOString(),
+              endedAt: x.endedAt ? new Date(new Date(x.endedAt).getTime() + delta).toISOString() : x.endedAt,
+            }
+          : x,
+      ),
+    }));
+  };
   const setWatch = (watch: WatchData) =>
     setState((s) => ({
       ...s,
@@ -78,9 +105,22 @@ function Detail() {
       </Link>
       <header>
         <h1 className="text-2xl font-bold tracking-tight">{w.title}</h1>
-        <p className="mt-1 text-sm text-sub">
-          {fmtDate(w.startedAt)}
-          {w.feeling ? ` · 感受 ${FEELINGS[w.feeling - 1]}` : ""}
+        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-sub">
+          <span>
+            {fmtDate(w.startedAt)}
+            {w.feeling ? ` · 感受 ${FEELINGS[w.feeling - 1]}` : ""}
+          </span>
+          <label className="relative cursor-pointer font-semibold text-primary underline underline-offset-2">
+            改日期
+            <input
+              type="date"
+              aria-label="修改这次训练的日期"
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              value={localDate(w.startedAt)}
+              max={localDate(new Date().toISOString())}
+              onChange={(e) => e.target.value && moveToDate(e.target.value)}
+            />
+          </label>
         </p>
       </header>
 
