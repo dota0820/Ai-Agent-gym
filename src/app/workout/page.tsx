@@ -75,6 +75,19 @@ export default function WorkoutPage() {
     );
 
   const elapsed = Math.max(0, (now - new Date(active.startedAt).getTime()) / 1000);
+  // A session dated on an earlier day is a back-filled record: no live timer.
+  const dayOf = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const sessionDay = dayOf(new Date(active.startedAt));
+  const today = dayOf(new Date(now));
+  const backfill = sessionDay !== today;
+  const setDay = (ymd: string) => {
+    if (!ymd) return;
+    const [y, mo, d] = ymd.split("-").map(Number);
+    // keep "now" as the start time when switching back to today, noon for other days
+    const next = ymd === today ? new Date() : new Date(y, mo - 1, d, 12, 0, 0);
+    update((w) => ({ ...w, startedAt: next.toISOString() }));
+  };
   const doneSets = active.exercises.reduce(
     (n, e) => n + e.sets.filter((s) => s.done).length,
     0,
@@ -112,7 +125,9 @@ export default function WorkoutPage() {
   function finish() {
     const w: Workout = {
       ...active!,
-      endedAt: new Date().toISOString(),
+      // a back-filled record has no real end time; its length comes from the watch field if given
+      endedAt: backfill ? undefined : new Date().toISOString(),
+      title: active!.title.trim() || "自由训练",
       feeling,
       notes: notes.trim() || undefined,
       watch:
@@ -128,10 +143,29 @@ export default function WorkoutPage() {
   return (
     <div className="space-y-3 pb-28">
       <header className="sticky top-0 z-10 -mx-4 flex items-center justify-between bg-bg/95 px-4 py-2 backdrop-blur">
-        <div>
-          <div className="text-lg font-bold leading-tight">{active.title}</div>
-          <div className="text-xs text-sub">
-            ⏱ {mmss(elapsed)} · 已完成 {doneSets}/{totalSets} 组
+        <div className="min-w-0 flex-1 pr-2">
+          <input
+            aria-label="训练名称"
+            value={active.title}
+            placeholder="给这次训练起个名字"
+            onChange={(e) => update((w) => ({ ...w, title: e.target.value }))}
+            className="w-full truncate rounded-lg border border-transparent bg-transparent text-lg font-bold leading-tight outline-none focus:border-primary focus:bg-surface focus:px-2"
+          />
+          <div className="flex flex-wrap items-center gap-x-2 text-xs text-sub">
+            <span>
+              {backfill ? "📝 补记" : `⏱ ${mmss(elapsed)}`} · 已完成 {doneSets}/{totalSets} 组
+            </span>
+            <label className="relative cursor-pointer font-semibold text-primary underline underline-offset-2">
+              📅 {backfill ? sessionDay.slice(5).replace("-", "月") + "日" : "今天"}
+              <input
+                type="date"
+                aria-label="训练日期"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                value={sessionDay}
+                max={today}
+                onChange={(e) => setDay(e.target.value)}
+              />
+            </label>
           </div>
         </div>
         <div className="flex gap-2">
@@ -376,7 +410,11 @@ export default function WorkoutPage() {
           >
             <h2 className="text-xl font-bold">练完啦!🎉</h2>
             <p className="mt-1 text-sm text-sub">
-              完成 {doneSets} 组 · 用时 {Math.max(1, Math.round(elapsed / 60))} 分钟。没打勾的组不会被记录。
+              完成 {doneSets} 组 ·{" "}
+              {backfill
+                ? `补记到 ${sessionDay}(训练时长可以填在下面“时长”里)`
+                : `用时 ${Math.max(1, Math.round(elapsed / 60))} 分钟`}
+              。没打勾的组不会被记录。
             </p>
 
             <div className="mt-4 text-sm font-semibold">今天感觉怎么样?</div>
