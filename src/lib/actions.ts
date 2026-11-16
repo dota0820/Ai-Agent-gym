@@ -4,6 +4,7 @@ import { formatGymsContext } from "./equipment";
 import { allExerciseNamesForPrompt, findExerciseById } from "./exercise-lookup";
 import { customExerciseFromGuide, guideFromCoach } from "./custom-exercise";
 import { nutritionContextForCoach } from "./nutrition";
+import { parseRepRange, targetRirWords } from "./rir";
 import {
   addCustomExercise,
   addMealLog,
@@ -32,7 +33,14 @@ export function newExercise(
     nameEn?: string;
     custom?: Guide;
   },
-  opts: { sets?: number; reps?: string; restSec?: number; weight?: string; note?: string } = {},
+  opts: {
+    sets?: number;
+    reps?: string;
+    restSec?: number;
+    weight?: string;
+    note?: string;
+    targetRir?: number;
+  } = {},
 ): WorkoutExercise {
   const last = lastPerformance(getState().workouts, base);
   const lastDone = last?.exercise.sets.filter((s) => s.done) ?? [];
@@ -41,8 +49,12 @@ export function newExercise(
   return {
     ...base,
     target: opts.reps
-      ? `${n} 组 × ${opts.reps}${opts.weight ? ` · ${opts.weight}` : ""}`
+      ? `${n} 组 × ${opts.reps}${opts.weight ? ` · ${opts.weight}` : ""}${
+          opts.targetRir != null ? ` · ${targetRirWords(opts.targetRir)}` : ""
+        }`
       : undefined,
+    targetRir: opts.targetRir,
+    repRange: parseRepRange(opts.reps),
     restSec: opts.restSec ?? 75,
     note: opts.note,
     sets: Array.from({ length: n }, (_, i) => ({
@@ -62,7 +74,14 @@ export function startFromPlan(plan: Plan) {
     exercises: plan.items.map((it) =>
       newExercise(
         { exerciseId: it.exerciseId, name: it.name, nameEn: it.nameEn, custom: it.custom },
-        { sets: it.sets, reps: it.reps, restSec: it.restSec, weight: it.weight, note: it.note },
+        {
+          sets: it.sets,
+          reps: it.reps,
+          restSec: it.restSec,
+          weight: it.weight,
+          note: it.note,
+          targetRir: it.targetRir,
+        },
       ),
     ),
   };
@@ -89,12 +108,18 @@ export function repeatWorkout(w: Workout) {
     title: w.title,
     focus: w.focus,
     startedAt: new Date().toISOString(),
-    exercises: w.exercises.map((e) =>
-      newExercise(
+    exercises: w.exercises.map((e) => ({
+      ...newExercise(
         { exerciseId: e.exerciseId, name: e.name, nameEn: e.nameEn, custom: e.custom },
-        { sets: e.sets.filter((s) => s.done).length || e.sets.length, restSec: e.restSec },
+        {
+          sets: e.sets.filter((s) => s.done).length || e.sets.length,
+          restSec: e.restSec,
+          targetRir: e.targetRir,
+        },
       ),
-    ),
+      repRange: e.repRange,
+      target: e.target,
+    })),
   };
   setState((s) => ({ ...s, active: next }));
 }
@@ -235,6 +260,7 @@ function toPlan(p: any): Plan {
         restSec: e.rest_seconds,
         weight: e.suggested_weight,
         note: e.coach_note,
+        targetRir: typeof e.target_rir === "number" ? e.target_rir : undefined,
         custom: !lib && c ? guideFromCoach(c) : undefined,
       };
     }),
@@ -261,6 +287,7 @@ function toWorkout(w: any): Workout {
         sets: (e.sets ?? []).map((s: any) => ({
           weight: s.weight_kg ?? null,
           reps: s.reps ?? null,
+          rir: typeof s.rir === "number" ? Math.max(0, Math.min(4, s.rir)) : null,
           done: true,
         })),
       };

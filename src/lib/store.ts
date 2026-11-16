@@ -465,7 +465,12 @@ export function setsSummary(e: WorkoutExercise): string {
   const done = e.sets.filter((s) => s.done);
   if (!done.length) return "未完成";
   return done
-    .map((s) => `${s.weight ? `${s.weight}kg` : "自重"}×${s.reps ?? "?"}`)
+    .map(
+      (s) =>
+        `${s.weight ? `${s.weight}kg` : "自重"}×${s.reps ?? "?"}${
+          s.rir != null ? ` RIR${s.rir >= 4 ? "4+" : s.rir}` : ""
+        }`,
+    )
     .join("  ");
 }
 

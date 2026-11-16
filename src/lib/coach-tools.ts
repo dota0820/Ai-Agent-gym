@@ -55,6 +55,13 @@ const planSchema = z.object({
         reps: z.string().describe("例如 10-12,或 30秒"),
         rest_seconds: z.number().int().min(0).max(300),
         suggested_weight: z.string().optional().describe("例如 20 kg、每只 5 kg"),
+        target_rir: z
+          .number()
+          .int()
+          .min(0)
+          .max(4)
+          .optional()
+          .describe("每组做完要留几次力(RIR),新手一般 2–3,孤立小动作可以 1–2"),
         coach_note: z.string().optional().describe("这次最该注意的一个要点"),
         custom_instructions: guideSchema.optional(),
       }),
@@ -77,6 +84,14 @@ const logSchema = z.object({
           z.object({
             weight_kg: z.number().nullable().describe("自重填 null"),
             reps: z.number().int(),
+            rir: z
+              .number()
+              .int()
+              .min(0)
+              .max(4)
+              .nullable()
+              .optional()
+              .describe("用户说的这组还能再做几次(RIR),没说就不填"),
           }),
         ),
       }),

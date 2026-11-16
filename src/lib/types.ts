@@ -163,6 +163,8 @@ export interface PlanItem {
   weight?: string;
   note?: string;
   custom?: Guide;
+  /** How many reps to leave in the tank on each set (RIR). */
+  targetRir?: number;
 }
 
 export interface Plan {
@@ -178,6 +180,8 @@ export interface SetLog {
   weight: number | null;
   reps: number | null;
   done: boolean;
+  /** Reps in reserve after the set: 0 = could not do another, 4 = four or more. */
+  rir?: number | null;
 }
 
 export interface WorkoutExercise {
@@ -188,6 +192,10 @@ export interface WorkoutExercise {
   restSec?: number;
   note?: string;
   custom?: Guide;
+  /** Target reps in reserve, from the coach's plan. */
+  targetRir?: number;
+  /** Target rep range, e.g. [10, 12]. */
+  repRange?: [number, number];
   sets: SetLog[];
 }
 

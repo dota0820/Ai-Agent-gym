@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { saveToLibrary, startFromPlan } from "@/lib/actions";
+import { targetRirWords } from "@/lib/rir";
 import { useApp } from "@/lib/store";
 import { MUSCLE_LABEL, type Muscle, type Plan } from "@/lib/types";
 import Guide, { guideFor } from "./Guide";
@@ -41,6 +42,7 @@ export default function PlanCard({ plan }: { plan: Plan }) {
                     {it.nameEn ? `${it.nameEn} · ` : ""}
                     {it.sets} 组 × {it.reps}
                     {it.weight ? ` · ${it.weight}` : ""}
+                    {it.targetRir != null ? ` · ${targetRirWords(it.targetRir)}` : ""}
                   </span>
                   {target && (
                     <span className="mt-0.5 block text-xs font-semibold text-primary">

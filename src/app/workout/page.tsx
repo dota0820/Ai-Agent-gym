@@ -6,6 +6,18 @@ import ExerciseCover from "@/components/ExerciseCover";
 import ExercisePicker from "@/components/ExercisePicker";
 import Guide, { guideFor } from "@/components/Guide";
 import NumInput from "@/components/NumInput";
+import {
+  adviseNextSession,
+  adviseNextSet,
+  DEFAULT_TARGET_RIR,
+  isTimedExercise,
+  judgeSet,
+  RIR_OPTIONS,
+  rirLabel,
+  rirWords,
+  VERDICT_TEXT,
+  type WeightAdvice,
+} from "@/lib/rir";
 import WatchForm from "@/components/WatchForm";
 import { btnGhost, btnPrimary, btnSoft, Card, input } from "@/components/ui";
 import { newExercise, saveToLibrary } from "@/lib/actions";
@@ -24,8 +36,61 @@ function update(fn: (w: Workout) => Workout) {
   setState((s) => (s.active ? { ...s, active: fn(s.active) } : s));
 }
 function updateEx(i: number, fn: (e: WorkoutExercise) => WorkoutExercise) {
-  update((w) => ({ ...w, exercises: w.exercises.map((e, j) => (j === i ? fn(e) : e)) }));
+  update((w) => ({
+    ...w,
+    exercises: w.exercises.map((e, j) => (j === i ? fn(e) : e)),
+  }));
 }
+/** Set the RIR of one set (tap the same value again to clear it). */
+function setRir(i: number, k: number, rir: number | null) {
+  updateEx(i, (e) => ({
+    ...e,
+    sets: e.sets.map((x, j) =>
+      j === k ? { ...x, rir: x.rir === rir ? null : rir } : x,
+    ),
+  }));
+}
+
+/** Apply a suggested weight to every set of an exercise that isn't done yet, from set `from` on. */
+function applyWeight(i: number, weight: number, from = 0) {
+  updateEx(i, (e) => ({
+    ...e,
+    sets: e.sets.map((x, j) => (j >= from && !x.done ? { ...x, weight } : x)),
+  }));
+}
+
+const VERDICT_STYLE = {
+  light: "bg-primary-soft text-primary",
+  right: "bg-mint-soft text-mint",
+  heavy: "bg-[#fdecea] text-[#c0392b]",
+} as const;
+
+function AdviceLine({
+  advice,
+  onApply,
+}: {
+  advice: WeightAdvice;
+  onApply?: () => void;
+}) {
+  return (
+    <div
+      className={`flex items-center justify-between gap-2 rounded-lg px-3 py-1.5 text-xs font-semibold ${
+        VERDICT_STYLE[advice.verdict]
+      }`}
+    >
+      <span>💡 {advice.text}</span>
+      {onApply && (
+        <button
+          onClick={onApply}
+          className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-[11px] font-bold shadow-sm"
+        >
+          改成 {advice.weight}kg
+        </button>
+      )}
+    </div>
+  );
+}
+
 const mmss = (sec: number) =>
   `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
 
@@ -74,7 +139,10 @@ export default function WorkoutPage() {
       </div>
     );
 
-  const elapsed = Math.max(0, (now - new Date(active.startedAt).getTime()) / 1000);
+  const elapsed = Math.max(
+    0,
+    (now - new Date(active.startedAt).getTime()) / 1000,
+  );
   // A session dated on an earlier day is a back-filled record: no live timer.
   const dayOf = (d: Date) =>
     `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -131,7 +199,9 @@ export default function WorkoutPage() {
       feeling,
       notes: notes.trim() || undefined,
       watch:
-        watch.durationMin || watch.calories || watch.avgHr || watch.maxHr ? watch : undefined,
+        watch.durationMin || watch.calories || watch.avgHr || watch.maxHr
+          ? watch
+          : undefined,
       exercises: active!.exercises
         .map((e) => ({ ...e, sets: e.sets.filter((s) => s.done) }))
         .filter((e) => e.sets.length),
@@ -153,10 +223,14 @@ export default function WorkoutPage() {
           />
           <div className="flex flex-wrap items-center gap-x-2 text-xs text-sub">
             <span>
-              {backfill ? "📝 补记" : `⏱ ${mmss(elapsed)}`} · 已完成 {doneSets}/{totalSets} 组
+              {backfill ? "📝 补记" : `⏱ ${mmss(elapsed)}`} · 已完成 {doneSets}/
+              {totalSets} 组
             </span>
             <label className="relative cursor-pointer font-semibold text-primary underline underline-offset-2">
-              📅 {backfill ? sessionDay.slice(5).replace("-", "月") + "日" : "今天"}
+              📅{" "}
+              {backfill
+                ? sessionDay.slice(5).replace("-", "月") + "日"
+                : "今天"}
               <input
                 type="date"
                 aria-label="训练日期"
@@ -169,7 +243,10 @@ export default function WorkoutPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href="/coach" className="rounded-xl border border-line bg-card px-3 py-2 text-sm">
+          <Link
+            href="/coach"
+            className="rounded-xl border border-line bg-card px-3 py-2 text-sm"
+          >
             问教练
           </Link>
           <button
@@ -182,15 +259,32 @@ export default function WorkoutPage() {
       </header>
 
       {active.exercises.length === 0 && (
-        <p className="py-6 text-center text-sm text-sub">还没有动作,点下面的按钮添加第一个动作。</p>
+        <p className="py-6 text-center text-sm text-sub">
+          还没有动作,点下面的按钮添加第一个动作。
+        </p>
       )}
 
       {active.exercises.map((ex, i) => {
         const guide = guideFor(ex, customExercises);
         const last = lastPerformance(workouts, ex);
         const libEx = findExerciseById(ex.exerciseId, customExercises);
+        const targetRir = ex.targetRir ?? DEFAULT_TARGET_RIR;
+        const timed = isTimedExercise(libEx, ex);
+        const sessionAdvice =
+          !timed && last && !ex.sets.some((x) => x.done)
+            ? adviseNextSession(
+                last.exercise.sets,
+                targetRir,
+                ex.repRange,
+                libEx,
+              )
+            : undefined;
+        const showSessionAdvice =
+          sessionAdvice?.weight != null &&
+          ex.sets.some((x) => !x.done && x.weight !== sessionAdvice.weight);
         const hasBigVisual =
-          !!libEx && (!isCustomExercise(libEx) || !!libEx.imageUrl || !!libEx.sourceUrl);
+          !!libEx &&
+          (!isCustomExercise(libEx) || !!libEx.imageUrl || !!libEx.sourceUrl);
         const imgShown = hasBigVisual && !hiddenImgs[i];
         return (
           <Card key={i} className="p-0">
@@ -200,7 +294,9 @@ export default function WorkoutPage() {
                   <div className="text-[17px] font-bold">{ex.name}</div>
                   <div className="text-xs text-sub">
                     {ex.nameEn}
-                    {ex.target ? `${ex.nameEn ? " · " : ""}目标 ${ex.target}` : ""}
+                    {ex.target
+                      ? `${ex.nameEn ? " · " : ""}目标 ${ex.target}`
+                      : ""}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -208,14 +304,18 @@ export default function WorkoutPage() {
                     <button
                       type="button"
                       className="rounded-full border border-line bg-bg px-2.5 py-1 text-xs font-semibold text-sub"
-                      onClick={() => setHiddenImgs((m) => ({ ...m, [i]: !m[i] }))}
+                      onClick={() =>
+                        setHiddenImgs((m) => ({ ...m, [i]: !m[i] }))
+                      }
                     >
                       {imgShown ? "收起图" : "大图"}
                     </button>
                   )}
                   <button
                     className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                      openGuide === i ? "bg-primary text-white" : "bg-primary-soft text-primary"
+                      openGuide === i
+                        ? "bg-primary text-white"
+                        : "bg-primary-soft text-primary"
                     }`}
                     onClick={() => setOpenGuide(openGuide === i ? null : i)}
                     aria-expanded={openGuide === i}
@@ -226,19 +326,33 @@ export default function WorkoutPage() {
               </div>
               {imgShown && (
                 <div className="mt-3">
-                  <ExerciseCover exerciseId={ex.exerciseId} name={ex.name} compact />
+                  <ExerciseCover
+                    exerciseId={ex.exerciseId}
+                    name={ex.name}
+                    compact
+                  />
                 </div>
               )}
               <div className="mt-2 rounded-lg bg-bg px-3 py-1.5 text-xs text-sub">
                 {last ? (
                   <>
                     上次({fmtDate(last.workout.startedAt)}):
-                    <span className="font-semibold text-ink">{setsSummary(last.exercise)}</span>
+                    <span className="font-semibold text-ink">
+                      {setsSummary(last.exercise)}
+                    </span>
                   </>
                 ) : (
                   "第一次做这个动作,从轻的开始,先把动作做对 ✨"
                 )}
               </div>
+              {sessionAdvice && showSessionAdvice && (
+                <div className="mt-1.5">
+                  <AdviceLine
+                    advice={sessionAdvice}
+                    onApply={() => applyWeight(i, sessionAdvice.weight!)}
+                  />
+                </div>
+              )}
               {ex.note && (
                 <p className="mt-2 rounded-lg bg-primary-soft px-3 py-1.5 text-xs text-primary">
                   💡 {ex.note}
@@ -255,9 +369,16 @@ export default function WorkoutPage() {
                     </button>
                   )}
                   {guide ? (
-                    <Guide guide={guide} name={ex.name} nameEn={ex.nameEn} showAnim={!imgShown} />
+                    <Guide
+                      guide={guide}
+                      name={ex.name}
+                      nameEn={ex.nameEn}
+                      showAnim={!imgShown}
+                    />
                   ) : (
-                    <p className="text-sm text-sub">这个动作没有内置教程,点右上角“问教练”问问看。</p>
+                    <p className="text-sm text-sub">
+                      这个动作没有内置教程,点右上角“问教练”问问看。
+                    </p>
                   )}
                 </div>
               )}
@@ -270,49 +391,123 @@ export default function WorkoutPage() {
                 <span>次数</span>
                 <span>完成</span>
               </div>
-              {ex.sets.map((s, k) => (
-                <div
-                  key={k}
-                  className="grid grid-cols-[28px_1fr_1fr_44px] items-center gap-2 py-1"
-                >
-                  <span className="text-center text-sm font-semibold text-sub">{k + 1}</span>
-                  <NumInput
-                    decimal
-                    className={`${input} text-center ${s.done ? "bg-mint-soft" : ""}`}
-                    placeholder="自重"
-                    aria-label={`${ex.name} 第 ${k + 1} 组重量`}
-                    value={s.weight}
-                    onChange={(v) =>
-                      updateEx(i, (x) => ({
-                        ...x,
-                        sets: x.sets.map((y, j) => (j === k ? { ...y, weight: v } : y)),
-                      }))
-                    }
-                  />
-                  <NumInput
-                    className={`${input} text-center ${s.done ? "bg-mint-soft" : ""}`}
-                    placeholder="—"
-                    aria-label={`${ex.name} 第 ${k + 1} 组次数`}
-                    value={s.reps}
-                    onChange={(v) =>
-                      updateEx(i, (x) => ({
-                        ...x,
-                        sets: x.sets.map((y, j) => (j === k ? { ...y, reps: v } : y)),
-                      }))
-                    }
-                  />
-                  <button
-                    aria-label={`${ex.name} 第 ${k + 1} 组${s.done ? "取消完成" : "完成"}`}
-                    aria-pressed={s.done}
-                    onClick={() => toggleSet(i, k)}
-                    className={`h-11 rounded-xl text-lg font-bold ${
-                      s.done ? "bg-mint text-white" : "border border-line bg-surface text-line"
-                    }`}
-                  >
-                    ✓
-                  </button>
-                </div>
-              ))}
+              {ex.sets.map((s, k) => {
+                const nextOpen = ex.sets.findIndex((x, j) => j > k && !x.done);
+                // advice only for the most recently finished set, so older sets stay quiet
+                const isLatestDone =
+                  s.done && !ex.sets.some((x, j) => j > k && x.done);
+                const advice =
+                  isLatestDone && !timed && s.rir != null && nextOpen > -1
+                    ? adviseNextSet(s, targetRir, ex.repRange, libEx)
+                    : undefined;
+                const verdict = s.done
+                  ? judgeSet(s, targetRir, ex.repRange)
+                  : undefined;
+                return (
+                  <div key={k}>
+                    <div className="grid grid-cols-[28px_1fr_1fr_44px] items-center gap-2 py-1">
+                      <span className="text-center text-sm font-semibold text-sub">
+                        {k + 1}
+                      </span>
+                      <NumInput
+                        decimal
+                        className={`${input} text-center ${s.done ? "bg-mint-soft" : ""}`}
+                        placeholder="自重"
+                        aria-label={`${ex.name} 第 ${k + 1} 组重量`}
+                        value={s.weight}
+                        onChange={(v) =>
+                          updateEx(i, (x) => ({
+                            ...x,
+                            sets: x.sets.map((y, j) =>
+                              j === k ? { ...y, weight: v } : y,
+                            ),
+                          }))
+                        }
+                      />
+                      <NumInput
+                        className={`${input} text-center ${s.done ? "bg-mint-soft" : ""}`}
+                        placeholder="—"
+                        aria-label={`${ex.name} 第 ${k + 1} 组次数`}
+                        value={s.reps}
+                        onChange={(v) =>
+                          updateEx(i, (x) => ({
+                            ...x,
+                            sets: x.sets.map((y, j) =>
+                              j === k ? { ...y, reps: v } : y,
+                            ),
+                          }))
+                        }
+                      />
+                      <button
+                        aria-label={`${ex.name} 第 ${k + 1} 组${s.done ? "取消完成" : "完成"}`}
+                        aria-pressed={s.done}
+                        onClick={() => toggleSet(i, k)}
+                        className={`h-11 rounded-xl text-lg font-bold ${
+                          s.done
+                            ? "bg-mint text-white"
+                            : "border border-line bg-surface text-line"
+                        }`}
+                      >
+                        ✓
+                      </button>
+                    </div>
+                    {s.done && !timed && (
+                      <div className="mb-1.5 ml-[36px] space-y-1.5">
+                        {s.rir == null ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="shrink-0 text-[11px] text-sub">
+                              还能做几次?
+                            </span>
+                            {RIR_OPTIONS.map((r) => (
+                              <button
+                                key={r}
+                                aria-label={`${ex.name} 第 ${k + 1} 组 ${rirWords(r)}`}
+                                onClick={() => setRir(i, k, r)}
+                                className="h-8 min-w-8 flex-1 rounded-lg border border-line bg-surface px-1 text-xs font-semibold active:bg-primary-soft"
+                              >
+                                {r === 0 ? "0" : rirLabel(r)}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setRir(i, k, s.rir!)}
+                            aria-label={`修改第 ${k + 1} 组的剩余次数`}
+                            className="flex items-center gap-2 text-xs"
+                          >
+                            <span className="font-semibold">
+                              RIR {rirLabel(s.rir)}
+                            </span>
+                            <span className="text-sub">{rirWords(s.rir)}</span>
+                            {verdict && (
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${VERDICT_STYLE[verdict]}`}
+                              >
+                                {VERDICT_TEXT[verdict]}
+                              </span>
+                            )}
+                            <span className="text-sub underline">改</span>
+                          </button>
+                        )}
+                        {advice &&
+                          (advice.verdict !== "right" ||
+                            nextOpen === k + 1) && (
+                            <AdviceLine
+                              advice={advice}
+                              onApply={
+                                advice.weight != null &&
+                                ex.sets[nextOpen]?.weight !== advice.weight
+                                  ? () =>
+                                      applyWeight(i, advice.weight!, nextOpen)
+                                  : undefined
+                              }
+                            />
+                          )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="flex items-center justify-between px-4 py-3 text-sm">
               <div className="flex gap-4">
@@ -323,7 +518,11 @@ export default function WorkoutPage() {
                       ...x,
                       sets: [
                         ...x.sets,
-                        { weight: x.sets.at(-1)?.weight ?? null, reps: null, done: false },
+                        {
+                          weight: x.sets.at(-1)?.weight ?? null,
+                          reps: null,
+                          done: false,
+                        },
                       ],
                     }))
                   }
@@ -333,7 +532,9 @@ export default function WorkoutPage() {
                 {ex.sets.length > 1 && (
                   <button
                     className="text-sub"
-                    onClick={() => updateEx(i, (x) => ({ ...x, sets: x.sets.slice(0, -1) }))}
+                    onClick={() =>
+                      updateEx(i, (x) => ({ ...x, sets: x.sets.slice(0, -1) }))
+                    }
                   >
                     − 减一组
                   </button>
@@ -367,7 +568,9 @@ export default function WorkoutPage() {
           <div className="mx-auto flex max-w-md items-center justify-between rounded-2xl bg-ink px-5 py-3 text-white shadow-lg">
             <div>
               <div className="text-xs opacity-70">休息一下,喝口水</div>
-              <div className="text-2xl font-bold tabular-nums">{mmss(restLeft)}</div>
+              <div className="text-2xl font-bold tabular-nums">
+                {mmss(restLeft)}
+              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -391,7 +594,10 @@ export default function WorkoutPage() {
         <ExercisePicker
           onClose={() => setPicker(false)}
           onPick={(e) => {
-            update((w) => ({ ...w, exercises: [...w.exercises, newExercise(e)] }));
+            update((w) => ({
+              ...w,
+              exercises: [...w.exercises, newExercise(e)],
+            }));
             setPicker(false);
           }}
         />
@@ -426,7 +632,9 @@ export default function WorkoutPage() {
                   aria-pressed={feeling === i + 1}
                   onClick={() => setFeeling(i + 1)}
                   className={`h-12 w-12 rounded-2xl text-2xl ${
-                    feeling === i + 1 ? "bg-primary-soft ring-2 ring-primary" : "bg-card"
+                    feeling === i + 1
+                      ? "bg-primary-soft ring-2 ring-primary"
+                      : "bg-card"
                   }`}
                 >
                   {f}
@@ -452,7 +660,10 @@ export default function WorkoutPage() {
               保存这次训练
             </button>
             <div className="mt-2 flex gap-2">
-              <button className={`${btnSoft} flex-1`} onClick={() => setFinishing(false)}>
+              <button
+                className={`${btnSoft} flex-1`}
+                onClick={() => setFinishing(false)}
+              >
                 继续练
               </button>
               <button
