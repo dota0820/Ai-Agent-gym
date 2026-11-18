@@ -2,8 +2,15 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
+import ExercisePicker from "@/components/ExercisePicker";
+import NumInput from "@/components/NumInput";
 import WatchForm from "@/components/WatchForm";
-import { btnGhost, btnPrimary, btnSoft, Card } from "@/components/ui";
+import { btnGhost, btnPrimary, btnSoft, Card, input } from "@/components/ui";
+import {
+  mergeWorkouts,
+  sameDayWorkouts,
+  updateWorkout,
+} from "@/lib/workout-edit";
 import {
   durationMin,
   fmtDate,
@@ -48,7 +55,11 @@ function Delta({ cur, prev }: { cur: WorkoutExercise; prev: WorkoutExercise }) {
     text = `总次数 −${b.reps - a.reps}`;
   }
   return (
-    <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{text}</span>
+    <span
+      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}
+    >
+      {text}
+    </span>
   );
 }
 
@@ -58,6 +69,8 @@ function Detail() {
   const ready = useHydrated();
   const router = useRouter();
   const [editWatch, setEditWatch] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [picker, setPicker] = useState<{ swap?: number } | null>(null);
   if (!ready) return null;
   const w = workouts.find((x) => x.id === id);
   if (!w)
@@ -85,7 +98,9 @@ function Detail() {
           ? {
               ...x,
               startedAt: shifted.toISOString(),
-              endedAt: x.endedAt ? new Date(new Date(x.endedAt).getTime() + delta).toISOString() : x.endedAt,
+              endedAt: x.endedAt
+                ? new Date(new Date(x.endedAt).getTime() + delta).toISOString()
+                : x.endedAt,
             }
           : x,
       ),
@@ -96,6 +111,21 @@ function Detail() {
       ...s,
       workouts: s.workouts.map((x) => (x.id === w.id ? { ...x, watch } : x)),
     }));
+  const twins = sameDayWorkouts(workouts, w);
+  const editEx = (i: number, fn: (e: WorkoutExercise) => WorkoutExercise) =>
+    updateWorkout(w.id, (x) => ({
+      ...x,
+      exercises: x.exercises.map((e, j) => (j === i ? fn(e) : e)),
+    }));
+  const editSet = (
+    i: number,
+    k: number,
+    patch: Partial<WorkoutExercise["sets"][number]>,
+  ) =>
+    editEx(i, (e) => ({
+      ...e,
+      sets: e.sets.map((st, j) => (j === k ? { ...st, ...patch } : st)),
+    }));
   const reviewQ = `我完成了 ${w.startedAt.slice(0, 10)} 的「${w.title}」,请点评这次训练,和上一次比怎么样,并告诉我下次的目标。`;
 
   return (
@@ -104,7 +134,34 @@ function Detail() {
         ‹ 训练记录
       </Link>
       <header>
-        <h1 className="text-2xl font-bold tracking-tight">{w.title}</h1>
+        <div className="flex items-start justify-between gap-2">
+          {editing ? (
+            <input
+              aria-label="训练名称"
+              className={`${input} text-xl font-bold`}
+              value={w.title}
+              onChange={(e) =>
+                updateWorkout(w.id, (x) => ({ ...x, title: e.target.value }))
+              }
+              onBlur={() =>
+                !w.title.trim() &&
+                updateWorkout(w.id, (x) => ({ ...x, title: "自由训练" }))
+              }
+            />
+          ) : (
+            <h1 className="text-2xl font-bold tracking-tight">{w.title}</h1>
+          )}
+          <button
+            onClick={() => setEditing(!editing)}
+            className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold ${
+              editing
+                ? "bg-primary text-white"
+                : "border border-line bg-card text-ink"
+            }`}
+          >
+            {editing ? "完成" : "✎ 编辑"}
+          </button>
+        </div>
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-sub">
           <span>
             {fmtDate(w.startedAt)}
@@ -124,6 +181,34 @@ function Detail() {
         </p>
       </header>
 
+      {twins.map((t) => (
+        <div
+          key={t.id}
+          className="rounded-2xl border border-primary/40 bg-primary-soft p-3 text-sm"
+        >
+          <div className="font-semibold text-primary">
+            同一天还有一条记录「{t.title}」
+          </div>
+          <p className="mt-0.5 text-xs text-sub">
+            {t.exercises.map((e) => e.name).join(" · ") || "没有动作"}
+          </p>
+          <p className="mt-1 text-xs text-sub">
+            如果是同一次训练,可以合并成一条:动作和组数都会保留,相同的动作会合在一起。
+          </p>
+          <button
+            className={`${btnPrimary} mt-2 w-full py-2.5`}
+            onClick={() => {
+              if (
+                confirm(`把「${t.title}」合并到这条记录里?合并后那条会被删除。`)
+              )
+                mergeWorkouts(w.id, t.id);
+            }}
+          >
+            合并成一条记录
+          </button>
+        </div>
+      ))}
+
       <div className="grid grid-cols-4 gap-2 text-center">
         {[
           { l: "时长", v: durationMin(w), u: "分钟" },
@@ -131,7 +216,10 @@ function Detail() {
           { l: "消耗", v: w.watch?.calories, u: "千卡" },
           { l: "平均心率", v: w.watch?.avgHr, u: "bpm" },
         ].map((x) => (
-          <div key={x.l} className="rounded-2xl border border-line bg-card py-2">
+          <div
+            key={x.l}
+            className="rounded-2xl border border-line bg-card py-2"
+          >
             <div className="text-lg font-bold tabular-nums">{x.v ?? "—"}</div>
             <div className="text-[11px] text-sub">
               {x.l}
@@ -141,7 +229,10 @@ function Detail() {
         ))}
       </div>
 
-      <Link href={`/coach?q=${encodeURIComponent(reviewQ)}`} className={`${btnPrimary} w-full`}>
+      <Link
+        href={`/coach?q=${encodeURIComponent(reviewQ)}`}
+        className={`${btnPrimary} w-full`}
+      >
         💬 让教练点评这次训练
       </Link>
 
@@ -156,10 +247,96 @@ function Detail() {
               </div>
               {prev && <Delta cur={e} prev={prev.exercise} />}
             </div>
-            <div className="mt-2 text-sm">
-              <span className="text-sub">这次:</span>
-              <span className="font-semibold">{setsSummary(e)}</span>
-            </div>
+            {editing ? (
+              <div className="mt-3 space-y-2">
+                <div className="flex gap-2">
+                  <button
+                    className={`${btnSoft} flex-1 py-2 text-sm`}
+                    onClick={() => setPicker({ swap: i })}
+                  >
+                    ⇄ 换成动作库里的动作
+                  </button>
+                  <button
+                    className={`${btnGhost} px-3 py-2 text-sm text-sub`}
+                    onClick={() => {
+                      if (confirm(`从这条记录里删除「${e.name}」?`))
+                        updateWorkout(w.id, (x) => ({
+                          ...x,
+                          exercises: x.exercises.filter((_, j) => j !== i),
+                        }));
+                    }}
+                  >
+                    删除
+                  </button>
+                </div>
+                <div className="grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2 text-center text-[11px] text-sub">
+                  <span>组</span>
+                  <span>重量 kg</span>
+                  <span>次数</span>
+                  <span />
+                </div>
+                {e.sets.map((st, k) => (
+                  <div
+                    key={k}
+                    className="grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2"
+                  >
+                    <span className="text-center text-sm font-semibold text-sub">
+                      {k + 1}
+                    </span>
+                    <NumInput
+                      decimal
+                      className={`${input} text-center`}
+                      placeholder="自重"
+                      aria-label={`${e.name} 第 ${k + 1} 组重量`}
+                      value={st.weight}
+                      onChange={(v) => editSet(i, k, { weight: v, done: true })}
+                    />
+                    <NumInput
+                      className={`${input} text-center`}
+                      placeholder="—"
+                      aria-label={`${e.name} 第 ${k + 1} 组次数`}
+                      value={st.reps}
+                      onChange={(v) => editSet(i, k, { reps: v, done: true })}
+                    />
+                    <button
+                      aria-label={`删除第 ${k + 1} 组`}
+                      className="h-9 rounded-lg text-sub active:bg-bg"
+                      onClick={() =>
+                        editEx(i, (x) => ({
+                          ...x,
+                          sets: x.sets.filter((_, j) => j !== k),
+                        }))
+                      }
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <button
+                  className="text-sm font-semibold text-primary"
+                  onClick={() =>
+                    editEx(i, (x) => ({
+                      ...x,
+                      sets: [
+                        ...x.sets,
+                        {
+                          weight: x.sets.at(-1)?.weight ?? null,
+                          reps: null,
+                          done: true,
+                        },
+                      ],
+                    }))
+                  }
+                >
+                  + 加一组
+                </button>
+              </div>
+            ) : (
+              <div className="mt-2 text-sm">
+                <span className="text-sub">这次:</span>
+                <span className="font-semibold">{setsSummary(e)}</span>
+              </div>
+            )}
             <div className="mt-1 text-sm text-sub">
               {prev
                 ? `上次(${fmtDate(prev.workout.startedAt)}):${setsSummary(prev.exercise)}`
@@ -168,6 +345,38 @@ function Detail() {
           </Card>
         );
       })}
+
+      {editing && (
+        <button className={`${btnGhost} w-full`} onClick={() => setPicker({})}>
+          + 添加动作
+        </button>
+      )}
+
+      {picker && (
+        <ExercisePicker
+          onClose={() => setPicker(null)}
+          onPick={(ex) => {
+            const i = picker.swap;
+            if (i !== undefined)
+              editEx(i, (e) => ({
+                ...e,
+                exerciseId: ex.exerciseId,
+                name: ex.name,
+                nameEn: ex.nameEn,
+                custom: undefined,
+              }));
+            else
+              updateWorkout(w.id, (x) => ({
+                ...x,
+                exercises: [
+                  ...x.exercises,
+                  { ...ex, sets: [{ weight: null, reps: null, done: true }] },
+                ],
+              }));
+            setPicker(null);
+          }}
+        />
+      )}
 
       {w.notes && (
         <Card>
@@ -181,16 +390,24 @@ function Detail() {
           <div className="text-sm font-semibold">
             ⌚ 手表数据
             {w.watch?.maxHr ? (
-              <span className="ml-2 font-normal text-sub">最高心率 {w.watch.maxHr} bpm</span>
+              <span className="ml-2 font-normal text-sub">
+                最高心率 {w.watch.maxHr} bpm
+              </span>
             ) : null}
           </div>
-          <button className="text-sm text-primary" onClick={() => setEditWatch(!editWatch)}>
+          <button
+            className="text-sm text-primary"
+            onClick={() => setEditWatch(!editWatch)}
+          >
             {editWatch ? "完成" : w.watch ? "修改" : "补充"}
           </button>
         </div>
         {editWatch && (
           <div className="mt-3">
-            <WatchForm value={w.watch ?? { source: "manual" }} onChange={setWatch} />
+            <WatchForm
+              value={w.watch ?? { source: "manual" }}
+              onChange={setWatch}
+            />
           </div>
         )}
       </Card>
@@ -203,7 +420,10 @@ function Detail() {
           className={`${btnGhost} flex-1 text-sub`}
           onClick={() => {
             if (confirm("删除这条训练记录?删除后不能恢复。")) {
-              setState((s) => ({ ...s, workouts: s.workouts.filter((x) => x.id !== w.id) }));
+              setState((s) => ({
+                ...s,
+                workouts: s.workouts.filter((x) => x.id !== w.id),
+              }));
               router.replace("/history");
             }
           }}

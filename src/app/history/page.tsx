@@ -7,6 +7,7 @@ import ProfileChip from "@/components/ProfileChip";
 import PlanCard from "@/components/PlanCard";
 import { btnPrimary, btnSoft, Card, H1 } from "@/components/ui";
 import { startFree } from "@/lib/actions";
+import { sameDayWorkouts } from "@/lib/workout-edit";
 import {
   computeNutritionTargets,
   fmtDateKey,
@@ -169,6 +170,11 @@ function HistoryContent() {
                       <p className="mt-1 text-sm text-sub">
                         {w.exercises.map((e) => e.name).join(" · ") || "没有记录动作"}
                       </p>
+                      {sameDayWorkouts(workouts, w).length > 0 && (
+                        <p className="mt-1 text-xs font-semibold text-primary">
+                          同一天有 {sameDayWorkouts(workouts, w).length + 1} 条记录,点开可以合并
+                        </p>
+                      )}
                       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-sub">
                         {durationMin(w) && <span>⏱ {durationMin(w)} 分钟</span>}
                         {volume(w) > 0 && <span>🏋️ 总重量 {volume(w)} kg</span>}
