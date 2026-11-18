@@ -92,7 +92,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
 
         {gyms.length > 1 && (
           <div className="border-t border-line pt-3">
-            <div className="mb-2 text-xs font-semibold text-sub">📍 当前所在健身房</div>
+            <div className="mb-2 text-xs font-semibold text-sub">当前所在健身房</div>
             <div className="flex flex-wrap gap-1.5">
               {gyms.map((g) => {
                 const isActive = g.id === activeGym.id;

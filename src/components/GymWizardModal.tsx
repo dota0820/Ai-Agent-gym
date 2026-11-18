@@ -1,4 +1,5 @@
 "use client";
+import Icon from "./Icon";
 import { useRef, useState } from "react";
 import { fileToJpegDataUrl } from "@/lib/actions";
 import {
@@ -386,8 +387,10 @@ export default function GymWizardModal({
                 onClick={() => fileRef.current?.click()}
                 className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/40 bg-surface px-4 py-6 text-center active:bg-bg disabled:opacity-50"
               >
-                <span className="text-2xl">{busy ? "⏳" : "📷"}</span>
-                <span className="text-sm font-bold text-primary">
+                <span className="text-deep">
+                  <Icon name={busy ? "timer" : "camera"} size={28} />
+                </span>
+                <span className="text-sm font-bold text-deep">
                   {busy
                     ? "AI 正在识别照片里的器械…"
                     : "拍照 / 从相册选图让 AI 识别"}
@@ -411,8 +414,8 @@ export default function GymWizardModal({
 
               {pendingScan && (
                 <div className="space-y-3 rounded-2xl border-2 border-primary bg-surface p-3.5">
-                  <div className="text-xs font-bold text-primary">
-                    🧐 AI 认出了以下器械，请确认哪些要加入：
+                  <div className="text-xs font-bold text-deep">
+                    AI 认出了以下器械，请确认哪些要加入：
                   </div>
                   <p className="text-xs text-sub">{pendingScan.summary}</p>
                   <div className="space-y-1.5">
@@ -440,7 +443,7 @@ export default function GymWizardModal({
                               : "border-line bg-bg opacity-60"
                           }`}
                         >
-                          <span className="mt-0.5 text-sm font-bold text-primary">
+                          <span className="mt-0.5 text-sm font-bold text-deep">
                             {on ? "☑" : "☐"}
                           </span>
                           <div className="min-w-0 flex-1">
@@ -498,7 +501,7 @@ export default function GymWizardModal({
                     </div>
                     <button
                       type="button"
-                      className="shrink-0 text-xs font-semibold text-primary underline"
+                      className="shrink-0 text-xs font-semibold text-deep underline"
                       onClick={() => selectAllInItems(cat.items)}
                     >
                       全选
@@ -548,7 +551,7 @@ export default function GymWizardModal({
                             )}
                             {on && spec && (
                               <span className="mt-1 rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold">
-                                📌 {spec}
+                                {spec}
                               </span>
                             )}
                           </span>
@@ -628,9 +631,9 @@ export default function GymWizardModal({
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="w-full rounded-xl border border-dashed border-line bg-surface py-2.5 text-center text-xs font-semibold text-primary active:bg-bg"
+                className="w-full rounded-xl border border-dashed border-line bg-surface py-2.5 text-center text-xs font-semibold text-deep active:bg-bg"
               >
-                📷 不确定眼前这台机器叫什么？点这里拍照让 AI 帮你认
+                不确定眼前这台机器叫什么？点这里拍照让 AI 帮你认
               </button>
             </div>
           )}
@@ -667,7 +670,7 @@ export default function GymWizardModal({
                         key={item}
                         type="button"
                         onClick={() => toggleItem(item)}
-                        className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary"
+                        className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-deep"
                       >
                         {item}
                         {details[item] ? ` (${details[item]})` : ""} ✕

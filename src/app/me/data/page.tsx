@@ -63,7 +63,7 @@ export default function MeDataPage() {
   return (
     <SubPage title="口令与备份">
       <Card className="space-y-3">
-        <div className="text-sm font-bold">🔑 访问口令</div>
+        <div className="text-sm font-bold">访问口令</div>
         <p className="text-sm text-sub">
           如果部署时设置了口令，在这里填一次，AI 教练和营养师才能用。
         </p>
@@ -84,7 +84,7 @@ export default function MeDataPage() {
       </Card>
 
       <Card className="space-y-2.5">
-        <div className="text-sm font-bold">💾 数据备份</div>
+        <div className="text-sm font-bold">数据备份</div>
         <p className="text-sm text-sub">
           当前共有 {profiles.length} 个人物档案（当前人物：{workouts.length} 次训练 · {meals.length} 条饮食 · 共享 {customExercises.length} 个自导入动作），数据只保存在这台设备的浏览器里。换手机或清理浏览器数据前，记得先导出备份。
         </p>

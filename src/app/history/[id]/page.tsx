@@ -159,7 +159,7 @@ function Detail() {
                 : "border border-line bg-card text-ink"
             }`}
           >
-            {editing ? "完成" : "✎ 编辑"}
+            {editing ? "完成" : "编辑"}
           </button>
         </div>
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-sub">
@@ -167,7 +167,7 @@ function Detail() {
             {fmtDate(w.startedAt)}
             {w.feeling ? ` · 感受 ${FEELINGS[w.feeling - 1]}` : ""}
           </span>
-          <label className="relative cursor-pointer font-semibold text-primary underline underline-offset-2">
+          <label className="relative cursor-pointer font-semibold text-deep underline underline-offset-2">
             改日期
             <input
               type="date"
@@ -186,7 +186,7 @@ function Detail() {
           key={t.id}
           className="rounded-2xl border border-primary/40 bg-primary-soft p-3 text-sm"
         >
-          <div className="font-semibold text-primary">
+          <div className="font-semibold text-deep">
             同一天还有一条记录「{t.title}」
           </div>
           <p className="mt-0.5 text-xs text-sub">
@@ -233,7 +233,7 @@ function Detail() {
         href={`/coach?q=${encodeURIComponent(reviewQ)}`}
         className={`${btnPrimary} w-full`}
       >
-        💬 让教练点评这次训练
+        让教练点评这次训练
       </Link>
 
       {w.exercises.map((e, i) => {
@@ -313,7 +313,7 @@ function Detail() {
                   </div>
                 ))}
                 <button
-                  className="text-sm font-semibold text-primary"
+                  className="text-sm font-semibold text-deep"
                   onClick={() =>
                     editEx(i, (x) => ({
                       ...x,
@@ -396,7 +396,7 @@ function Detail() {
             ) : null}
           </div>
           <button
-            className="text-sm text-primary"
+            className="text-sm text-deep"
             onClick={() => setEditWatch(!editWatch)}
           >
             {editWatch ? "完成" : w.watch ? "修改" : "补充"}

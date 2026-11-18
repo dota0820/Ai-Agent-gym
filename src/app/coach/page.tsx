@@ -2,31 +2,21 @@
 /* eslint-disable @next/next/no-img-element */
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import CoachMascot, { CoachThinking } from "@/components/CoachMascot";
+import Icon, { type IconName } from "@/components/Icon";
 import MD from "@/components/MD";
 import PlanCard from "@/components/PlanCard";
-import ProfileChip from "@/components/ProfileChip";
 import { fileToJpegDataUrl, sendToCoach, useCoachBusy, visibleText } from "@/lib/actions";
 import { setState, useApp } from "@/lib/store";
 import { canSpeak, speak, stopSpeaking, useDictation } from "@/lib/voice";
 
 /** Suggestions on the empty screen; `photo` opens the camera instead of sending. */
-const STARTERS: { icon: string; label: string; send?: string; photo?: boolean }[] = [
-  { icon: "🗓️", label: "帮我安排今天的训练", send: "帮我安排今天的训练,根据我最近的记录决定练哪里" },
-  { icon: "🎯", label: "下次我应该练什么?", send: "下次我应该练什么?" },
-  { icon: "🏋️", label: "教我一个动作的正确做法", send: "我想学一个动作的正确做法,你先问我是哪个动作" },
-  { icon: "📷", label: "拍器械,问怎么用", photo: true },
+const STARTERS: { icon: IconName; label: string; send?: string; photo?: boolean }[] = [
+  { icon: "calendar", label: "帮我安排今天的训练", send: "帮我安排今天的训练,根据我最近的记录决定练哪里" },
+  { icon: "target", label: "下次我应该练什么?", send: "下次我应该练什么?" },
+  { icon: "dumbbell", label: "教我一个动作的正确做法", send: "我想学一个动作的正确做法,你先问我是哪个动作" },
+  { icon: "camera", label: "拍器械,问怎么用", photo: true },
 ];
-
-/** The coach's mark: a small animated gradient orb. */
-function CoachOrb({ size = 28 }: { size?: number }) {
-  return (
-    <span
-      aria-hidden
-      className="coach-orb inline-block shrink-0 rounded-full"
-      style={{ width: size, height: size }}
-    />
-  );
-}
 
 function ChoiceButton({
   label,
@@ -43,7 +33,7 @@ function ChoiceButton({
       className="flex w-full items-center gap-3 rounded-2xl border border-line bg-card px-3.5 py-3 text-left text-[15px] active:scale-[0.99] active:border-primary"
     >
       {badge && (
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-bold text-primary">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-bold text-deep">
           {badge}
         </span>
       )}
@@ -152,15 +142,29 @@ function Coach() {
   const hello = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
   const canSend = !busy && (!!text.trim() || !!photo);
   const iconBtn =
-    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[19px] text-sub active:bg-primary-soft disabled:opacity-40";
+    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sub active:bg-primary-soft disabled:opacity-40";
 
   return (
     <div className="flex flex-col">
-      {/* soft glow behind the page, like the ChatGPT / Claude apps */}
-      <div aria-hidden className="coach-glow pointer-events-none fixed inset-0 -z-10" />
-
       <header className="sticky top-0 z-20 -mx-4 -mt-5 mb-2 flex items-center justify-between gap-2 px-4 pt-3 pb-2 backdrop-blur-md">
-        <ProfileChip />
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft">
+            <CoachMascot size={34} thinking={busy} label="哑铃教练" />
+          </span>
+          <div className="min-w-0">
+            <div className="text-[17px] font-bold leading-tight">AI 教练</div>
+            <div className="flex items-center gap-1.5 text-xs text-sub">
+              {busy ? (
+                <>
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                  思考中…
+                </>
+              ) : (
+                "记得你的身体情况和喜好"
+              )}
+            </div>
+          </div>
+        </div>
         <div className="flex shrink-0 items-center gap-1">
           {canSpeak() && (
             <button
@@ -171,13 +175,13 @@ function Coach() {
                 else speak("好的,我会把回复读给你听");
                 setState((s) => ({ ...s, profile: { ...s.profile, speak: !s.profile.speak } }));
               }}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border text-base ${
+              className={`flex h-11 w-11 items-center justify-center rounded-full border ${
                 profile.speak
-                  ? "border-primary bg-primary-soft text-primary"
+                  ? "border-primary bg-primary-soft text-deep"
                   : "border-line bg-card text-sub"
               }`}
             >
-              {profile.speak ? "🔊" : "🔈"}
+              <Icon name={profile.speak ? "volume" : "mute"} size={19} />
             </button>
           )}
           {chat.length > 0 && (
@@ -187,9 +191,9 @@ function Coach() {
                 if (confirm("开始新对话?(聊天记录会清空,训练记录和计划不会被删除)"))
                   setState((s) => ({ ...s, chat: [] }));
               }}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-card text-base text-ink"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-card text-ink"
             >
-              ✎
+              <Icon name="pen" size={19} />
             </button>
           )}
         </div>
@@ -198,8 +202,10 @@ function Coach() {
       {chat.length === 0 ? (
         <div className="flex min-h-[calc(100dvh-150px)] flex-col pb-[118px]">
           <div className="flex flex-1 flex-col items-center justify-center text-center">
-            <CoachOrb size={64} />
-            <h1 className="coach-hello mt-5 text-[28px] font-bold leading-tight tracking-tight">
+            <span className="flex h-24 w-24 items-center justify-center rounded-full bg-primary-soft">
+              <CoachMascot size={72} label="哑铃教练" />
+            </span>
+            <h1 className="mt-5 text-[28px] font-bold leading-tight tracking-tight">
               {hello}{profile.name ? `,${profile.name}` : ""}
             </h1>
             <p className="mt-2 text-[15px] text-sub">我是你的 AI 健身教练,今天想练什么?</p>
@@ -213,8 +219,8 @@ function Coach() {
                 }
                 className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-3 text-left text-[16px] text-ink active:bg-primary-soft"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-card text-lg">
-                  {s.icon}
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-card text-deep">
+                  <Icon name={s.icon} size={19} />
                 </span>
                 {s.label}
               </button>
@@ -232,7 +238,10 @@ function Coach() {
                 {m.image ? (
                   <img src={m.image} alt="你发的照片" className="max-h-56 max-w-[70%] rounded-3xl" />
                 ) : m.image === "" ? (
-                  <span className="text-xs text-sub">📷 照片(已不保留预览)</span>
+                  <span className="flex items-center gap-1 text-xs text-sub">
+                    <Icon name="camera" size={14} />
+                    照片(已不保留预览)
+                  </span>
                 ) : null}
                 <div className="msg-user max-w-[82%] whitespace-pre-wrap rounded-3xl px-4 py-2.5 text-[16px] leading-relaxed">
                   {m.text}
@@ -240,35 +249,37 @@ function Coach() {
               </div>
             ) : (
               <div key={m.id} className="space-y-3">
-                {(shown || streaming) && (
-                  <div>
-                    <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-sub">
-                      <CoachOrb size={20} />
-                      AI 教练
-                    </div>
-                    {shown ? (
+                {(shown || streaming) &&
+                  (shown ? (
+                    <div>
+                      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-sub">
+                        <CoachMascot size={20} />
+                        AI 教练
+                      </div>
                       <div className="msg-ai text-[16px]">
                         <MD text={shown} />
                       </div>
-                    ) : (
-                      <span className="thinking text-[15px] font-medium">正在思考…</span>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  ) : (
+                    <CoachThinking />
+                  ))}
                 {m.plan && <PlanCard plan={m.plan} />}
                 {m.logged && (
                   <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                    ✓ 已记录:{m.logged}
+                    <Icon name="check" size={13} stroke={3} className="mr-1 inline" />
+                    已记录:{m.logged}
                   </div>
                 )}
                 {m.exerciseAdded && (
                   <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                    ✓ 已加入动作库:{m.exerciseAdded}
+                    <Icon name="check" size={13} stroke={3} className="mr-1 inline" />
+                    已加入动作库:{m.exerciseAdded}
                   </div>
                 )}
                 {m.mealLogged && (
                   <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                    🥗 已记录饮食:{m.mealLogged}
+                    <Icon name="check" size={13} stroke={3} className="mr-1 inline" />
+                    已记录饮食:{m.mealLogged}
                   </div>
                 )}
                 {isLast && !busy && m.choices && m.choices.length > 0 && (
@@ -293,14 +304,19 @@ function Coach() {
                 <>
                   <img src={photo.thumb} alt="待发送的照片" className="h-14 w-14 rounded-xl object-cover" />
                   <span className="flex-1 text-sub">照片已选好,可以再补一句话,然后点发送</span>
-                  <button className="px-2 text-sub" aria-label="移除照片" onClick={() => setPhoto(null)}>
-                    ✕
+                  <button
+                    className="flex h-10 w-10 items-center justify-center text-sub"
+                    aria-label="移除照片"
+                    onClick={() => setPhoto(null)}
+                  >
+                    <Icon name="x" size={18} />
                   </button>
                 </>
               )}
               {!photo && dictation.listening && (
-                <span className="flex-1 animate-pulse px-2 font-semibold text-primary">
-                  🎙 正在听…说完会自动停
+                <span className="flex flex-1 animate-pulse items-center gap-1.5 px-2 font-semibold text-deep">
+                  <Icon name="mic" size={16} />
+                  正在听…说完会自动停
                 </span>
               )}
               {!photo && !dictation.listening && (photoErr || dictation.error) && (
@@ -321,12 +337,12 @@ function Coach() {
               }}
             />
             <button
-              className={`${iconBtn} text-[24px] font-light text-ink`}
+              className={`${iconBtn} text-ink`}
               aria-label="拍照或选照片发给教练"
               disabled={busy}
               onClick={() => fileRef.current?.click()}
             >
-              +
+              <Icon name="plus" size={22} />
             </button>
             <textarea
               ref={boxRef}
@@ -354,16 +370,20 @@ function Coach() {
                 disabled={busy}
                 onClick={() => (dictation.listening ? dictation.stop() : dictation.start())}
               >
-                {dictation.listening ? "■" : "🎙"}
+                <Icon name={dictation.listening ? "stop" : "mic"} size={20} />
               </button>
             )}
             <button
               onClick={() => submit()}
               disabled={!canSend}
               aria-label="发送"
-              className="send-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white transition disabled:opacity-30"
+              className="send-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition disabled:opacity-30"
             >
-              {busy ? <span className="h-3 w-3 rounded-[3px] bg-white" /> : "↑"}
+              {busy ? (
+                <span className="h-3 w-3 rounded-[3px] bg-[var(--c-on-accent)]" />
+              ) : (
+                <Icon name="up" size={20} stroke={2.5} />
+              )}
             </button>
           </div>
           <p className="mt-1.5 text-center text-[11px] text-sub">

@@ -1,5 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
+import Icon from "@/components/Icon";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -291,7 +292,7 @@ function FoodContent() {
                   ? "(默认参考 · 填身高体重更准)"
                   : `(${profile.heightCm}cm/${profile.weightKg}kg · BMR ${targets.bmr})`}
             </div>
-            <div className="mt-0.5 text-2xl font-bold tabular-nums">
+            <div className="num mt-0.5 text-4xl font-bold">
               {totals.calories}
               <span className="text-sm font-normal text-sub"> / {targets.calories} kcal</span>
             </div>
@@ -301,7 +302,7 @@ function FoodContent() {
             className="rounded-full bg-bg px-3 py-1 text-xs font-semibold text-sub"
             onClick={() => setEditTargets(!editTargets)}
           >
-            {editTargets ? "收起目标" : "⚙️ 调目标"}
+            {editTargets ? "收起目标" : "调目标"}
           </button>
         </div>
 
@@ -315,9 +316,9 @@ function FoodContent() {
         </div>
 
         <div className="space-y-2.5 pt-1">
-          <MacroBar label="🥩 蛋白质" val={totals.protein} target={targets.protein} unit="g" barColor="bg-mint" />
-          <MacroBar label="🍚 碳水" val={totals.carbs} target={targets.carbs} unit="g" barColor="bg-amber-500" />
-          <MacroBar label="🥑 脂肪" val={totals.fat} target={targets.fat} unit="g" barColor="bg-primary/80" />
+          <MacroBar label="蛋白质" val={totals.protein} target={targets.protein} unit="g" barColor="bg-[#2563eb]" />
+          <MacroBar label="碳水" val={totals.carbs} target={targets.carbs} unit="g" barColor="bg-amber-500" />
+          <MacroBar label="脂肪" val={totals.fat} target={targets.fat} unit="g" barColor="bg-[#9333ea]" />
         </div>
 
         {editTargets && (
@@ -327,7 +328,7 @@ function FoodContent() {
               {targets.isCustom && (
                 <button
                   type="button"
-                  className="text-primary underline"
+                  className="text-deep underline"
                   onClick={() =>
                     setState((s) => ({
                       ...s,
@@ -365,19 +366,22 @@ function FoodContent() {
 
         {dayWorkouts.length > 0 && (
           <div className="rounded-xl bg-mint-soft px-3 py-2 text-xs text-mint">
-            🏋️ {fmtDateKey(dateKey)}练了：{dayWorkouts.map((w) => w.title).join("、")}
+            {fmtDateKey(dateKey)}练了：{dayWorkouts.map((w) => w.title).join("、")}
             {workoutCals > 0 ? ` · 手表消耗 ${workoutCals} kcal` : ""}
           </div>
         )}
 
         <Link href={`/coach?q=${encodeURIComponent(askCoachPrompt)}`} className={`${btnSoft} w-full text-sm`}>
-          💬 问营养师 / 教练：下一餐怎么吃更好？
+          问营养师 / 教练：下一餐怎么吃更好？
         </Link>
       </Card>
 
       <Card className="space-y-3">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-bold">📸 记一餐</div>
+          <div className="flex items-center gap-1.5 text-sm font-bold">
+            <Icon name="camera" size={16} />
+            记一餐
+          </div>
           {!draft && (
             <button
               type="button"
@@ -456,23 +460,25 @@ function FoodContent() {
                 disabled={busy}
                 onClick={() => fileRef.current?.click()}
               >
-                📷 {photo ? "换一张图" : "拍食物 / 传图"}
+                <Icon name="camera" size={18} className="mr-1.5" />
+                {photo ? "换一张图" : "拍食物 / 传图"}
               </button>
               {dictation.supported && (
                 <button
                   type="button"
-                  className={`${btnGhost} px-4 text-sm ${dictation.listening ? "border-primary text-primary" : ""}`}
+                  className={`${btnGhost} px-4 text-sm ${dictation.listening ? "border-primary text-deep" : ""}`}
                   disabled={busy}
                   onClick={() => (dictation.listening ? dictation.stop() : dictation.start())}
                 >
-                  {dictation.listening ? "■ 停止" : "🎙 语音"}
+                  <Icon name={dictation.listening ? "stop" : "mic"} size={18} className="mr-1" />
+                  {dictation.listening ? "停止" : "语音"}
                 </button>
               )}
             </div>
 
-            {dictation.error && <p className="text-xs text-primary">{dictation.error}</p>}
+            {dictation.error && <p className="text-xs text-deep">{dictation.error}</p>}
             {error && (
-              <div className="rounded-xl bg-primary-soft px-3 py-2 text-xs text-primary">{error}</div>
+              <div className="rounded-xl bg-primary-soft px-3 py-2 text-xs text-deep">{error}</div>
             )}
 
             <button
@@ -481,14 +487,15 @@ function FoodContent() {
               disabled={busy || (!text.trim() && !photo)}
               onClick={() => void analyzeMeal()}
             >
-              {busy ? "✨ AI 营养师正在识别食物并计算…" : "✨ AI 分析蛋白质 / 碳水 / 热量"}
+              <Icon name="sparkles" size={18} className="mr-1.5" />
+              {busy ? "AI 营养师正在识别食物并计算…" : "AI 分析蛋白质 / 碳水 / 热量"}
             </button>
           </>
         ) : (
           <div className="space-y-3 border-t border-line pt-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-primary">
-                {manualMode ? "✍️ 手动填写（直接修改数字）" : "✨ AI 分析结果（可核对微调后保存）"}
+              <span className="text-xs font-semibold text-deep">
+                {manualMode ? "手动填写（直接修改数字）" : "AI 分析结果（可核对微调后保存）"}
               </span>
               <button
                 type="button"
@@ -504,7 +511,7 @@ function FoodContent() {
 
             {draft.advice && (
               <div className="rounded-xl bg-mint-soft px-3 py-2 text-xs leading-relaxed text-mint">
-                🥗 {draft.advice}
+                {draft.advice}
               </div>
             )}
 
@@ -585,7 +592,7 @@ function FoodContent() {
             )}
 
             <button type="button" className={`${btnPrimary} w-full`} onClick={saveDraft}>
-              ✓ 保存到{fmtDateKey(dateKey)}饮食记录
+              保存到{fmtDateKey(dateKey)}饮食记录
             </button>
           </div>
         )}
@@ -620,7 +627,7 @@ function FoodContent() {
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-deep">
                         {mt.emoji} {mt.label} · {time}
                       </span>
                       <button
@@ -647,7 +654,7 @@ function FoodContent() {
 
                 {m.advice && (
                   <p className="rounded-xl bg-mint-soft px-3 py-2 text-xs leading-relaxed text-mint">
-                    🥗 {m.advice}
+                    {m.advice}
                   </p>
                 )}
 

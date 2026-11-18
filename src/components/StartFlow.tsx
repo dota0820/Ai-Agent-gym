@@ -5,9 +5,10 @@ import { repeatWorkout } from "@/lib/actions";
 import { subsFor } from "@/lib/exercises";
 import { hoursSinceTrained, RECOVERY_HOURS, todaySuggestion, weekDots } from "@/lib/recovery";
 import { useApp } from "@/lib/store";
-import { isDark, useTheme } from "@/lib/theme";
+import { useTheme } from "@/lib/theme";
 import { GROUPS } from "@/lib/types";
 import Body3D, { type BodyPart } from "./Body3D";
+import Icon from "./Icon";
 
 const TIMES = ["30 分钟", "45 分钟", "60 分钟"];
 const ENERGY = [
@@ -133,14 +134,14 @@ export default function StartFlow({ name }: { name: string }) {
     <section>
       <div className="min-h-[76px]">
         <h1
-          className={`glow-text text-[30px] font-bold leading-tight tracking-tight ${
+          className={`text-[30px] font-bold leading-tight tracking-tight ${
             animate && !line1.done ? "caret" : ""
           }`}
         >
           {animate ? line1.shown : hello}
         </h1>
         {line2On && (
-          <p className={`mt-1 text-lg font-semibold text-primary ${animate ? "rise-in" : ""}`}>
+          <p className={`mt-1 text-lg font-semibold text-deep ${animate ? "rise-in" : ""}`}>
             今天想做什么?
           </p>
         )}
@@ -160,11 +161,11 @@ export default function StartFlow({ name }: { name: string }) {
                   d.done
                     ? "bg-primary text-white"
                     : d.today
-                      ? "border-2 border-primary text-primary"
+                      ? "border-2 border-primary text-deep"
                       : "border border-line text-sub"
                 } ${d.future ? "opacity-50" : ""}`}
               >
-                {d.done ? "✓" : d.label}
+                {d.done ? <Icon name="check" size={14} stroke={3} /> : d.label}
               </span>
             ))}
             <span className="ml-1 text-xs text-sub">本周 {weekCount} 天</span>
@@ -174,11 +175,13 @@ export default function StartFlow({ name }: { name: string }) {
             type="button"
             disabled={!tip.part}
             onClick={() => tip.part && pick(tip.part)}
-            className="flex w-full items-center gap-2 rounded-2xl border border-line bg-card px-3 py-2.5 text-left text-sm"
+            className="flex w-full items-center gap-2.5 rounded-2xl bg-primary-soft px-3.5 py-3 text-left text-sm"
           >
-            <span aria-hidden>💡</span>
+            <span className="text-deep">
+              <Icon name="chat" size={18} />
+            </span>
             <span className="min-w-0 flex-1 leading-snug">{tip.text}</span>
-            {tip.part && <span className="shrink-0 font-semibold text-primary">就练这个 ›</span>}
+            {tip.part && <span className="shrink-0 font-bold text-deep">就练这个 ›</span>}
           </button>
         </div>
       )}
@@ -189,15 +192,9 @@ export default function StartFlow({ name }: { name: string }) {
             animate ? "rise-in" : ""
           }`}
         >
-          {isDark(theme) && (
-            <div
-              aria-hidden
-              className="scan-sweep pointer-events-none absolute inset-x-0 top-0 h-full bg-gradient-to-b from-transparent via-primary/10 to-transparent"
-            />
-          )}
-          <div className="flex items-center justify-between px-4 pt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-sub">
-            <span>Body Scan</span>
-            <span className="text-primary">{group ? `已选 · ${group.label}` : "转动 · 点选部位"}</span>
+          <div className="flex items-center justify-between px-4 pt-3 text-xs font-semibold text-sub">
+            <span>选一个部位</span>
+            <span className="text-deep">{group ? `已选 · ${group.label}` : "转动 · 点选部位"}</span>
           </div>
           {!no3d && (
             <div className="h-[340px]">
@@ -234,9 +231,9 @@ export default function StartFlow({ name }: { name: string }) {
                 key={g.id}
                 onClick={() => pick(g.id as BodyPart)}
                 aria-pressed={part === g.id}
-                className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${
+                className={`h-10 shrink-0 rounded-full px-4 text-sm font-semibold ${
                   part === g.id
-                    ? "bg-primary text-white"
+                    ? "border-2 border-primary bg-primary-soft text-deep"
                     : "border border-line bg-surface text-ink"
                 }`}
               >
@@ -251,7 +248,7 @@ export default function StartFlow({ name }: { name: string }) {
               <button
                 key={x.label}
                 onClick={() => router.push(`/coach?q=${encodeURIComponent(x.q)}`)}
-                className="shrink-0 rounded-full border border-primary/40 bg-primary-soft px-3 py-1.5 text-sm font-semibold text-primary"
+                className="h-10 shrink-0 rounded-full border border-dashed border-primary/60 bg-card px-4 text-sm font-semibold text-deep"
               >
                 {x.label}
               </button>
@@ -284,7 +281,7 @@ export default function StartFlow({ name }: { name: string }) {
           >
             <div className="flex items-center justify-between text-xs font-semibold text-sub">
               <span className="tracking-[0.18em]">
-                {group.emoji} {group.label} · 第 {stepNo} / {total} 步
+                {group.label} · 第 {stepNo} / {total} 步
               </span>
               <button onClick={close} className="px-2 py-1">
                 取消
@@ -302,7 +299,7 @@ export default function StartFlow({ name }: { name: string }) {
                 <button
                   key={o}
                   onClick={() => q.onPick(o)}
-                  className="w-full rounded-2xl border border-primary/40 bg-primary-soft px-4 py-3.5 text-left text-[17px] font-semibold text-primary active:scale-[0.99]"
+                  className="w-full rounded-2xl border border-primary/40 bg-primary-soft px-4 py-3.5 text-left text-[17px] font-semibold text-deep active:scale-[0.99]"
                 >
                   {o}
                 </button>

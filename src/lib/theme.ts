@@ -3,21 +3,30 @@ import { useSyncExternalStore } from "react";
 
 /** Colour themes. The CSS variables for each one live in src/app/globals.css. */
 export const THEMES = [
-  { id: "frost", label: "科技浅色", dark: false, bg: "#f2f6fc", card: "#ffffff", primary: "#2f6bff", ink: "#14213a" },
   { id: "warm", label: "暖色奶油", dark: false, bg: "#fbf6f1", card: "#ffffff", primary: "#e8615a", ink: "#2a2733" },
   { id: "mint", label: "薄荷清新", dark: false, bg: "#f2faf6", card: "#ffffff", primary: "#128a66", ink: "#1e2f29" },
   { id: "lavender", label: "薰衣草紫", dark: false, bg: "#f7f5fd", card: "#ffffff", primary: "#7054e0", ink: "#2a2440" },
   { id: "sakura", label: "樱花粉", dark: false, bg: "#fff5f8", card: "#ffffff", primary: "#d6447c", ink: "#3a2630" },
-  { id: "tech", label: "科技深色", dark: true, bg: "#060a13", card: "#0d1526", primary: "#35d8ff", ink: "#e8f1ff" },
+  { id: "frost", label: "科技浅色", dark: false, bg: "#f2f6fc", card: "#ffffff", primary: "#2f6bff", ink: "#14213a" },
 ] as const;
 
 export type Theme = (typeof THEMES)[number]["id"];
-const DEFAULT: Theme = "frost";
+const DEFAULT: Theme = "warm";
 const KEY = "gymcoach:theme";
 const listeners = new Set<() => void>();
 
 const isTheme = (v: unknown): v is Theme => THEMES.some((t) => t.id === v);
 export const isDark = (t: Theme) => THEMES.find((x) => x.id === t)?.dark ?? false;
+
+/** Gym mode: the dark, high-contrast look used while a workout is open. */
+export function setGymMode(on: boolean) {
+  const root = document.documentElement;
+  if (on) root.dataset.mode = "gym";
+  else delete root.dataset.mode;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  const bg = getComputedStyle(root).getPropertyValue("--c-bg").trim();
+  if (meta && bg) meta.setAttribute("content", bg);
+}
 
 export function getTheme(): Theme {
   if (typeof window === "undefined") return DEFAULT;

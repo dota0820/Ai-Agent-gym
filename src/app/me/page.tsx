@@ -1,4 +1,5 @@
 "use client";
+import Icon from "@/components/Icon";
 import { useState } from "react";
 import { setTheme, THEMES, useTheme } from "@/lib/theme";
 import ProfileSheet from "@/components/ProfileSheet";
@@ -54,32 +55,35 @@ export default function Me() {
       <Card className="divide-y divide-line overflow-hidden p-0">
         <Row
           href="/me/profile"
-          icon="👤"
+          icon="user"
           title="身体与目标"
           value={`${targets.calories} kcal`}
         />
         <Row
           href="/me/gym"
-          icon="🏋️"
+          icon="dumbbell"
           title="我的健身房"
           value={`${activeGym.name} · ${gymCount}项`}
         />
         <Row
           href="/me/profile#memory"
-          icon="🧠"
+          icon="brain"
           title="教练记住的事"
           value={`${profile.memory.length} 条`}
         />
       </Card>
 
       <Card className="divide-y divide-line overflow-hidden p-0">
-        <Row href="/me/ai" icon="🤖" title="AI 模型" value={modelLabel} />
-        <Row href="/me/data" icon="🔐" title="口令与备份" />
+        <Row href="/me/ai" icon="cpu" title="AI 模型" value={modelLabel} />
+        <Row href="/me/data" icon="lock" title="口令与备份" />
       </Card>
 
       <Card>
-        <div className="text-sm font-bold">🎨 外观</div>
-        <p className="mt-0.5 text-xs text-sub">点一下马上换,随时可以改</p>
+        <div className="flex items-center gap-1.5 text-sm font-bold">
+          <Icon name="palette" size={16} />
+          外观（配色）
+        </div>
+        <p className="mt-0.5 text-xs text-sub">点一下马上换。开始训练后会自动变成同色系的深色模式。</p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {THEMES.map((t) => (
             <button
@@ -103,7 +107,7 @@ export default function Me() {
                 </span>
               </span>
               <span className="block px-2 py-1.5 text-xs font-semibold">
-                {theme === t.id ? "✓ " : ""}
+                {theme === t.id && <Icon name="check" size={12} stroke={3} className="mr-1 inline" />}
                 {t.label}
               </span>
             </button>

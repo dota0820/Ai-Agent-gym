@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import ExerciseCover from "@/components/ExerciseCover";
+import Icon from "@/components/Icon";
 import ExercisePicker from "@/components/ExercisePicker";
 import Guide, { guideFor } from "@/components/Guide";
 import NumInput from "@/components/NumInput";
@@ -30,6 +31,7 @@ import {
   useApp,
   useHydrated,
 } from "@/lib/store";
+import { setGymMode } from "@/lib/theme";
 import type { WatchData, Workout, WorkoutExercise } from "@/lib/types";
 
 function update(fn: (w: Workout) => Workout) {
@@ -60,9 +62,9 @@ function applyWeight(i: number, weight: number, from = 0) {
 }
 
 const VERDICT_STYLE = {
-  light: "bg-primary-soft text-primary",
+  light: "bg-primary-soft text-deep",
   right: "bg-mint-soft text-mint",
-  heavy: "bg-[#fdecea] text-[#c0392b]",
+  heavy: "bg-red-50 text-red-600",
 } as const;
 
 function AdviceLine({
@@ -78,7 +80,10 @@ function AdviceLine({
         VERDICT_STYLE[advice.verdict]
       }`}
     >
-      <span>💡 {advice.text}</span>
+      <span className="flex items-center gap-1.5">
+        <Icon name="bulb" size={14} />
+        {advice.text}
+      </span>
       {onApply && (
         <button
           onClick={onApply}
@@ -113,6 +118,12 @@ export default function WorkoutPage() {
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
+  }, []);
+
+  // Gym mode: dark and high-contrast while the workout screen is open.
+  useEffect(() => {
+    setGymMode(true);
+    return () => setGymMode(false);
   }, []);
 
   const restLeft = restEnd ? Math.ceil((restEnd - now) / 1000) : 0;
@@ -173,7 +184,7 @@ export default function WorkoutPage() {
       return;
     }
     if (s.reps == null) {
-      alert("先填一下这组做了几次(或几秒)再打勾 🙂");
+      alert("先填一下这组做了几次(或几秒)再打勾");
       return;
     }
     updateEx(i, (e) => ({
@@ -222,12 +233,21 @@ export default function WorkoutPage() {
             className="w-full truncate rounded-lg border border-transparent bg-transparent text-lg font-bold leading-tight outline-none focus:border-primary focus:bg-surface focus:px-2"
           />
           <div className="flex flex-wrap items-center gap-x-2 text-xs text-sub">
-            <span>
-              {backfill ? "📝 补记" : `⏱ ${mmss(elapsed)}`} · 已完成 {doneSets}/
-              {totalSets} 组
+            <span className="flex items-center gap-1">
+              {backfill ? (
+                "补记"
+              ) : (
+                <>
+                  <Icon name="timer" size={13} />
+                  <span className="num text-[15px] font-bold text-ink">{mmss(elapsed)}</span>
+                </>
+              )}
+              <span>
+                · 已完成 <span className="num text-[15px] font-bold text-ink">{doneSets}/{totalSets}</span> 组
+              </span>
             </span>
-            <label className="relative cursor-pointer font-semibold text-primary underline underline-offset-2">
-              📅{" "}
+            <label className="relative flex cursor-pointer items-center gap-1 font-semibold text-deep underline underline-offset-2">
+              <Icon name="calendar" size={13} />
               {backfill
                 ? sessionDay.slice(5).replace("-", "月") + "日"
                 : "今天"}
@@ -245,12 +265,12 @@ export default function WorkoutPage() {
         <div className="flex gap-2">
           <Link
             href="/coach"
-            className="rounded-xl border border-line bg-card px-3 py-2 text-sm"
+            className="flex h-11 items-center rounded-full border border-line bg-card px-4 text-sm"
           >
             问教练
           </Link>
           <button
-            className="rounded-xl bg-mint px-3 py-2 text-sm font-semibold text-white"
+            className="h-11 rounded-full bg-primary px-4 text-sm font-bold text-white"
             onClick={() => setFinishing(true)}
           >
             结束
@@ -291,7 +311,7 @@ export default function WorkoutPage() {
             <div className="p-4 pb-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
-                  <div className="text-[17px] font-bold">{ex.name}</div>
+                  <div className="text-xl font-bold">{ex.name}</div>
                   <div className="text-xs text-sub">
                     {ex.nameEn}
                     {ex.target
@@ -315,7 +335,7 @@ export default function WorkoutPage() {
                     className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
                       openGuide === i
                         ? "bg-primary text-white"
-                        : "bg-primary-soft text-primary"
+                        : "bg-primary-soft text-deep"
                     }`}
                     onClick={() => setOpenGuide(openGuide === i ? null : i)}
                     aria-expanded={openGuide === i}
@@ -342,7 +362,7 @@ export default function WorkoutPage() {
                     </span>
                   </>
                 ) : (
-                  "第一次做这个动作,从轻的开始,先把动作做对 ✨"
+                  "第一次做这个动作,从轻的开始,先把动作做对"
                 )}
               </div>
               {sessionAdvice && showSessionAdvice && (
@@ -354,8 +374,9 @@ export default function WorkoutPage() {
                 </div>
               )}
               {ex.note && (
-                <p className="mt-2 rounded-lg bg-primary-soft px-3 py-1.5 text-xs text-primary">
-                  💡 {ex.note}
+                <p className="mt-2 flex items-start gap-1.5 rounded-lg bg-primary-soft px-3 py-1.5 text-xs text-deep">
+                  <Icon name="bulb" size={14} className="mt-px" />
+                  {ex.note}
                 </p>
               )}
               {openGuide === i && (
@@ -363,7 +384,7 @@ export default function WorkoutPage() {
                   {!ex.exerciseId && ex.custom && (
                     <button
                       onClick={() => saveToLibrary(ex)}
-                      className="mb-3 w-full rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-primary"
+                      className="mb-3 w-full rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-deep"
                     >
                       ＋ 加入我的动作库(以后可以直接用)
                     </button>
@@ -385,7 +406,7 @@ export default function WorkoutPage() {
             </div>
 
             <div className="px-4">
-              <div className="grid grid-cols-[28px_1fr_1fr_44px] items-center gap-2 py-1 text-center text-[11px] text-sub">
+              <div className="grid grid-cols-[28px_1fr_1fr_52px] items-center gap-2 py-1 text-center text-xs text-sub">
                 <span>组</span>
                 <span>重量 kg</span>
                 <span>次数</span>
@@ -405,13 +426,13 @@ export default function WorkoutPage() {
                   : undefined;
                 return (
                   <div key={k}>
-                    <div className="grid grid-cols-[28px_1fr_1fr_44px] items-center gap-2 py-1">
-                      <span className="text-center text-sm font-semibold text-sub">
+                    <div className="grid grid-cols-[28px_1fr_1fr_52px] items-center gap-2 py-1">
+                      <span className="num text-center text-lg font-bold text-sub">
                         {k + 1}
                       </span>
                       <NumInput
                         decimal
-                        className={`${input} text-center ${s.done ? "bg-mint-soft" : ""}`}
+                        className={`${input} num h-12 text-center !text-2xl font-bold placeholder:!text-base placeholder:font-normal ${s.done ? "bg-mint-soft" : ""}`}
                         placeholder="自重"
                         aria-label={`${ex.name} 第 ${k + 1} 组重量`}
                         value={s.weight}
@@ -425,7 +446,7 @@ export default function WorkoutPage() {
                         }
                       />
                       <NumInput
-                        className={`${input} text-center ${s.done ? "bg-mint-soft" : ""}`}
+                        className={`${input} num h-12 text-center !text-2xl font-bold placeholder:!text-base placeholder:font-normal ${s.done ? "bg-mint-soft" : ""}`}
                         placeholder="—"
                         aria-label={`${ex.name} 第 ${k + 1} 组次数`}
                         value={s.reps}
@@ -442,13 +463,13 @@ export default function WorkoutPage() {
                         aria-label={`${ex.name} 第 ${k + 1} 组${s.done ? "取消完成" : "完成"}`}
                         aria-pressed={s.done}
                         onClick={() => toggleSet(i, k)}
-                        className={`h-11 rounded-xl text-lg font-bold ${
+                        className={`flex h-12 items-center justify-center rounded-xl ${
                           s.done
-                            ? "bg-mint text-white"
-                            : "border border-line bg-surface text-line"
+                            ? "bg-primary text-white"
+                            : "border-2 border-line bg-surface text-sub"
                         }`}
                       >
-                        ✓
+                        <Icon name="check" size={22} stroke={3} />
                       </button>
                     </div>
                     {s.done && !timed && (
@@ -512,7 +533,7 @@ export default function WorkoutPage() {
             <div className="flex items-center justify-between px-4 py-3 text-sm">
               <div className="flex gap-4">
                 <button
-                  className="font-semibold text-primary"
+                  className="font-semibold text-deep"
                   onClick={() =>
                     updateEx(i, (x) => ({
                       ...x,
@@ -565,22 +586,22 @@ export default function WorkoutPage() {
 
       {restEnd && restLeft > 0 && (
         <div className="safe-b fixed inset-x-0 bottom-0 z-30 px-4 pb-4">
-          <div className="mx-auto flex max-w-md items-center justify-between rounded-2xl bg-ink px-5 py-3 text-white shadow-lg">
+          <div className="mx-auto flex max-w-md items-center justify-between rounded-3xl bg-primary px-5 py-3 text-[var(--c-on-accent)] shadow-lg">
             <div>
-              <div className="text-xs opacity-70">休息一下,喝口水</div>
-              <div className="text-2xl font-bold tabular-nums">
+              <div className="text-xs font-semibold opacity-80">休息一下,喝口水</div>
+              <div className="num text-5xl font-bold leading-none">
                 {mmss(restLeft)}
               </div>
             </div>
             <div className="flex gap-2">
               <button
-                className="rounded-xl bg-white/15 px-3 py-2 text-sm"
+                className="h-12 rounded-2xl bg-black/15 px-3 text-sm font-semibold"
                 onClick={() => setRestEnd(restEnd + 30000)}
               >
                 +30 秒
               </button>
               <button
-                className="rounded-xl bg-surface px-3 py-2 text-sm font-semibold text-ink"
+                className="h-12 rounded-2xl bg-surface px-4 text-sm font-bold text-ink"
                 onClick={() => setRestEnd(null)}
               >
                 跳过
@@ -614,7 +635,7 @@ export default function WorkoutPage() {
             role="dialog"
             aria-label="结束训练"
           >
-            <h2 className="text-xl font-bold">练完啦!🎉</h2>
+            <h2 className="text-xl font-bold">练完啦!</h2>
             <p className="mt-1 text-sm text-sub">
               完成 {doneSets} 组 ·{" "}
               {backfill

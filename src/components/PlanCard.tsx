@@ -15,7 +15,7 @@ export default function PlanCard({ plan }: { plan: Plan }) {
   return (
     <div className="rounded-2xl border border-line bg-card">
       <div className="p-4 pb-2">
-        <div className="text-xs font-semibold text-primary">训练计划 · {plan.focus}</div>
+        <div className="text-xs font-semibold text-deep">训练计划 · {plan.focus}</div>
         <div className="mt-0.5 text-lg font-bold">{plan.title}</div>
         {plan.note && <p className="mt-1 text-sm text-sub">{plan.note}</p>}
       </div>
@@ -33,7 +33,7 @@ export default function PlanCard({ plan }: { plan: Plan }) {
                 onClick={() => setOpen(open === i ? null : i)}
                 aria-expanded={open === i}
               >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-primary">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-bold text-deep">
                   {i + 1}
                 </span>
                 <span className="min-w-0 flex-1">
@@ -45,7 +45,7 @@ export default function PlanCard({ plan }: { plan: Plan }) {
                     {it.targetRir != null ? ` · ${targetRirWords(it.targetRir)}` : ""}
                   </span>
                   {target && (
-                    <span className="mt-0.5 block text-xs font-semibold text-primary">
+                    <span className="mt-0.5 block text-xs font-semibold text-deep">
                       练到:{target}
                     </span>
                   )}
@@ -55,14 +55,14 @@ export default function PlanCard({ plan }: { plan: Plan }) {
               {open === i && (
                 <div className="px-4 pb-4">
                   {it.note && (
-                    <p className="mb-3 rounded-xl bg-primary-soft px-3 py-2 text-sm text-primary">
-                      💡 教练提醒:{it.note}
+                    <p className="mb-3 rounded-xl bg-primary-soft px-3 py-2 text-sm text-deep">
+                      教练提醒:{it.note}
                     </p>
                   )}
                   {!it.exerciseId && it.custom && (
                     <button
                       onClick={() => saveToLibrary(it)}
-                      className="mb-3 w-full rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-primary"
+                      className="mb-3 w-full rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-deep"
                     >
                       ＋ 加入我的动作库(以后可以直接用)
                     </button>

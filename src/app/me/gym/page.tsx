@@ -57,7 +57,7 @@ export default function MeGymPage() {
                 onClick={() => switchProfileGym(g.id)}
                 className="flex min-w-0 flex-1 items-start gap-2.5 text-left"
               >
-                <span className={`mt-0.5 text-sm ${isCurrent ? "text-primary" : "text-sub"}`}>
+                <span className={`mt-0.5 text-sm ${isCurrent ? "text-deep" : "text-sub"}`}>
                   {isCurrent ? "●" : "○"}
                 </span>
                 <div className="min-w-0 flex-1">
@@ -65,7 +65,7 @@ export default function MeGymPage() {
                     <span className="truncate font-semibold">{g.name}</span>
                     {g.scene && <span className="truncate text-xs text-sub">{g.scene}</span>}
                     {isCurrent && (
-                      <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                      <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-deep">
                         当前
                       </span>
                     )}

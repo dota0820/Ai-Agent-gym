@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
+import "@fontsource/barlow-condensed/600.css";
+import "@fontsource/barlow-condensed/700.css";
 import "./globals.css";
 import ClientOnly from "@/components/ClientOnly";
 import TabBar from "@/components/TabBar";
@@ -15,12 +17,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f2f6fc",
+  themeColor: "#fbf6f1",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN" className="h-full antialiased" data-theme="frost" suppressHydrationWarning>
+    <html lang="zh-CN" className="h-full antialiased" data-theme="warm" suppressHydrationWarning>
       <body className="min-h-full">
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">

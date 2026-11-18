@@ -1,5 +1,6 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
+import Icon from "./Icon";
 import { useState } from "react";
 import {
   anySubLabel,
@@ -26,8 +27,8 @@ export default function ExercisePicker({
   const [showImport, setShowImport] = useState(false);
 
   const tabs: { id: ExtendedLibGroup; label: string }[] = [
-    ...(customExercises.length > 0 ? [{ id: "custom" as const, label: `⭐ 我的(${customExercises.length})` }] : []),
-    { id: "shape", label: "✨ 女生塑形" },
+    ...(customExercises.length > 0 ? [{ id: "custom" as const, label: `我的(${customExercises.length})` }] : []),
+    { id: "shape", label: "女生塑形" },
     ...GROUPS,
   ];
   const list = listAllExercises(g, "", customExercises);
@@ -46,10 +47,10 @@ export default function ExercisePicker({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary"
+                className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-deep"
                 onClick={() => setShowImport(true)}
               >
-                🔗 从视频链接导入
+                从视频链接导入
               </button>
               <button className="text-sm text-sub" onClick={onClose}>
                 关闭
@@ -90,8 +91,8 @@ export default function ExercisePicker({
                         className="h-[72px] w-[108px] shrink-0 rounded-lg bg-[#141418] object-cover"
                       />
                     ) : (
-                      <div className="flex h-[72px] w-[108px] shrink-0 items-center justify-center rounded-lg bg-primary-soft text-2xl">
-                        🎬
+                      <div className="flex h-[72px] w-[108px] shrink-0 items-center justify-center rounded-lg bg-primary-soft text-deep">
+                        <Icon name="video" size={24} />
                       </div>
                     )}
                     <span className="min-w-0 flex-1">
@@ -101,12 +102,12 @@ export default function ExercisePicker({
                         {sub ? `${e.nameEn ? " · " : ""}${sub}` : ""}
                       </span>
                       {isCustomExercise(e) && (
-                        <span className="mt-1 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        <span className="mt-1 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-deep">
                           {e.sourcePlatform ? `来自 ${e.sourcePlatform}` : "自定义"}
                         </span>
                       )}
                     </span>
-                    <span className="text-lg font-bold text-primary">+</span>
+                    <span className="text-lg font-bold text-deep">+</span>
                   </button>
                 </li>
               );

@@ -54,7 +54,7 @@ export default function MeAiPage() {
     <SubPage title="AI 模型与 Key">
       <Card className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-bold">🔑 OpenRouter API Key</div>
+          <div className="text-sm font-bold">OpenRouter API Key</div>
           <span
             className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
               hasAnyKey ? "bg-mint-soft text-mint" : "bg-red-50 text-red-600"
@@ -119,7 +119,7 @@ export default function MeAiPage() {
 
       {aiModel && !AI_MODELS.some((m) => m.id === aiModel) && (
         <div className="rounded-2xl border border-primary/40 bg-primary-soft px-4 py-3 text-sm">
-          <div className="font-semibold text-primary">◉ 正在使用</div>
+          <div className="font-semibold text-deep">◉ 正在使用</div>
           <div className="break-all font-mono text-xs">{aiModel}</div>
         </div>
       )}
@@ -144,7 +144,7 @@ export default function MeAiPage() {
                     onClick={() => setAiModel(m.id)}
                     className="flex w-full items-start gap-3 px-4 py-3 text-left active:bg-bg disabled:cursor-not-allowed"
                   >
-                    <span className={`mt-0.5 text-base ${active ? "text-primary" : "text-sub"}`}>
+                    <span className={`mt-0.5 text-base ${active ? "text-deep" : "text-sub"}`}>
                       {active ? "◉" : "○"}
                     </span>
                     <div className="min-w-0 flex-1">
@@ -177,7 +177,7 @@ export default function MeAiPage() {
                 type="button"
                 disabled={disabled || liveState === "loading"}
                 onClick={loadLive}
-                className="w-full rounded-xl bg-primary-soft px-4 py-3 text-[15px] font-semibold text-primary disabled:opacity-50"
+                className="w-full rounded-xl bg-primary-soft px-4 py-3 text-[15px] font-semibold text-deep disabled:opacity-50"
               >
                 {liveState === "loading" ? "正在读取…" : "显示全部模型"}
               </button>
@@ -213,7 +213,7 @@ export default function MeAiPage() {
                             active ? "bg-primary-soft" : "active:bg-bg"
                           }`}
                         >
-                          <span className={`text-sm ${active ? "text-primary" : "text-sub"}`}>
+                          <span className={`text-sm ${active ? "text-deep" : "text-sub"}`}>
                             {active ? "◉" : "○"}
                           </span>
                           <span className="min-w-0 flex-1">

@@ -35,14 +35,14 @@ function Detail() {
         ‹ 返回
       </button>
       <header>
-        <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+        <div className="flex items-center gap-2 text-xs font-semibold text-deep">
           <span>
             {group.label}
             {sub ? ` › ${sub.label}` : ""}
           </span>
           {custom && (
             <span className="rounded-full bg-mint-soft px-2 py-0.5 text-[11px] text-mint">
-              {e.sourcePlatform ? `🔗 ${e.sourcePlatform}` : "自定义动作"}
+              {e.sourcePlatform ? `${e.sourcePlatform}` : "自定义动作"}
             </span>
           )}
         </div>
@@ -76,7 +76,7 @@ function Detail() {
         href={`/coach?q=${encodeURIComponent(`${e.name}${e.nameEn ? `(${e.nameEn})` : ""}我有点不确定动作对不对,能再仔细讲讲要点吗?`)}`}
         className={`${btnSoft} w-full`}
       >
-        💬 还是不懂?问教练
+        还是不懂?问教练
       </Link>
 
       {custom && (

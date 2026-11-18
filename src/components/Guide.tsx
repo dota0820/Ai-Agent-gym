@@ -99,7 +99,7 @@ export default function Guide({
         <ol className="space-y-3 px-3 pb-3">
           {guide.steps.map((s, i) => (
             <li key={i} className="flex gap-2.5 text-[17px] leading-[1.7]">
-              <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-[13px] font-bold text-primary">
+              <span className="mt-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-[13px] font-bold text-deep">
                 {i + 1}
               </span>
               <span>{s}</span>
@@ -111,7 +111,7 @@ export default function Guide({
       {guide.mistakes.length > 0 && (
         <details className="group rounded-2xl border border-line">
           <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-3 text-[16px] font-semibold">
-            ⚠️ 常见错误({guide.mistakes.length})
+            常见错误({guide.mistakes.length})
             <span className="text-sub group-open:rotate-180">▾</span>
           </summary>
           <ul className="space-y-2 px-3 pb-3">
@@ -132,7 +132,7 @@ export default function Guide({
               <Link
                 key={w}
                 href={`/coach?q=${encodeURIComponent(`我做${lib.name}(${lib.nameEn || lib.name})的时候,${w}。是哪里做错了?怎么改?`)}`}
-                className="flex items-center justify-between gap-2 rounded-2xl border border-primary/40 bg-surface px-3 py-3 text-[16px] font-semibold text-primary active:scale-[0.99]"
+                className="flex items-center justify-between gap-2 rounded-2xl border border-primary/40 bg-surface px-3 py-3 text-[16px] font-semibold text-deep active:scale-[0.99]"
               >
                 <span>{w}?</span>
                 <span className="shrink-0 text-sm">问教练 ›</span>
@@ -148,7 +148,7 @@ export default function Guide({
             href={sourceUrl}
             target="_blank"
             rel="noreferrer"
-            className="inline-block text-[15px] font-semibold text-primary underline underline-offset-2"
+            className="inline-block text-[15px] font-semibold text-deep underline underline-offset-2"
           >
             ▶ 打开原视频 ({sourcePlatform || "来源"})
           </a>
@@ -157,7 +157,7 @@ export default function Guide({
           href={videoUrl(name, nameEn)}
           target="_blank"
           rel="noreferrer"
-          className="inline-block text-[15px] font-semibold text-primary underline underline-offset-2"
+          className="inline-block text-[15px] font-semibold text-deep underline underline-offset-2"
         >
           ▶ YouTube 搜示范视频
         </a>

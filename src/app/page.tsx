@@ -31,7 +31,7 @@ export default function Home() {
       {!profile.goal && (
         <Link href="/me" className="block">
           <Card className="border-primary/30 bg-primary-soft">
-            <div className="font-semibold text-primary">先让教练认识你 →</div>
+            <div className="font-semibold text-deep">先让教练认识你 →</div>
             <p className="mt-1 text-sm text-ink/70">
               花 1 分钟填一下目标和健身房器械,教练的安排会更适合你。
             </p>

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ───────── Themes ─────────
- * One block of colour variables per theme; "frost" (light tech) is the default.
+ * One block of colour variables per theme; "warm" is the default.
  * The list shown in the picker lives in src/lib/theme.ts.
  * Colours are CSS variables so every screen follows the active theme.
  */
@@ -12,7 +12,7 @@
   --c-card: #ffffff;
   --c-surface: #ffffff;
   --c-ink: #14213a;
-  --c-sub: #66758f;
+  --c-sub: #5a6984;
   --c-line: #dde6f2;
   --c-primary: #2f6bff;
   --c-primary-soft: #e5edff;
@@ -22,6 +22,7 @@
   --c-body: #d3dceb;
   --c-muscle: #2f6bff;
   --c-muscle-2: #a9c2ff;
+  --c-deep: #1f55d8;
 }
 [data-theme="warm"] {
   color-scheme: light;
@@ -29,7 +30,7 @@
   --c-card: #ffffff;
   --c-surface: #ffffff;
   --c-ink: #2a2733;
-  --c-sub: #857f8f;
+  --c-sub: #6f6879;
   --c-line: #efe6de;
   --c-primary: #e8615a;
   --c-primary-soft: #fde9e5;
@@ -39,6 +40,7 @@
   --c-body: #e6dfd8;
   --c-muscle: #e8615a;
   --c-muscle-2: #f6b8a8;
+  --c-deep: #b93a33;
 }
 [data-theme="mint"] {
   color-scheme: light;
@@ -46,7 +48,7 @@
   --c-card: #ffffff;
   --c-surface: #ffffff;
   --c-ink: #1e2f29;
-  --c-sub: #667d73;
+  --c-sub: #566b62;
   --c-line: #d9ebe2;
   --c-primary: #128a66;
   --c-primary-soft: #dbf3e9;
@@ -56,6 +58,7 @@
   --c-body: #d6e6de;
   --c-muscle: #128a66;
   --c-muscle-2: #9ed9c3;
+  --c-deep: #0e7254;
 }
 [data-theme="lavender"] {
   color-scheme: light;
@@ -63,7 +66,7 @@
   --c-card: #ffffff;
   --c-surface: #ffffff;
   --c-ink: #2a2440;
-  --c-sub: #787191;
+  --c-sub: #665f80;
   --c-line: #e6e1f5;
   --c-primary: #7054e0;
   --c-primary-soft: #ece7fc;
@@ -73,6 +76,7 @@
   --c-body: #dfd9ef;
   --c-muscle: #7054e0;
   --c-muscle-2: #c3b6f3;
+  --c-deep: #5a3fc8;
 }
 [data-theme="sakura"] {
   color-scheme: light;
@@ -80,7 +84,7 @@
   --c-card: #ffffff;
   --c-surface: #ffffff;
   --c-ink: #3a2630;
-  --c-sub: #8c7482;
+  --c-sub: #7a6170;
   --c-line: #f5dfe7;
   --c-primary: #d6447c;
   --c-primary-soft: #fde5ee;
@@ -90,25 +94,8 @@
   --c-body: #f0dbe3;
   --c-muscle: #d6447c;
   --c-muscle-2: #f3b2cb;
+  --c-deep: #ad2a5e;
 }
-[data-theme="tech"] {
-  color-scheme: dark;
-  --c-bg: #060a13;
-  --c-card: #0d1526;
-  --c-surface: #121c31;
-  --c-ink: #e8f1ff;
-  --c-sub: #8696b4;
-  --c-line: #1e2b45;
-  --c-primary: #35d8ff;
-  --c-primary-soft: #0f2a40;
-  --c-mint: #3df0b0;
-  --c-mint-soft: #0e2c2a;
-  --c-on-accent: #04121f;
-  --c-body: #24324f;
-  --c-muscle: #35d8ff;
-  --c-muscle-2: #1f6f93;
-}
-
 @theme inline {
   --color-bg: var(--c-bg);
   --color-card: var(--c-card);
@@ -118,6 +105,7 @@
   --color-line: var(--c-line);
   --color-primary: var(--c-primary);
   --color-primary-soft: var(--c-primary-soft);
+  --color-deep: var(--c-deep);
   --color-mint: var(--c-mint);
   --color-mint-soft: var(--c-mint-soft);
   --font-sans: -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
@@ -143,60 +131,61 @@ select {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* ───────── Tech theme details ───────── */
-[data-theme="tech"] body {
-  background:
-    radial-gradient(900px 500px at 85% -10%, rgba(53, 216, 255, 0.13), transparent 60%),
-    radial-gradient(700px 480px at -10% 30%, rgba(124, 92, 255, 0.12), transparent 60%),
-    linear-gradient(rgba(120, 160, 255, 0.035) 1px, transparent 1px) 0 0 / 100% 28px,
-    linear-gradient(90deg, rgba(120, 160, 255, 0.035) 1px, transparent 1px) 0 0 / 28px 100%,
-    var(--c-bg);
-  background-attachment: fixed;
-}
-/* text on accent fills follows the theme (dark text on the bright tech accents) */
+/* text on accent fills follows the theme */
 :is(.bg-primary, .bg-mint, .bg-ink).text-white,
 :is(.bg-primary, .bg-mint, .bg-ink) [class*="text-white"] {
   color: var(--c-on-accent);
 }
-[data-theme="frost"] body {
-  background:
-    radial-gradient(800px 460px at 90% -10%, rgba(47, 107, 255, 0.12), transparent 60%),
-    radial-gradient(700px 460px at -10% 25%, rgba(0, 200, 220, 0.1), transparent 60%),
-    linear-gradient(rgba(47, 107, 255, 0.035) 1px, transparent 1px) 0 0 / 100% 28px,
-    linear-gradient(90deg, rgba(47, 107, 255, 0.035) 1px, transparent 1px) 0 0 / 28px 100%,
-    var(--c-bg);
-  background-attachment: fixed;
+.num {
+  font-family: "Barlow Condensed", var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
 }
-[data-theme="frost"] .bg-primary {
-  background-image: linear-gradient(135deg, #2f6bff, #19b5e6);
-  box-shadow: 0 6px 18px rgba(47, 107, 255, 0.22);
+
+/* ───────── Gym mode ─────────
+ * While a workout is open the whole app turns dark and high-contrast, with a
+ * brighter version of the theme's accent (set from the workout page).
+ */
+html[data-mode="gym"] {
+  color-scheme: dark;
+  --c-bg: #16121a;
+  --c-card: #221c26;
+  --c-surface: #221c26;
+  --c-ink: #f5f2f4;
+  --c-sub: #a9a2ad;
+  --c-line: #342b38;
+  --c-primary-soft: #33252c;
+  --c-mint: #5fd8ae;
+  --c-mint-soft: #1d3029;
+  --c-on-accent: #1a1418;
+  --c-body: #3a3140;
+  --c-deep: var(--c-primary);
 }
-[data-theme="frost"] .bg-card {
-  box-shadow: 0 6px 20px rgba(30, 60, 120, 0.06);
+html[data-mode="gym"][data-theme="warm"] { --c-primary: #ff8a80; --c-muscle: #ff8a80; --c-muscle-2: #8a4a44; }
+html[data-mode="gym"][data-theme="sakura"] {
+  --c-bg: #170f14; --c-card: #241820; --c-surface: #241820; --c-line: #38262f; --c-primary-soft: #3a2230;
+  --c-primary: #ff7fad; --c-muscle: #ff7fad; --c-muscle-2: #8a3d5a;
 }
-[data-theme="tech"] .bg-primary {
-  background-image: linear-gradient(135deg, #35d8ff, #6f8cff);
-  box-shadow: 0 0 18px rgba(53, 216, 255, 0.28);
+html[data-mode="gym"][data-theme="lavender"] {
+  --c-bg: #110f1a; --c-card: #1c1928; --c-surface: #1c1928; --c-line: #2d2940; --c-primary-soft: #2a2545;
+  --c-primary: #a996ff; --c-muscle: #a996ff; --c-muscle-2: #4f4590;
 }
-[data-theme="tech"] .bg-card {
-  box-shadow:
-    inset 0 1px 0 rgba(140, 180, 255, 0.06),
-    0 8px 24px rgba(0, 0, 0, 0.25);
+html[data-mode="gym"][data-theme="mint"] {
+  --c-bg: #0c1411; --c-card: #15201b; --c-surface: #15201b; --c-line: #24332c; --c-primary-soft: #183429;
+  --c-primary: #4fd6a5; --c-muscle: #4fd6a5; --c-muscle-2: #23624b;
 }
-[data-theme="tech"] .bg-red-50 {
+html[data-mode="gym"][data-theme="frost"] {
+  --c-bg: #0a0f1a; --c-card: #131b2b; --c-surface: #131b2b; --c-line: #223049; --c-primary-soft: #1b2a4a;
+  --c-primary: #7aa5ff; --c-muscle: #7aa5ff; --c-muscle-2: #34508f;
+}
+html[data-mode="gym"] .bg-red-50 {
   background: rgba(255, 90, 90, 0.14);
 }
-[data-theme="tech"] .text-red-600 {
-  color: #ff8a8a;
+html[data-mode="gym"] .text-red-600 {
+  color: #ff9a9a;
 }
-[data-theme="tech"] h1 {
-  background: linear-gradient(90deg, #e8f1ff, #9fdcff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-[data-theme="tech"] ::placeholder {
-  color: #5d6c8a;
+html[data-mode="gym"] .bg-amber-50 {
+  background: rgba(245, 158, 11, 0.14);
 }
 
 /* ───────── Start-screen animation ───────── */
@@ -253,52 +242,31 @@ select {
 }
 
 /* ───────── Coach chat (ChatGPT / Claude style) ───────── */
-.coach-glow {
-  background:
-    radial-gradient(520px 340px at 15% 8%, color-mix(in srgb, var(--c-primary) 14%, transparent), transparent 70%),
-    radial-gradient(480px 360px at 95% 20%, color-mix(in srgb, var(--c-mint) 10%, transparent), transparent 70%);
+@keyframes mascot-lift {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  25% { transform: translateY(-6px) rotate(-10deg); }
+  50% { transform: translateY(-6px) rotate(0); }
+  75% { transform: translateY(-6px) rotate(10deg); }
 }
-@keyframes orb-spin {
-  to {
-    transform: rotate(360deg);
-  }
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+  40% { transform: translateY(-4px); opacity: 1; }
 }
-@keyframes orb-breathe {
-  50% {
-    box-shadow: 0 0 26px color-mix(in srgb, var(--c-primary) 55%, transparent);
-  }
+.mascot-lift {
+  animation: mascot-lift 1.6s ease-in-out infinite;
+  transform-origin: 50% 80%;
 }
-.coach-orb {
-  background: conic-gradient(
-    from 0deg,
-    var(--c-primary),
-    var(--c-mint),
-    color-mix(in oklab, var(--c-primary) 55%, white),
-    var(--c-primary)
-  );
-  box-shadow: 0 0 14px color-mix(in srgb, var(--c-primary) 35%, transparent);
-  animation:
-    orb-spin 6s linear infinite,
-    orb-breathe 3s ease-in-out infinite;
-  -webkit-mask: radial-gradient(circle at 50% 50%, #000 62%, transparent 63%);
-  mask: radial-gradient(circle at 50% 50%, #000 62%, transparent 63%);
+.dot-bounce {
+  animation: dot-bounce 1.2s ease-in-out infinite;
 }
-.coach-hello {
-  background: linear-gradient(90deg, var(--c-ink), var(--c-primary));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+
 .msg-user {
-  background: color-mix(in srgb, var(--c-ink) 7%, var(--c-card));
+  background: var(--c-primary-soft);
   color: var(--c-ink);
 }
 .msg-ai strong {
-  color: var(--c-primary);
+  color: var(--c-deep);
   font-weight: 700;
-}
-[data-theme="tech"] .msg-ai strong {
-  color: var(--c-ink);
 }
 @keyframes shimmer {
   to {
@@ -316,17 +284,18 @@ select {
 .chat-bar {
   background: var(--c-card);
   border: 1px solid var(--c-line);
-  box-shadow: 0 10px 30px rgba(20, 30, 60, 0.1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
 }
 .chat-bar:focus-within {
   border-color: color-mix(in srgb, var(--c-primary) 55%, var(--c-line));
 }
 .send-btn {
-  background: linear-gradient(135deg, color-mix(in oklab, var(--c-primary) 75%, white), var(--c-primary));
+  background: var(--c-primary);
   color: var(--c-on-accent);
 }
 @media (prefers-reduced-motion: reduce) {
-  .coach-orb,
+  .mascot-lift,
+  .dot-bounce,
   .thinking {
     animation: none;
   }

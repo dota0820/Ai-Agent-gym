@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import Icon from "@/components/Icon";
 import ImportExerciseModal from "@/components/ImportExerciseModal";
+import RecordSwitch from "@/components/RecordSwitch";
 import { btnSoft, H1 } from "@/components/ui";
 import {
   anySubLabel,
@@ -16,9 +18,9 @@ import { subsFor } from "@/lib/exercises";
 import { useApp } from "@/lib/store";
 import { GROUPS, MUSCLE_LABEL } from "@/lib/types";
 
-const TABS: { id: ExtendedLibGroup; label: string; emoji: string }[] = [
-  { id: "custom", label: "我的导入", emoji: "⭐" },
-  { id: "shape", label: "女生塑形", emoji: "✨" },
+const TABS: { id: ExtendedLibGroup; label: string }[] = [
+  { id: "custom", label: "我的导入" },
+  { id: "shape", label: "女生塑形" },
   ...GROUPS,
 ];
 
@@ -37,6 +39,9 @@ function Library() {
 
   return (
     <div>
+      <div className="mb-4">
+        <RecordSwitch on="library" />
+      </div>
       <H1 sub="点开动作看动图示范、练到哪块肌肉;也可贴小红书/FB/YouTube链接导入">动作库</H1>
 
       <button
@@ -44,7 +49,8 @@ function Library() {
         onClick={() => setShowImport(true)}
         className={`${btnSoft} mb-3 w-full border border-primary/25`}
       >
-        🔗 从小红书 / FB / YouTube 链接导入新动作
+        <Icon name="link" size={18} className="mr-1.5" />
+        从小红书 / FB / YouTube 链接导入新动作
       </button>
 
       <div className="-mx-4 mb-2 flex gap-2 overflow-x-auto px-4 pb-1">
@@ -54,10 +60,10 @@ function Library() {
             onClick={() => go(x.id)}
             aria-pressed={g === x.id}
             className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-semibold ${
-              g === x.id ? "bg-primary text-white" : "border border-line bg-card"
+              g === x.id ? "border-2 border-primary bg-primary-soft text-deep" : "border border-line bg-card"
             }`}
           >
-            {x.emoji} {x.label}
+            {x.label}
             {x.id === "custom" && customExercises.length > 0 ? `(${customExercises.length})` : ""}
           </button>
         ))}
@@ -71,7 +77,7 @@ function Library() {
               onClick={() => go(g, x.id)}
               aria-pressed={sub === x.id}
               className={`shrink-0 rounded-full px-3 py-1 text-[13px] font-semibold ${
-                sub === x.id ? "bg-ink text-white" : "bg-primary-soft text-primary"
+                sub === x.id ? "bg-ink text-white" : "bg-primary-soft text-deep"
               }`}
             >
               {x.label}
@@ -88,7 +94,9 @@ function Library() {
 
       {g === "custom" && list.length === 0 && (
         <div className="rounded-2xl border border-line bg-card p-5 text-center">
-          <div className="text-2xl">🎬</div>
+          <div className="flex justify-center text-deep">
+            <Icon name="video" size={28} />
+          </div>
           <p className="mt-2 text-sm font-semibold">还没有导入过外部视频动作</p>
           <p className="mt-1 text-xs leading-relaxed text-sub">
             在小红书、Facebook 或 YouTube 看到喜欢的练臀/练背教学，点上方按钮把链接或分享文案贴进来，AI 会自动帮你整理成标准动作卡。
@@ -116,8 +124,8 @@ function Library() {
                     className="h-[68px] w-[102px] shrink-0 rounded-xl bg-[#141418] object-cover"
                   />
                 ) : (
-                  <div className="flex h-[68px] w-[102px] shrink-0 items-center justify-center rounded-xl bg-primary-soft text-2xl">
-                    🎬
+                  <div className="flex h-[68px] w-[102px] shrink-0 items-center justify-center rounded-xl bg-primary-soft text-deep">
+                    <Icon name="video" size={26} />
                   </div>
                 )}
                 <span className="min-w-0 flex-1">
@@ -128,11 +136,11 @@ function Library() {
                   <span className="mt-1 flex flex-wrap gap-1">
                     {custom && (
                       <span className="rounded-full bg-mint-soft px-2 py-0.5 text-[11px] font-semibold text-mint">
-                        {e.sourcePlatform ? `🔗 ${e.sourcePlatform}` : "自定义"}
+                        {e.sourcePlatform || "自定义"}
                       </span>
                     )}
                     {sLabel && (
-                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-deep">
                         {sLabel}
                       </span>
                     )}

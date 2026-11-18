@@ -148,14 +148,14 @@ export default function MeProfilePage() {
 
       <Card className="space-y-2.5">
         <div className="flex items-center justify-between">
-          <div className="text-sm font-bold">🥗 每日营养目标</div>
+          <div className="text-sm font-bold">每日营养目标</div>
           <span className="text-xs text-sub">
             {target.missingBodyStats ? "通用参考值" : `BMR ${target.bmr} · TDEE ${target.tdee}`}
           </span>
         </div>
         <div className="grid grid-cols-4 gap-2 text-center">
           <div className="rounded-xl bg-bg p-2.5">
-            <div className="text-base font-bold text-primary">{target.calories}</div>
+            <div className="text-base font-bold text-deep">{target.calories}</div>
             <div className="text-[11px] text-sub">热量 kcal</div>
           </div>
           <div className="rounded-xl bg-bg p-2.5">
@@ -175,7 +175,7 @@ export default function MeProfilePage() {
 
       <div id="memory">
         <Card>
-          <div className="text-sm font-bold">🧠 教练记住的事</div>
+          <div className="text-sm font-bold">教练记住的事</div>
           {profile.memory.length === 0 ? (
             <p className="mt-1 text-sm text-sub">
               聊天时提到的长期信息（比如“我不喜欢跑步”），教练会记在这里。
