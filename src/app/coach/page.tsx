@@ -9,21 +9,22 @@ import { fileToJpegDataUrl, sendToCoach, useCoachBusy, visibleText } from "@/lib
 import { setState, useApp } from "@/lib/store";
 import { canSpeak, speak, stopSpeaking, useDictation } from "@/lib/voice";
 
-const STARTERS = [
-  "今天想练背,帮我安排一下",
-  "我是完全的新手,第一次去健身房应该做什么?",
-  "下次我应该练什么?",
-  "高位下拉我总是手臂酸、背没感觉,怎么办?",
+/** Suggestions on the empty screen; `photo` opens the camera instead of sending. */
+const STARTERS: { icon: string; label: string; send?: string; photo?: boolean }[] = [
+  { icon: "🗓️", label: "帮我安排今天的训练", send: "帮我安排今天的训练,根据我最近的记录决定练哪里" },
+  { icon: "🎯", label: "下次我应该练什么?", send: "下次我应该练什么?" },
+  { icon: "🏋️", label: "教我一个动作的正确做法", send: "我想学一个动作的正确做法,你先问我是哪个动作" },
+  { icon: "📷", label: "拍器械,问怎么用", photo: true },
 ];
 
-function CoachAvatar() {
+/** The coach's mark: a small animated gradient orb. */
+function CoachOrb({ size = 28 }: { size?: number }) {
   return (
     <span
       aria-hidden
-      className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-base"
-    >
-      🏋️
-    </span>
+      className="coach-orb inline-block shrink-0 rounded-full"
+      style={{ width: size, height: size }}
+    />
   );
 }
 
@@ -39,7 +40,7 @@ function ChoiceButton({
   return (
     <button
       onClick={onClick}
-      className="flex w-full items-center gap-3 rounded-2xl border border-line bg-surface px-3.5 py-3 text-left text-[15px] font-medium shadow-[0_2px_8px_rgba(20,30,60,0.04)] active:scale-[0.99] active:border-primary"
+      className="flex w-full items-center gap-3 rounded-2xl border border-line bg-card px-3.5 py-3 text-left text-[15px] active:scale-[0.99] active:border-primary"
     >
       {badge && (
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft text-xs font-bold text-primary">
@@ -47,10 +48,14 @@ function ChoiceButton({
         </span>
       )}
       <span className="min-w-0 flex-1">{label}</span>
-      <span className="shrink-0 text-primary">›</span>
+      <span className="shrink-0 text-sub">↗</span>
     </button>
   );
 }
+
+/** Phones and tablets: Enter makes a new line and the send button sends (like ChatGPT). */
+const isTouch = () =>
+  typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 
 function Coach() {
   const { chat, profile } = useApp();
@@ -62,6 +67,7 @@ function Coach() {
   const router = useRouter();
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const boxRef = useRef<HTMLTextAreaElement>(null);
   const sentQ = useRef<string | null>(null);
   const dictation = useDictation((t) => setText(t));
 
@@ -77,6 +83,14 @@ function Coach() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [chat.length, lastLen]);
+
+  // Grow the input with its text, up to about six lines.
+  useEffect(() => {
+    const el = boxRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+  }, [text]);
 
   // Read the reply aloud once it has finished streaming.
   const wasBusy = useRef(false);
@@ -107,139 +121,150 @@ function Coach() {
         fileToJpegDataUrl(file, 360),
       ]);
       setPhoto({ full, thumb });
+      boxRef.current?.focus();
     } catch {
       setPhotoErr("这张照片打不开,换一张试试。");
     }
   }
 
+  const hour = new Date().getHours();
+  const hello = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
+  const canSend = !busy && (!!text.trim() || !!photo);
   const iconBtn =
-    "flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full text-xl active:bg-primary-soft disabled:opacity-40";
+    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-[19px] text-sub active:bg-primary-soft disabled:opacity-40";
 
   return (
     <div className="flex flex-col">
-      <div className="mb-3">
+      {/* soft glow behind the page, like the ChatGPT / Claude apps */}
+      <div aria-hidden className="coach-glow pointer-events-none fixed inset-0 -z-10" />
+
+      <header className="sticky top-0 z-20 -mx-4 -mt-5 mb-2 flex items-center justify-between gap-2 px-4 pt-3 pb-2 backdrop-blur-md">
         <ProfileChip />
-      </div>
-      <header className="mb-3 flex items-center justify-between gap-2">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">AI 教练</h1>
-          <p className="text-sm text-sub">打字、说话、拍照都可以</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1">
           {canSpeak() && (
             <button
               aria-pressed={profile.speak}
+              aria-label={profile.speak ? "关闭朗读" : "朗读教练的回复"}
               onClick={() => {
                 if (profile.speak) stopSpeaking();
                 else speak("好的,我会把回复读给你听");
                 setState((s) => ({ ...s, profile: { ...s.profile, speak: !s.profile.speak } }));
               }}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                profile.speak ? "bg-primary text-white" : "border border-line bg-card text-sub"
+              className={`flex h-10 w-10 items-center justify-center rounded-full border text-base ${
+                profile.speak
+                  ? "border-primary bg-primary-soft text-primary"
+                  : "border-line bg-card text-sub"
               }`}
             >
-              {profile.speak ? "🔊 朗读开" : "🔈 朗读关"}
+              {profile.speak ? "🔊" : "🔈"}
             </button>
           )}
           {chat.length > 0 && (
             <button
-              className="text-sm text-sub underline"
+              aria-label="新对话"
               onClick={() => {
-                if (confirm("清空聊天记录?(训练记录和计划不会被删除)"))
+                if (confirm("开始新对话?(聊天记录会清空,训练记录和计划不会被删除)"))
                   setState((s) => ({ ...s, chat: [] }));
               }}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-card text-base text-ink"
             >
-              清空
+              ✎
             </button>
           )}
         </div>
       </header>
 
-      {chat.length === 0 && (
-        <div className="space-y-2.5">
-          <div className="flex items-start gap-2.5">
-            <CoachAvatar />
-            <p className="bubble-ai rounded-2xl rounded-tl-md px-4 py-3 text-[15px] leading-relaxed">
-              嗨,我是你的健身教练 💪 告诉我今天想练哪里,我会看你之前的记录,帮你排好动作、组数和重量。看到不会用的器械,拍张照发给我就行。
-            </p>
+      {chat.length === 0 ? (
+        <div className="flex min-h-[calc(100dvh-150px)] flex-col pb-[118px]">
+          <div className="flex flex-1 flex-col items-center justify-center text-center">
+            <CoachOrb size={64} />
+            <h1 className="coach-hello mt-5 text-[28px] font-bold leading-tight tracking-tight">
+              {hello}{profile.name ? `,${profile.name}` : ""}
+            </h1>
+            <p className="mt-2 text-[15px] text-sub">我是你的 AI 健身教练,今天想练什么?</p>
           </div>
-          <div className="space-y-2 pl-[42px]">
+          <div className="space-y-1">
             {STARTERS.map((s) => (
-              <ChoiceButton key={s} label={s} onClick={() => void sendToCoach(s)} />
+              <button
+                key={s.label}
+                onClick={() =>
+                  s.photo ? fileRef.current?.click() : s.send && void sendToCoach(s.send)
+                }
+                className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-3 text-left text-[16px] text-ink active:bg-primary-soft"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-card text-lg">
+                  {s.icon}
+                </span>
+                {s.label}
+              </button>
             ))}
           </div>
         </div>
-      )}
-
-      <div className="space-y-3 pb-36">
-        {chat.map((m, i) => {
-          const isLast = i === chat.length - 1;
-          const streaming = busy && isLast && m.role === "assistant";
-          const shown = m.role === "assistant" ? visibleText(m.text) : m.text;
-          return m.role === "user" ? (
-            <div key={m.id} className="flex flex-col items-end gap-1">
-              {m.image ? (
-                <img src={m.image} alt="你发的照片" className="max-h-48 max-w-[60%] rounded-2xl" />
-              ) : m.image === "" ? (
-                <span className="text-xs text-sub">📷 照片(已不保留预览)</span>
-              ) : null}
-              <div className="bubble-user max-w-[82%] whitespace-pre-wrap rounded-2xl rounded-br-md px-4 py-2.5 text-[15px] leading-relaxed">
-                {m.text}
+      ) : (
+        <div className="space-y-6 pt-2 pb-44">
+          {chat.map((m, i) => {
+            const isLast = i === chat.length - 1;
+            const streaming = busy && isLast && m.role === "assistant";
+            const shown = m.role === "assistant" ? visibleText(m.text) : m.text;
+            return m.role === "user" ? (
+              <div key={m.id} className="flex flex-col items-end gap-1.5">
+                {m.image ? (
+                  <img src={m.image} alt="你发的照片" className="max-h-56 max-w-[70%] rounded-3xl" />
+                ) : m.image === "" ? (
+                  <span className="text-xs text-sub">📷 照片(已不保留预览)</span>
+                ) : null}
+                <div className="msg-user max-w-[82%] whitespace-pre-wrap rounded-3xl px-4 py-2.5 text-[16px] leading-relaxed">
+                  {m.text}
+                </div>
               </div>
-            </div>
-          ) : (
-            <div key={m.id} className="space-y-2">
-              {(shown || streaming) && (
-                <div className="flex items-start gap-2.5">
-                  <CoachAvatar />
-                  <div className="bubble-ai min-w-0 max-w-[calc(100%-42px)] rounded-2xl rounded-tl-md px-4 py-2.5">
+            ) : (
+              <div key={m.id} className="space-y-3">
+                {(shown || streaming) && (
+                  <div>
+                    <div className="mb-1.5 flex items-center gap-2 text-xs font-semibold text-sub">
+                      <CoachOrb size={20} />
+                      AI 教练
+                    </div>
                     {shown ? (
-                      <MD text={shown} />
+                      <div className="msg-ai text-[16px]">
+                        <MD text={shown} />
+                      </div>
                     ) : (
-                      <span className="flex items-center gap-1 py-1.5" aria-label="教练正在想">
-                        {[0, 1, 2].map((d) => (
-                          <span
-                            key={d}
-                            className="h-2 w-2 animate-bounce rounded-full bg-primary"
-                            style={{ animationDelay: `${d * 0.15}s` }}
-                          />
-                        ))}
-                      </span>
+                      <span className="thinking text-[15px] font-medium">正在思考…</span>
                     )}
                   </div>
-                </div>
-              )}
-              {m.plan && <PlanCard plan={m.plan} />}
-              {m.logged && (
-                <div className="ml-[42px] inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                  ✓ 已记录:{m.logged}
-                </div>
-              )}
-              {m.exerciseAdded && (
-                <div className="ml-[42px] inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                  ✓ 已加入动作库:{m.exerciseAdded}
-                </div>
-              )}
-              {m.mealLogged && (
-                <div className="ml-[42px] inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                  🥗 已记录饮食:{m.mealLogged}
-                </div>
-              )}
-              {isLast && !busy && m.choices && m.choices.length > 0 && (
-                <div className="flex flex-col gap-2 pt-1 pl-[42px]" role="group" aria-label="快捷回复">
-                  {m.choices.map((c, k) => (
-                    <ChoiceButton key={c} label={c} badge={"ABCD"[k]} onClick={() => submit(c)} />
-                  ))}
-                  <p className="text-xs text-sub">点一下就能回答,也可以打字、说话或拍照</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-        <div ref={endRef} />
-      </div>
+                )}
+                {m.plan && <PlanCard plan={m.plan} />}
+                {m.logged && (
+                  <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                    ✓ 已记录:{m.logged}
+                  </div>
+                )}
+                {m.exerciseAdded && (
+                  <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                    ✓ 已加入动作库:{m.exerciseAdded}
+                  </div>
+                )}
+                {m.mealLogged && (
+                  <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                    🥗 已记录饮食:{m.mealLogged}
+                  </div>
+                )}
+                {isLast && !busy && m.choices && m.choices.length > 0 && (
+                  <div className="flex flex-col gap-2" role="group" aria-label="快捷回复">
+                    {m.choices.map((c, k) => (
+                      <ChoiceButton key={c} label={c} badge={"ABCD"[k]} onClick={() => submit(c)} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          <div ref={endRef} />
+        </div>
+      )}
 
-      <div className="fixed inset-x-0 bottom-[calc(58px+env(safe-area-inset-bottom))] z-10 bg-gradient-to-t from-bg via-bg to-transparent px-4 pt-4 pb-2">
+      <div className="fixed inset-x-0 bottom-[calc(58px+env(safe-area-inset-bottom))] z-10 bg-gradient-to-t from-bg via-bg/90 to-transparent px-4 pt-6 pb-2">
         <div className="mx-auto max-w-md">
           {(photo || photoErr || dictation.error || dictation.listening) && (
             <div className="mb-2 flex items-center gap-3 rounded-2xl border border-line bg-card p-2 text-sm">
@@ -262,7 +287,7 @@ function Coach() {
               )}
             </div>
           )}
-          <div className="chat-bar flex items-end gap-1 rounded-[26px] p-1.5">
+          <div className="chat-bar flex items-end gap-1 rounded-[28px] p-1.5">
             <input
               ref={fileRef}
               type="file"
@@ -275,13 +300,31 @@ function Coach() {
               }}
             />
             <button
-              className={iconBtn}
+              className={`${iconBtn} text-[24px] font-light text-ink`}
               aria-label="拍照或选照片发给教练"
               disabled={busy}
               onClick={() => fileRef.current?.click()}
             >
-              📷
+              +
             </button>
+            <textarea
+              ref={boxRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                // Computer keyboard: Enter sends, Shift+Enter makes a new line.
+                // Phone keyboard: Enter always makes a new line; tap ↑ to send.
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && !isTouch()) {
+                  e.preventDefault();
+                  submit();
+                }
+              }}
+              rows={1}
+              enterKeyHint="enter"
+              placeholder="问问 AI 教练…"
+              aria-label="给教练发消息"
+              className="max-h-[168px] min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-[16px] leading-6 outline-none placeholder:text-sub"
+            />
             {dictation.supported && (
               <button
                 className={`${iconBtn} ${dictation.listening ? "bg-primary text-white" : ""}`}
@@ -293,29 +336,18 @@ function Coach() {
                 {dictation.listening ? "■" : "🎙"}
               </button>
             )}
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  submit();
-                }
-              }}
-              rows={1}
-              placeholder="跟教练说点什么…"
-              aria-label="给教练发消息"
-              className="max-h-32 min-h-[42px] min-w-0 flex-1 resize-none bg-transparent px-2 py-2.5 outline-none"
-            />
             <button
               onClick={() => submit()}
-              disabled={busy || (!text.trim() && !photo)}
+              disabled={!canSend}
               aria-label="发送"
-              className="flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-white disabled:opacity-35"
+              className="send-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white transition disabled:opacity-30"
             >
-              {busy ? "…" : "↑"}
+              {busy ? <span className="h-3 w-3 rounded-[3px] bg-white" /> : "↑"}
             </button>
           </div>
+          <p className="mt-1.5 text-center text-[11px] text-sub">
+            AI 教练也会出错,关节痛或身体不舒服请先停下来
+          </p>
         </div>
       </div>
     </div>

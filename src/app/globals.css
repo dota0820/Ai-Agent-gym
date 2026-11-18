@@ -252,33 +252,82 @@ select {
   }
 }
 
-/* ───────── Coach chat ───────── */
-.bubble-user {
-  background: linear-gradient(
-    135deg,
-    color-mix(in oklab, var(--c-primary) 78%, white),
+/* ───────── Coach chat (ChatGPT / Claude style) ───────── */
+.coach-glow {
+  background:
+    radial-gradient(520px 340px at 15% 8%, color-mix(in srgb, var(--c-primary) 14%, transparent), transparent 70%),
+    radial-gradient(480px 360px at 95% 20%, color-mix(in srgb, var(--c-mint) 10%, transparent), transparent 70%);
+}
+@keyframes orb-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes orb-breathe {
+  50% {
+    box-shadow: 0 0 26px color-mix(in srgb, var(--c-primary) 55%, transparent);
+  }
+}
+.coach-orb {
+  background: conic-gradient(
+    from 0deg,
+    var(--c-primary),
+    var(--c-mint),
+    color-mix(in oklab, var(--c-primary) 55%, white),
     var(--c-primary)
   );
-  color: var(--c-on-accent);
-  box-shadow: 0 6px 16px color-mix(in srgb, var(--c-primary) 22%, transparent);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--c-primary) 35%, transparent);
+  animation:
+    orb-spin 6s linear infinite,
+    orb-breathe 3s ease-in-out infinite;
+  -webkit-mask: radial-gradient(circle at 50% 50%, #000 62%, transparent 63%);
+  mask: radial-gradient(circle at 50% 50%, #000 62%, transparent 63%);
 }
-.bubble-ai {
-  background: var(--c-card);
-  border: 1px solid var(--c-line);
-  box-shadow: 0 4px 14px rgba(20, 30, 60, 0.05);
+.coach-hello {
+  background: linear-gradient(90deg, var(--c-ink), var(--c-primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
-.bubble-ai strong {
+.msg-user {
+  background: color-mix(in srgb, var(--c-ink) 7%, var(--c-card));
+  color: var(--c-ink);
+}
+.msg-ai strong {
   color: var(--c-primary);
   font-weight: 700;
 }
-[data-theme="tech"] .bubble-ai strong {
+[data-theme="tech"] .msg-ai strong {
   color: var(--c-ink);
+}
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+.thinking {
+  background: linear-gradient(90deg, var(--c-sub) 30%, var(--c-primary) 50%, var(--c-sub) 70%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.6s linear infinite;
 }
 .chat-bar {
   background: var(--c-card);
   border: 1px solid var(--c-line);
-  box-shadow: 0 8px 24px rgba(20, 30, 60, 0.1);
+  box-shadow: 0 10px 30px rgba(20, 30, 60, 0.1);
 }
 .chat-bar:focus-within {
-  border-color: var(--c-primary);
+  border-color: color-mix(in srgb, var(--c-primary) 55%, var(--c-line));
+}
+.send-btn {
+  background: linear-gradient(135deg, color-mix(in oklab, var(--c-primary) 75%, white), var(--c-primary));
+  color: var(--c-on-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .coach-orb,
+  .thinking {
+    animation: none;
+  }
 }
