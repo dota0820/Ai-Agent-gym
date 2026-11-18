@@ -79,10 +79,30 @@ function Coach() {
     void sendToCoach(q);
   }, [q, router]);
 
+  // Follow the reply as it streams only while the user is at the bottom. If they
+  // scroll up to read, leave the view alone instead of yanking it down.
+  const stick = useRef(true);
+  useEffect(() => {
+    const onScroll = () => {
+      // distance from the end of the conversation to the bottom of the screen
+      const end = endRef.current?.getBoundingClientRect().bottom ?? 0;
+      stick.current = end - window.innerHeight < 160;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const lastLen = chat[chat.length - 1]?.text.length ?? 0;
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    if (stick.current) endRef.current?.scrollIntoView({ block: "end" });
   }, [chat.length, lastLen]);
+
+  // Stop the phone browser's pull-to-refresh from reloading the chat while scrolling up.
+  useEffect(() => {
+    const els = [document.documentElement, document.body];
+    const before = els.map((e) => e.style.overscrollBehaviorY);
+    els.forEach((e) => (e.style.overscrollBehaviorY = "contain"));
+    return () => els.forEach((e, i) => (e.style.overscrollBehaviorY = before[i]));
+  }, []);
 
   // Grow the input with its text, up to about six lines.
   useEffect(() => {
@@ -108,6 +128,7 @@ function Coach() {
     if ((!t.trim() && !photo) || busy) return;
     stopSpeaking();
     dictation.stop();
+    stick.current = true; // a new message always scrolls into view
     void sendToCoach(t, photo ?? undefined);
     setText("");
     setPhoto(null);
