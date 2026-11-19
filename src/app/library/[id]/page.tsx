@@ -1,4 +1,5 @@
 "use client";
+import { articlesForExercise } from "@/lib/knowledge";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense } from "react";
@@ -7,7 +8,13 @@ import Guide from "@/components/Guide";
 import MuscleMap from "@/components/MuscleMap";
 import { btnGhost, btnPrimary, btnSoft, Card } from "@/components/ui";
 import { findExerciseById, isCustomExercise } from "@/lib/exercise-lookup";
-import { fmtDate, lastPerformance, removeCustomExercise, setsSummary, useApp } from "@/lib/store";
+import {
+  fmtDate,
+  lastPerformance,
+  removeCustomExercise,
+  setsSummary,
+  useApp,
+} from "@/lib/store";
 import { GROUPS, SUBS } from "@/lib/types";
 
 function Detail() {
@@ -55,7 +62,13 @@ function Detail() {
       <ExerciseCover exerciseId={e.id} name={e.name} />
 
       <Card>
-        <Guide guide={e} name={e.name} nameEn={e.nameEn} showAnim={false} showMuscles={false} />
+        <Guide
+          guide={e}
+          name={e.name}
+          nameEn={e.nameEn}
+          showAnim={false}
+          showMuscles={false}
+        />
       </Card>
 
       <Card>
@@ -69,6 +82,30 @@ function Detail() {
             你上次做这个动作({fmtDate(last.workout.startedAt)})
           </div>
           <div className="mt-1 font-semibold">{setsSummary(last.exercise)}</div>
+        </Card>
+      )}
+
+      {articlesForExercise(e.id).length > 0 && (
+        <Card>
+          <h2 className="mb-2 text-base font-bold">新手常见问题</h2>
+          <ul className="space-y-2">
+            {articlesForExercise(e.id).map((a) => (
+              <li key={a.id}>
+                <Link
+                  href={`/learn?k=${a.id}`}
+                  className="flex items-start gap-2 rounded-xl bg-primary-soft px-3 py-2.5 text-sm"
+                >
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold">{a.title}</span>
+                    <span className="mt-0.5 block text-[13px] leading-relaxed text-sub">
+                      💡 {a.truth}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-primary">›</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </Card>
       )}
 

@@ -8,7 +8,7 @@ const TABS: { href: string; label: string; icon: IconName; also?: string[] }[] =
   { href: "/coach", label: "教练", icon: "chat" },
   { href: "/food", label: "饮食", icon: "food" },
   // the exercise library lives under 记录 now
-  { href: "/history", label: "记录", icon: "clipboard", also: ["/library"] },
+  { href: "/history", label: "记录", icon: "clipboard", also: ["/library", "/learn"] },
   { href: "/me", label: "我的", icon: "user" },
 ];
 

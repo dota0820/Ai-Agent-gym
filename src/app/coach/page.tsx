@@ -6,16 +6,36 @@ import CoachMascot, { CoachThinking } from "@/components/CoachMascot";
 import Icon, { type IconName } from "@/components/Icon";
 import MD from "@/components/MD";
 import PlanCard from "@/components/PlanCard";
-import { fileToJpegDataUrl, sendToCoach, useCoachBusy, visibleText } from "@/lib/actions";
+import {
+  fileToJpegDataUrl,
+  sendToCoach,
+  useCoachBusy,
+  visibleText,
+} from "@/lib/actions";
 import { setState, useApp } from "@/lib/store";
 import { canSpeak, speak, stopSpeaking, useDictation } from "@/lib/voice";
 
 /** Suggestions on the empty screen; `photo` opens the camera instead of sending. */
-const STARTERS: { icon: IconName; label: string; send?: string; photo?: boolean }[] = [
-  { icon: "calendar", label: "帮我安排今天的训练", send: "帮我安排今天的训练,根据我最近的记录决定练哪里" },
+const STARTERS: {
+  icon: IconName;
+  label: string;
+  send?: string;
+  photo?: boolean;
+  href?: string;
+}[] = [
+  {
+    icon: "calendar",
+    label: "帮我安排今天的训练",
+    send: "帮我安排今天的训练,根据我最近的记录决定练哪里",
+  },
   { icon: "target", label: "下次我应该练什么?", send: "下次我应该练什么?" },
-  { icon: "dumbbell", label: "教我一个动作的正确做法", send: "我想学一个动作的正确做法,你先问我是哪个动作" },
+  {
+    icon: "dumbbell",
+    label: "教我一个动作的正确做法",
+    send: "我想学一个动作的正确做法,你先问我是哪个动作",
+  },
   { icon: "camera", label: "拍器械,问怎么用", photo: true },
+  { icon: "bulb", label: "新手避坑指南(练不到?会不会受伤?)", href: "/learn" },
 ];
 
 function ChoiceButton({
@@ -45,13 +65,16 @@ function ChoiceButton({
 
 /** Phones and tablets: Enter makes a new line and the send button sends (like ChatGPT). */
 const isTouch = () =>
-  typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
+  typeof window !== "undefined" &&
+  window.matchMedia("(pointer: coarse)").matches;
 
 function Coach() {
   const { chat, profile } = useApp();
   const busy = useCoachBusy();
   const [text, setText] = useState("");
-  const [photo, setPhoto] = useState<{ full: string; thumb: string } | null>(null);
+  const [photo, setPhoto] = useState<{ full: string; thumb: string } | null>(
+    null,
+  );
   const [photoErr, setPhotoErr] = useState("");
   const params = useSearchParams();
   const router = useRouter();
@@ -91,7 +114,8 @@ function Coach() {
     const els = [document.documentElement, document.body];
     const before = els.map((e) => e.style.overscrollBehaviorY);
     els.forEach((e) => (e.style.overscrollBehaviorY = "contain"));
-    return () => els.forEach((e, i) => (e.style.overscrollBehaviorY = before[i]));
+    return () =>
+      els.forEach((e, i) => (e.style.overscrollBehaviorY = before[i]));
   }, []);
 
   // Grow the input with its text, up to about six lines.
@@ -173,7 +197,10 @@ function Coach() {
               onClick={() => {
                 if (profile.speak) stopSpeaking();
                 else speak("好的,我会把回复读给你听");
-                setState((s) => ({ ...s, profile: { ...s.profile, speak: !s.profile.speak } }));
+                setState((s) => ({
+                  ...s,
+                  profile: { ...s.profile, speak: !s.profile.speak },
+                }));
               }}
               className={`flex h-11 w-11 items-center justify-center rounded-full border ${
                 profile.speak
@@ -188,7 +215,11 @@ function Coach() {
             <button
               aria-label="新对话"
               onClick={() => {
-                if (confirm("开始新对话?(聊天记录会清空,训练记录和计划不会被删除)"))
+                if (
+                  confirm(
+                    "开始新对话?(聊天记录会清空,训练记录和计划不会被删除)",
+                  )
+                )
                   setState((s) => ({ ...s, chat: [] }));
               }}
               className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-card text-ink"
@@ -206,16 +237,23 @@ function Coach() {
               <CoachMascot size={72} label="哑铃教练" />
             </span>
             <h1 className="mt-5 text-[28px] font-bold leading-tight tracking-tight">
-              {hello}{profile.name ? `,${profile.name}` : ""}
+              {hello}
+              {profile.name ? `,${profile.name}` : ""}
             </h1>
-            <p className="mt-2 text-[15px] text-sub">我是你的 AI 健身教练,今天想练什么?</p>
+            <p className="mt-2 text-[15px] text-sub">
+              我是你的 AI 健身教练,今天想练什么?
+            </p>
           </div>
           <div className="space-y-1">
             {STARTERS.map((s) => (
               <button
                 key={s.label}
                 onClick={() =>
-                  s.photo ? fileRef.current?.click() : s.send && void sendToCoach(s.send)
+                  s.href
+                    ? router.push(s.href)
+                    : s.photo
+                      ? fileRef.current?.click()
+                      : s.send && void sendToCoach(s.send)
                 }
                 className="flex w-full items-center gap-3.5 rounded-2xl px-2 py-3 text-left text-[16px] text-ink active:bg-primary-soft"
               >
@@ -236,7 +274,11 @@ function Coach() {
             return m.role === "user" ? (
               <div key={m.id} className="flex flex-col items-end gap-1.5">
                 {m.image ? (
-                  <img src={m.image} alt="你发的照片" className="max-h-56 max-w-[70%] rounded-3xl" />
+                  <img
+                    src={m.image}
+                    alt="你发的照片"
+                    className="max-h-56 max-w-[70%] rounded-3xl"
+                  />
                 ) : m.image === "" ? (
                   <span className="flex items-center gap-1 text-xs text-sub">
                     <Icon name="camera" size={14} />
@@ -266,26 +308,50 @@ function Coach() {
                 {m.plan && <PlanCard plan={m.plan} />}
                 {m.logged && (
                   <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                    <Icon name="check" size={13} stroke={3} className="mr-1 inline" />
+                    <Icon
+                      name="check"
+                      size={13}
+                      stroke={3}
+                      className="mr-1 inline"
+                    />
                     已记录:{m.logged}
                   </div>
                 )}
                 {m.exerciseAdded && (
                   <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                    <Icon name="check" size={13} stroke={3} className="mr-1 inline" />
+                    <Icon
+                      name="check"
+                      size={13}
+                      stroke={3}
+                      className="mr-1 inline"
+                    />
                     已加入动作库:{m.exerciseAdded}
                   </div>
                 )}
                 {m.mealLogged && (
                   <div className="inline-block rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                    <Icon name="check" size={13} stroke={3} className="mr-1 inline" />
+                    <Icon
+                      name="check"
+                      size={13}
+                      stroke={3}
+                      className="mr-1 inline"
+                    />
                     已记录饮食:{m.mealLogged}
                   </div>
                 )}
                 {isLast && !busy && m.choices && m.choices.length > 0 && (
-                  <div className="flex flex-col gap-2" role="group" aria-label="快捷回复">
+                  <div
+                    className="flex flex-col gap-2"
+                    role="group"
+                    aria-label="快捷回复"
+                  >
                     {m.choices.map((c, k) => (
-                      <ChoiceButton key={c} label={c} badge={"ABCD"[k]} onClick={() => submit(c)} />
+                      <ChoiceButton
+                        key={c}
+                        label={c}
+                        badge={"ABCD"[k]}
+                        onClick={() => submit(c)}
+                      />
                     ))}
                   </div>
                 )}
@@ -302,8 +368,14 @@ function Coach() {
             <div className="mb-2 flex items-center gap-3 rounded-2xl border border-line bg-card p-2 text-sm">
               {photo && (
                 <>
-                  <img src={photo.thumb} alt="待发送的照片" className="h-14 w-14 rounded-xl object-cover" />
-                  <span className="flex-1 text-sub">照片已选好,可以再补一句话,然后点发送</span>
+                  <img
+                    src={photo.thumb}
+                    alt="待发送的照片"
+                    className="h-14 w-14 rounded-xl object-cover"
+                  />
+                  <span className="flex-1 text-sub">
+                    照片已选好,可以再补一句话,然后点发送
+                  </span>
                   <button
                     className="flex h-10 w-10 items-center justify-center text-sub"
                     aria-label="移除照片"
@@ -319,9 +391,13 @@ function Coach() {
                   正在听…说完会自动停
                 </span>
               )}
-              {!photo && !dictation.listening && (photoErr || dictation.error) && (
-                <span className="flex-1 px-2 text-sub">{photoErr || dictation.error}</span>
-              )}
+              {!photo &&
+                !dictation.listening &&
+                (photoErr || dictation.error) && (
+                  <span className="flex-1 px-2 text-sub">
+                    {photoErr || dictation.error}
+                  </span>
+                )}
             </div>
           )}
           <div className="chat-bar flex items-end gap-1 rounded-[28px] p-1.5">
@@ -351,7 +427,12 @@ function Coach() {
               onKeyDown={(e) => {
                 // Computer keyboard: Enter sends, Shift+Enter makes a new line.
                 // Phone keyboard: Enter always makes a new line; tap ↑ to send.
-                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && !isTouch()) {
+                if (
+                  e.key === "Enter" &&
+                  !e.shiftKey &&
+                  !e.nativeEvent.isComposing &&
+                  !isTouch()
+                ) {
                   e.preventDefault();
                   submit();
                 }
@@ -368,7 +449,9 @@ function Coach() {
                 aria-label={dictation.listening ? "停止语音输入" : "语音输入"}
                 aria-pressed={dictation.listening}
                 disabled={busy}
-                onClick={() => (dictation.listening ? dictation.stop() : dictation.start())}
+                onClick={() =>
+                  dictation.listening ? dictation.stop() : dictation.start()
+                }
               >
                 <Icon name={dictation.listening ? "stop" : "mic"} size={20} />
               </button>
