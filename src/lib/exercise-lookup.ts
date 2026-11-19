@@ -1,4 +1,4 @@
-import { exerciseImages, EXERCISES, EX_BY_ID, listExercises, subLabel } from "./exercises";
+import { exerciseImages, hasExerciseImages, EXERCISES, EX_BY_ID, listExercises, subLabel } from "./exercises";
 import type { CustomExercise, Exercise } from "./types";
 import type { LibGroup } from "./exercises";
 
@@ -40,7 +40,8 @@ export function anySubLabel(e: AnyExercise, g: ExtendedLibGroup): string | undef
 
 export function exerciseThumbnail(e: AnyExercise): string | undefined {
   if (isCustomExercise(e)) return e.imageUrl;
-  return exerciseImages(e.id)[1];
+  // exercises without their own demo photos get the list placeholder instead of a broken image
+  return hasExerciseImages(e.id) ? exerciseImages(e.id)[1] : undefined;
 }
 
 export function allExerciseNamesForPrompt(customExercises: CustomExercise[]): string {
