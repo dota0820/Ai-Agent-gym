@@ -26,11 +26,33 @@ export default function ExerciseCover({
   if (!ex) return null;
 
   if (!isCustomExercise(ex)) {
-    return <ExerciseAnim id={ex.id} name={ex.name} note={ex.imageNote} compact={compact} />;
+    return (
+      <ExerciseAnim
+        id={ex.id}
+        name={ex.name}
+        note={ex.imageNote}
+        compact={compact}
+      />
+    );
   }
 
   const safeImg = safeImageUrl(ex.imageUrl);
   const safeSrc = safeHttpUrl(ex.sourceUrl);
+  const like =
+    !safeImg && ex.lookalikeId
+      ? findExerciseById(ex.lookalikeId, [])
+      : undefined;
+  if (like) {
+    // no photo of its own: show the closest built-in exercise as a reference
+    return (
+      <ExerciseAnim
+        id={like.id}
+        name={ex.name}
+        note={`参考示范:${like.name}(姿势相近)`}
+        compact={compact}
+      />
+    );
+  }
   if (!safeImg && !safeSrc) return null;
   const imgFailed = failedId === exerciseId;
 

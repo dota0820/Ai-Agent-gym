@@ -1,7 +1,17 @@
 import { z } from "zod";
 import { ALL_EQUIPMENT_ITEMS } from "./equipment";
 
-const GROUP_IDS = ["back", "chest", "legs", "glutes", "shoulders", "arms", "core", "mobility", "cardio"] as const;
+const GROUP_IDS = [
+  "back",
+  "chest",
+  "legs",
+  "glutes",
+  "shoulders",
+  "arms",
+  "core",
+  "mobility",
+  "cardio",
+] as const;
 const MUSCLE_IDS = [
   "trapezius",
   "upper-back",
@@ -29,16 +39,59 @@ const guideSchema = z.object({
   steps: z.array(z.string()).describe("一步一步的动作要领,含呼吸和速度"),
   common_mistakes: z.array(z.string()),
   feel: z.string().describe("应该哪里有感觉"),
-  key_points: z.array(z.string()).max(3).optional().describe("最重要的 3 个要点,每个不超过 14 个字"),
+  key_points: z
+    .array(z.string())
+    .max(3)
+    .optional()
+    .describe("最重要的 3 个要点,每个不超过 14 个字"),
   group: z.enum(GROUP_IDS).optional().describe("属于哪个部位"),
-  primary_muscles: z.array(z.enum(MUSCLE_IDS)).optional().describe("主要练到的肌肉"),
-  secondary_muscles: z.array(z.enum(MUSCLE_IDS)).optional().describe("辅助参与的肌肉"),
+  primary_muscles: z
+    .array(z.enum(MUSCLE_IDS))
+    .optional()
+    .describe("主要练到的肌肉"),
+  secondary_muscles: z
+    .array(z.enum(MUSCLE_IDS))
+    .optional()
+    .describe("辅助参与的肌肉"),
   start_weight: z.string().optional().describe("新手起始重量,例如 每只 3–5 kg"),
 });
+
+const SIMILAR_DESC =
+  "动作库里姿势最接近的内置动作 id(例如 哑铃夹胸推→db-bench、上斜哑铃飞鸟→incline-db-press、绳索夹胸→cable-fly-high),App 会借用它的示范图;必须是库里真实存在的 id,实在没有相近的才不填";
 
 const addExerciseSchema = guideSchema.extend({
   name: z.string().describe("中文名"),
   name_en: z.string().optional().describe("英文名"),
+  group: z.enum(GROUP_IDS).describe("属于哪个部位"),
+  primary_muscles: z
+    .array(z.enum(MUSCLE_IDS))
+    .min(1)
+    .describe("主要练到的肌肉(必填,人体图会标出来)"),
+  secondary_muscles: z
+    .array(z.enum(MUSCLE_IDS))
+    .describe("辅助参与的肌肉,没有就空数组"),
+  similar_exercise_id: z.string().optional().describe(SIMILAR_DESC),
+});
+
+const updateExerciseSchema = z.object({
+  exercise_id: z
+    .string()
+    .describe(
+      "要修改的自定义动作 id(以 custom- 开头,见「用户自定义的动作库」)",
+    ),
+  name: z.string().optional(),
+  name_en: z.string().optional(),
+  group: z.enum(GROUP_IDS).optional(),
+  primary_muscles: z.array(z.enum(MUSCLE_IDS)).optional(),
+  secondary_muscles: z.array(z.enum(MUSCLE_IDS)).optional(),
+  similar_exercise_id: z.string().optional().describe(SIMILAR_DESC),
+  equipment: z.string().optional(),
+  setup: z.string().optional(),
+  steps: z.array(z.string()).optional(),
+  common_mistakes: z.array(z.string()).optional(),
+  feel: z.string().optional(),
+  key_points: z.array(z.string()).max(3).optional(),
+  start_weight: z.string().optional(),
 });
 
 const planSchema = z.object({
@@ -54,7 +107,10 @@ const planSchema = z.object({
         sets: z.number().int().min(1).max(8),
         reps: z.string().describe("例如 10-12,或 30秒"),
         rest_seconds: z.number().int().min(0).max(300),
-        suggested_weight: z.string().optional().describe("例如 20 kg、每只 5 kg"),
+        suggested_weight: z
+          .string()
+          .optional()
+          .describe("例如 20 kg、每只 5 kg"),
         target_rir: z
           .number()
           .int()
@@ -152,14 +208,26 @@ export const COACH_TOOLS: CoachTool[] = [
       "把一个动作库里没有的动作保存进用户自己的动作库,以后可以在动作库里查看、在训练里直接添加。用户说“把这个动作加进动作库”,或你介绍了一个库外动作而用户想保留时调用。库里已有的动作不要重复添加。",
     schema: addExerciseSchema,
     event: (exercise) => ({ type: "exercise", exercise }),
-    result: "已加入用户的动作库,以后安排训练时可以用它的 id 直接引用(见上下文里的自定义动作列表)。",
+    result:
+      "已加入用户的动作库,以后安排训练时可以用它的 id 直接引用(见上下文里的自定义动作列表)。",
+  },
+  {
+    name: "update_exercise_in_library",
+    description:
+      "修改用户动作库里已经存在的自定义动作:补上或改正练到的肌肉、部位、参考示范动作、步骤等。用户说动作信息不对、缺了肌肉/图片时调用;只填要改的字段。",
+    schema: updateExerciseSchema,
+    event: (patch) => ({ type: "exercise_update", patch }),
+    result: "已更新这个动作。",
   },
   {
     name: "remember",
     description:
       "记住一条关于用户的长期信息(伤病、偏好、器械限制、目标等),以后每次对话都会看到。",
     schema: z.object({ note: z.string() }),
-    event: (input) => ({ type: "memory", note: (input as { note: string }).note }),
+    event: (input) => ({
+      type: "memory",
+      note: (input as { note: string }).note,
+    }),
     result: "已记住。",
   },
 ];
@@ -204,7 +272,9 @@ export const EquipmentScanSchema = z.object({
   is_gym_photo: z.boolean().describe("图片是否能看清健身房器械或健身器材"),
   matched_equipment: z
     .array(z.string())
-    .describe(`从标准列表中匹配到的器械名称，必须严格从这些词里选: ${ALL_EQUIPMENT_ITEMS.join("、")}`),
+    .describe(
+      `从标准列表中匹配到的器械名称，必须严格从这些词里选: ${ALL_EQUIPMENT_ITEMS.join("、")}`,
+    ),
   extra_equipment: z
     .array(z.string())
     .describe("标准列表以外、在照片中额外看到的器械中文名（没有就空数组）"),
@@ -212,21 +282,31 @@ export const EquipmentScanSchema = z.object({
     .array(
       z.object({
         equipment: z.string().describe("对应的器械名，例如 哑铃 / 龙门架/拉索"),
-        spec: z.string().describe("照片中看到的重量范围或规格特点，例如 每只 2–20 kg、配有V把"),
+        spec: z
+          .string()
+          .describe(
+            "照片中看到的重量范围或规格特点，例如 每只 2–20 kg、配有V把",
+          ),
       }),
     )
     .describe("照片中明确可见的重量、规格或把手特点，看不清就返回空数组"),
-  summary: z.string().describe("用一句话友好告诉用户你看到了哪些器械与重量规格"),
+  summary: z
+    .string()
+    .describe("用一句话友好告诉用户你看到了哪些器械与重量规格"),
 });
 
 export const ImportedExerciseSchema = z.object({
   readable: z
     .boolean()
-    .describe("是否能从链接内容、分享文本、用户说明或图片中明确判断出是什么健身动作"),
+    .describe(
+      "是否能从链接内容、分享文本、用户说明或图片中明确判断出是什么健身动作",
+    ),
   reason_if_unreadable: z
     .string()
     .nullable()
-    .describe("如果 readable 为 false，用通俗中文告诉用户缺什么信息、建议如何补充"),
+    .describe(
+      "如果 readable 为 false，用通俗中文告诉用户缺什么信息、建议如何补充",
+    ),
   name: z.string().describe("动作中文名称，简洁直观"),
   nameEn: z.string().describe("英文名称，没有就留空字符串"),
   group: z.enum([
@@ -240,8 +320,16 @@ export const ImportedExerciseSchema = z.object({
     "mobility",
     "cardio",
   ]),
-  sub: z.string().describe("该部位下的子分类 id，如 middle / upper / lower / rear / front / main / side / biceps / triceps / deep / hip / spine / shoulder，有氧填空字符串"),
-  primary: z.array(z.string()).describe("主要目标肌群 id，如 chest / upper-back / gluteal / quadriceps / hamstring / front-deltoids / back-deltoids / biceps / triceps / abs"),
+  sub: z
+    .string()
+    .describe(
+      "该部位下的子分类 id，如 middle / upper / lower / rear / front / main / side / biceps / triceps / deep / hip / spine / shoulder，有氧填空字符串",
+    ),
+  primary: z
+    .array(z.string())
+    .describe(
+      "主要目标肌群 id，如 chest / upper-back / gluteal / quadriceps / hamstring / front-deltoids / back-deltoids / biceps / triceps / abs",
+    ),
   secondary: z.array(z.string()).describe("次要参与肌群 id"),
   startWeight: z.string().describe("新手建议起始重量，例如 10-15 kg 或 自重"),
   equipment: z.string().describe("需要的器械"),

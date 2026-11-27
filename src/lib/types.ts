@@ -150,6 +150,8 @@ export interface CustomExercise extends Exercise {
   sourceUrl?: string;
   sourcePlatform?: string;
   imageUrl?: string;
+  /** Built-in exercise that looks alike; its demo photos stand in when there is no image. */
+  lookalikeId?: string;
   createdAt: string;
 }
 

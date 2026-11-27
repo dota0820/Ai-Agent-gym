@@ -2,11 +2,16 @@
 import { useSyncExternalStore } from "react";
 import { formatGymsContext } from "./equipment";
 import { allExerciseNamesForPrompt, findExerciseById } from "./exercise-lookup";
-import { customExerciseFromGuide, guideFromCoach } from "./custom-exercise";
+import {
+  customExerciseFromGuide,
+  guideFromCoach,
+  patchCustomExercise,
+} from "./custom-exercise";
 import { nutritionContextForCoach } from "./nutrition";
 import { parseRepRange, planNextSession, targetRirWords } from "./rir";
 import {
   addCustomExercise,
+  updateCustomExercise,
   addMealLog,
   aiHeaders,
   flushPersist,
@@ -19,7 +24,14 @@ import {
   setStateForProfile,
   uid,
 } from "./store";
-import type { ChatMsg, Guide, MealLog, Plan, Workout, WorkoutExercise } from "./types";
+import type {
+  ChatMsg,
+  Guide,
+  MealLog,
+  Plan,
+  Workout,
+  WorkoutExercise,
+} from "./types";
 
 // ───────── workouts ─────────
 
@@ -54,14 +66,25 @@ export function newExercise(
   const repRange = parseRepRange(opts.reps) ?? last?.exercise.repRange;
   const lib = findExerciseById(base.exerciseId, state.customExercises);
   // progress from last time unless the plan was written after that session
-  const planIsNewer = !!opts.plannedAt && (!last || last.workout.startedAt < opts.plannedAt);
+  const planIsNewer =
+    !!opts.plannedAt && (!last || last.workout.startedAt < opts.plannedAt);
   const next =
     last && !planIsNewer
-      ? planNextSession(lastDone, opts.targetRir ?? last.exercise.targetRir ?? 2, repRange, lib)
+      ? planNextSession(
+          lastDone,
+          opts.targetRir ?? last.exercise.targetRir ?? 2,
+          repRange,
+          lib,
+        )
       : undefined;
   const planned = planIsNewer || !last ? parseWeightKg(opts.weight) : undefined;
   const nextWeights = next?.weights;
-  const shownWeight = next?.weight != null ? `${next.weight}kg` : planned != null || !last ? opts.weight : undefined;
+  const shownWeight =
+    next?.weight != null
+      ? `${next.weight}kg`
+      : planned != null || !last
+        ? opts.weight
+        : undefined;
   return {
     ...base,
     target: opts.reps
@@ -93,7 +116,12 @@ export function startFromPlan(plan: Plan) {
     startedAt: new Date().toISOString(),
     exercises: plan.items.map((it) =>
       newExercise(
-        { exerciseId: it.exerciseId, name: it.name, nameEn: it.nameEn, custom: it.custom },
+        {
+          exerciseId: it.exerciseId,
+          name: it.name,
+          nameEn: it.nameEn,
+          custom: it.custom,
+        },
         {
           sets: it.sets,
           reps: it.reps,
@@ -131,7 +159,12 @@ export function repeatWorkout(w: Workout) {
     startedAt: new Date().toISOString(),
     exercises: w.exercises.map((e) => ({
       ...newExercise(
-        { exerciseId: e.exerciseId, name: e.name, nameEn: e.nameEn, custom: e.custom },
+        {
+          exerciseId: e.exerciseId,
+          name: e.name,
+          nameEn: e.nameEn,
+          custom: e.custom,
+        },
         {
           sets: e.sets.filter((s) => s.done).length || e.sets.length,
           reps: e.repRange ? `${e.repRange[0]}-${e.repRange[1]}` : undefined,
@@ -207,7 +240,8 @@ function buildContext(): string {
   const s = getState();
   const p = s.profile;
   const now = new Date();
-  const genderLabel = p.gender === "male" ? "男" : p.gender === "female" ? "女" : "(未填)";
+  const genderLabel =
+    p.gender === "male" ? "男" : p.gender === "female" ? "女" : "(未填)";
   const lines = [
     `今天是 ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")},星期${"日一二三四五六"[now.getDay()]}。`,
     "",
@@ -223,12 +257,20 @@ function buildContext(): string {
     `伤病/注意事项: ${p.injuries || "(无)"}`,
     "",
     "## 你之前记住的事",
-    p.memory.length ? p.memory.slice(-30).map((m) => `- ${m}`).join("\n") : "(暂无)",
+    p.memory.length
+      ? p.memory
+          .slice(-30)
+          .map((m) => `- ${m}`)
+          .join("\n")
+      : "(暂无)",
     "",
     "## App 里当前的计划",
     s.plan
       ? `${s.plan.title}(${localDateStr(s.plan.createdAt) || s.plan.createdAt.slice(0, 10)} 制定): ${s.plan.items
-          .map((i) => `${i.name} ${i.sets}×${i.reps}${i.weight ? ` ${i.weight}` : ""}`)
+          .map(
+            (i) =>
+              `${i.name} ${i.sets}×${i.reps}${i.weight ? ` ${i.weight}` : ""}`,
+          )
           .join(";")}`
       : "(暂无)",
     s.active
@@ -245,7 +287,8 @@ function buildContext(): string {
       : "",
     "",
     "## 最近的训练记录(新的在前)",
-    historyForCoach(s.workouts),,
+    historyForCoach(s.workouts),
+    ,
     "",
     "## 每个动作的下次进步目标(App 按双重递增法算出,排计划时以此为准)",
     progressionForCoach(s.workouts, s.customExercises),
@@ -257,14 +300,21 @@ function buildContext(): string {
     nutritionContextForCoach(s.meals, p),
   ];
   const full = lines.join("\n");
-  return full.length > MAX_CONTEXT_CHARS ? full.slice(0, MAX_CONTEXT_CHARS) + "\n...(部分历史已省略)" : full;
+  return full.length > MAX_CONTEXT_CHARS
+    ? full.slice(0, MAX_CONTEXT_CHARS) + "\n...(部分历史已省略)"
+    : full;
 }
 
 /** One line per recently trained exercise: what to do next time to beat last time. */
-function progressionForCoach(workouts: Workout[], custom: ReturnType<typeof getState>["customExercises"]): string {
+function progressionForCoach(
+  workouts: Workout[],
+  custom: ReturnType<typeof getState>["customExercises"],
+): string {
   const seen = new Set<string>();
   const lines: string[] = [];
-  const sorted = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const sorted = [...workouts].sort((a, b) =>
+    b.startedAt.localeCompare(a.startedAt),
+  );
   for (const w of sorted) {
     for (const e of w.exercises) {
       const key = e.exerciseId ?? e.name;
@@ -272,7 +322,10 @@ function progressionForCoach(workouts: Workout[], custom: ReturnType<typeof getS
       seen.add(key);
       const lib = findExerciseById(e.exerciseId, custom);
       const next = planNextSession(e.sets, e.targetRir ?? 2, e.repRange, lib);
-      if (next) lines.push(`- ${e.name}${e.exerciseId ? ` [${e.exerciseId}]` : ""}: ${next.text}`);
+      if (next)
+        lines.push(
+          `- ${e.name}${e.exerciseId ? ` [${e.exerciseId}]` : ""}: ${next.text}`,
+        );
       if (lines.length >= 15) return lines.join("\n");
     }
   }
@@ -352,7 +405,9 @@ function toPlan(p: any): Plan {
 
 function toWorkout(w: any): Workout {
   const customExercises = getState().customExercises;
-  const d = /^\d{4}-\d{2}-\d{2}$/.test(w.date) ? new Date(`${w.date}T12:00:00`) : new Date();
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(w.date)
+    ? new Date(`${w.date}T12:00:00`)
+    : new Date();
   const iso = (isNaN(d.getTime()) ? new Date() : d).toISOString();
   return {
     id: uid(),
@@ -369,7 +424,8 @@ function toWorkout(w: any): Workout {
         sets: (e.sets ?? []).map((s: any) => ({
           weight: s.weight_kg ?? null,
           reps: s.reps ?? null,
-          rir: typeof s.rir === "number" ? Math.max(0, Math.min(4, s.rir)) : null,
+          rir:
+            typeof s.rir === "number" ? Math.max(0, Math.min(4, s.rir)) : null,
           done: true,
         })),
       };
@@ -407,7 +463,10 @@ function toMeal(m: any): MealLog {
 
 const MAX_THUMBS = 8;
 
-export async function sendToCoach(text: string, photo?: { full: string; thumb: string }) {
+export async function sendToCoach(
+  text: string,
+  photo?: { full: string; thumb: string },
+) {
   text = text.trim() || (photo ? "帮我看看这张照片" : "");
   if (!text || busy) return;
   const initState = getState();
@@ -427,7 +486,8 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
     setStateForProfile(
       targetProfileId,
       (ws) => {
-        const isCurrent = (ws.activeThreadId || targetThreadId) === targetThreadId;
+        const isCurrent =
+          (ws.activeThreadId || targetThreadId) === targetThreadId;
         if (isCurrent) {
           return {
             ...ws,
@@ -438,7 +498,13 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
         return {
           ...ws,
           threads: (ws.threads ?? []).map((t) =>
-            t.id === targetThreadId ? { ...t, updatedAt: new Date().toISOString(), messages: fn(t.messages) } : t,
+            t.id === targetThreadId
+              ? {
+                  ...t,
+                  updatedAt: new Date().toISOString(),
+                  messages: fn(t.messages),
+                }
+              : t,
           ),
         };
       },
@@ -446,7 +512,10 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
     );
 
   const patchTargetMsg = (fn: (m: ChatMsg) => ChatMsg, deferPersist = false) =>
-    patchThreadMessages((msgs) => msgs.map((m) => (m.id === aid ? fn(m) : m)), deferPersist);
+    patchThreadMessages(
+      (msgs) => msgs.map((m) => (m.id === aid ? fn(m) : m)),
+      deferPersist,
+    );
 
   const initialContext = buildContext();
 
@@ -469,7 +538,10 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
     });
   }
   const fail = (msg: string) =>
-    patchTargetMsg((m) => ({ ...m, text: (m.text ? m.text + "\n\n" : "") + `⚠️ ${msg}` }));
+    patchTargetMsg((m) => ({
+      ...m,
+      text: (m.text ? m.text + "\n\n" : "") + `⚠️ ${msg}`,
+    }));
 
   // Which step failed decides what we tell the user.
   let stage: "send" | "stream" = "send";
@@ -479,7 +551,11 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
     const s = getState();
     const targetWs = s.profiles.find((p) => p.profile.id === targetProfileId);
     const threadHit = targetWs?.threads?.find((t) => t.id === targetThreadId);
-    const chatSnapshot = threadHit ? threadHit.messages : targetWs ? targetWs.chat : s.chat;
+    const chatSnapshot = threadHit
+      ? threadHit.messages
+      : targetWs
+        ? targetWs.chat
+        : s.chat;
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: aiHeaders(),
@@ -529,7 +605,10 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
         } else if (ev.type === "workout") {
           setActiveTool("");
           const w = toWorkout(ev.workout);
-          setStateForProfile(targetProfileId, (ws) => ({ ...ws, workouts: [...ws.workouts, w] }));
+          setStateForProfile(targetProfileId, (ws) => ({
+            ...ws,
+            workouts: [...ws.workouts, w],
+          }));
           patchTargetMsg((m) => ({ ...m, logged: w.title }));
         } else if (ev.type === "meal") {
           setActiveTool("");
@@ -545,9 +624,23 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
             ev.exercise.name,
             ev.exercise.name_en,
             guideFromCoach(ev.exercise),
+            ev.exercise.similar_exercise_id,
           );
           addCustomExercise(ex);
           patchTargetMsg((m) => ({ ...m, exerciseAdded: ex.name }));
+        } else if (ev.type === "exercise_update") {
+          setActiveTool("");
+          const cur = getState().customExercises.find(
+            (x) => x.id === ev.patch.exercise_id,
+          );
+          if (cur) {
+            const next = patchCustomExercise(cur, ev.patch);
+            updateCustomExercise(next);
+            patchTargetMsg((m) => ({
+              ...m,
+              exerciseAdded: `${next.name}(已更新)`,
+            }));
+          }
         } else if (ev.type === "memory") {
           setActiveTool("");
           setStateForProfile(targetProfileId, (ws) => ({
@@ -561,7 +654,8 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
       } catch (err) {
         // one bad event must not throw away the rest of the reply
         console.error("coach event failed", ev?.type, err);
-        if (ev.type !== "text") fail("教练的这一步没能保存到 App,请让教练再做一次。");
+        if (ev.type !== "text")
+          fail("教练的这一步没能保存到 App,请让教练再做一次。");
       }
     };
     for (;;) {
@@ -577,17 +671,27 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
     buf += dec.decode();
     handle(buf);
   } catch (err) {
-    if (controller.signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
+    if (
+      controller.signal.aborted ||
+      (err instanceof DOMException && err.name === "AbortError")
+    ) {
       abortedByUser = true;
     } else {
       console.error("coach request failed", stage, err);
-      const detail = err instanceof Error && err.message ? `(${err.message.slice(0, 80)})` : "";
+      const detail =
+        err instanceof Error && err.message
+          ? `(${err.message.slice(0, 80)})`
+          : "";
       if (typeof navigator !== "undefined" && navigator.onLine === false)
         fail("手机现在没有网络,连上网后再发一次。");
       else if (stage === "send")
-        fail(`连不上 App 的服务器,消息没有发出去。请检查网络后再发一次。${detail}`);
+        fail(
+          `连不上 App 的服务器,消息没有发出去。请检查网络后再发一次。${detail}`,
+        );
       else if (received)
-        fail("回复传到一半断了(可能是网络不稳,或教练想得太久超时)。上面是已经收到的部分,请再发一次。");
+        fail(
+          "回复传到一半断了(可能是网络不稳,或教练想得太久超时)。上面是已经收到的部分,请再发一次。",
+        );
       else fail(`服务器没有回应就断开了,请再发一次。${detail}`);
     }
   } finally {
@@ -613,7 +717,10 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
   }
 }
 
-export async function fileToJpegDataUrl(file: File, max = 1568): Promise<string> {
+export async function fileToJpegDataUrl(
+  file: File,
+  max = 1568,
+): Promise<string> {
   const bmp = await createImageBitmap(file);
   try {
     const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
@@ -631,23 +738,37 @@ export async function fileToJpegDataUrl(file: File, max = 1568): Promise<string>
  * Saves an off-library exercise from the current plan or in-progress workout
  * into the user's library and points every matching item at the saved copy.
  */
-export function saveToLibrary(item: { name: string; nameEn?: string; custom?: Guide }): string | null {
+export function saveToLibrary(item: {
+  name: string;
+  nameEn?: string;
+  custom?: Guide;
+}): string | null {
   if (!item.custom) return null;
   const ex = customExerciseFromGuide(item.name, item.nameEn, item.custom);
   addCustomExercise(ex);
-  const link = <T extends { name: string; exerciseId?: string; custom?: Guide }>(x: T): T =>
-    !x.exerciseId && x.name === item.name ? { ...x, exerciseId: ex.id, custom: undefined } : x;
+  const link = <
+    T extends { name: string; exerciseId?: string; custom?: Guide },
+  >(
+    x: T,
+  ): T =>
+    !x.exerciseId && x.name === item.name
+      ? { ...x, exerciseId: ex.id, custom: undefined }
+      : x;
   setState((s) => ({
     ...s,
     plan: s.plan ? { ...s.plan, items: s.plan.items.map(link) } : s.plan,
-    active: s.active ? { ...s.active, exercises: s.active.exercises.map(link) } : s.active,
+    active: s.active
+      ? { ...s.active, exercises: s.active.exercises.map(link) }
+      : s.active,
     chat: s.chat.map((m) =>
       m.plan ? { ...m, plan: { ...m.plan, items: m.plan.items.map(link) } } : m,
     ),
     threads: s.threads.map((t) => ({
       ...t,
       messages: t.messages.map((m) =>
-        m.plan ? { ...m, plan: { ...m.plan, items: m.plan.items.map(link) } } : m,
+        m.plan
+          ? { ...m, plan: { ...m.plan, items: m.plan.items.map(link) } }
+          : m,
       ),
     })),
   }));

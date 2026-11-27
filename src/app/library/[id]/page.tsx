@@ -185,7 +185,25 @@ function Detail() {
 
           <Card>
             <h2 className="mb-3 text-base font-bold">练到哪里</h2>
-            <MuscleMap primary={e.primary} secondary={e.secondary} />
+            {e.primary.length ? (
+              <MuscleMap primary={e.primary} secondary={e.secondary} />
+            ) : (
+              <p className="text-sm text-sub">还没标出练到的肌肉。</p>
+            )}
+            {custom && (!e.primary.length || (!e.imageUrl && !e.lookalikeId)) && (
+              <Link
+                href={`/coach?q=${encodeURIComponent(
+                  `动作库里的「${e.name}」(id: ${e.id})缺了${!e.primary.length ? "练到的肌肉" : ""}${
+                    !e.primary.length && !e.imageUrl && !e.lookalikeId ? "和" : ""
+                  }${!e.imageUrl && !e.lookalikeId ? "示范图" : ""},请用 update_exercise_in_library 帮我补上。`,
+                )}`}
+                className="mt-3 flex h-11 items-center justify-center gap-1.5 rounded-full bg-primary text-[14px] font-bold"
+              >
+                让教练补上{!e.primary.length ? "肌肉" : ""}
+                {!e.primary.length && !e.imageUrl && !e.lookalikeId ? "和" : ""}
+                {!e.imageUrl && !e.lookalikeId ? "示范图" : ""}
+              </Link>
+            )}
           </Card>
 
           {last && (
