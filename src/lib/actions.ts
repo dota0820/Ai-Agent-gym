@@ -366,42 +366,62 @@ const MAX_THUMBS = 8;
 export async function sendToCoach(text: string, photo?: { full: string; thumb: string }) {
   text = text.trim() || (photo ? "帮我看看这张照片" : "");
   if (!text || busy) return;
-  const targetProfileId = getState().activeProfileId;
+  const initState = getState();
+  const targetProfileId = initState.activeProfileId;
+  const targetThreadId = initState.activeThreadId || `t-${uid()}`;
   const controller = new AbortController();
   activeAbort = controller;
   setBusy(true);
   setActiveTool("");
   const ts = new Date().toISOString();
   const aid = uid();
-  const patchTargetMsg = (fn: (m: ChatMsg) => ChatMsg, deferPersist = false) =>
+
+  const patchThreadMessages = (
+    fn: (msgs: ChatMsg[]) => ChatMsg[],
+    deferPersist = false,
+  ) =>
     setStateForProfile(
       targetProfileId,
-      (ws) => ({
-        ...ws,
-        chat: ws.chat.map((m) => (m.id === aid ? fn(m) : m)),
-      }),
+      (ws) => {
+        const isCurrent = (ws.activeThreadId || targetThreadId) === targetThreadId;
+        if (isCurrent) {
+          return {
+            ...ws,
+            activeThreadId: targetThreadId,
+            chat: fn(ws.chat),
+          };
+        }
+        return {
+          ...ws,
+          threads: (ws.threads ?? []).map((t) =>
+            t.id === targetThreadId ? { ...t, updatedAt: new Date().toISOString(), messages: fn(t.messages) } : t,
+          ),
+        };
+      },
       { deferPersist },
     );
+
+  const patchTargetMsg = (fn: (m: ChatMsg) => ChatMsg, deferPersist = false) =>
+    patchThreadMessages((msgs) => msgs.map((m) => (m.id === aid ? fn(m) : m)), deferPersist);
+
   const initialContext = buildContext();
 
-  setStateForProfile(targetProfileId, (ws) => ({
-    ...ws,
-    chat: [
-      ...ws.chat,
-      { id: uid(), role: "user", text, ts, image: photo?.thumb },
-      { id: aid, role: "assistant", text: "", ts },
-    ],
-  }));
+  patchThreadMessages((msgs) => [
+    ...msgs,
+    { id: uid(), role: "user", text, ts, image: photo?.thumb },
+    { id: aid, role: "assistant", text: "", ts },
+  ]);
+
   if (photo) {
     // keep storage small: only the most recent photos keep their thumbnail
-    setStateForProfile(targetProfileId, (ws) => {
+    patchThreadMessages((msgs) => {
       let kept = 0;
-      const chat = [...ws.chat].reverse().map((m) => {
+      const pruned = [...msgs].reverse().map((m) => {
         if (!m.image) return m;
         kept++;
         return kept > MAX_THUMBS ? { ...m, image: "" } : m;
       });
-      return { ...ws, chat: chat.reverse() };
+      return pruned.reverse();
     });
   }
   const fail = (msg: string) =>
@@ -414,7 +434,8 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
   try {
     const s = getState();
     const targetWs = s.profiles.find((p) => p.profile.id === targetProfileId);
-    const chatSnapshot = targetWs ? targetWs.chat : s.chat;
+    const threadHit = targetWs?.threads?.find((t) => t.id === targetThreadId);
+    const chatSnapshot = threadHit ? threadHit.messages : targetWs ? targetWs.chat : s.chat;
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: aiHeaders(),
@@ -579,6 +600,12 @@ export function saveToLibrary(item: { name: string; nameEn?: string; custom?: Gu
     chat: s.chat.map((m) =>
       m.plan ? { ...m, plan: { ...m.plan, items: m.plan.items.map(link) } } : m,
     ),
+    threads: s.threads.map((t) => ({
+      ...t,
+      messages: t.messages.map((m) =>
+        m.plan ? { ...m, plan: { ...m.plan, items: m.plan.items.map(link) } } : m,
+      ),
+    })),
   }));
   return ex.id;
 }

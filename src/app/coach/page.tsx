@@ -2,6 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
+import ChatThreadsSheet from "@/components/ChatThreadsSheet";
 import CoachMascot, { CoachThinking } from "@/components/CoachMascot";
 import Icon, { type IconName } from "@/components/Icon";
 import MD from "@/components/MD";
@@ -14,7 +15,12 @@ import {
   useCoachToolStatus,
   visibleText,
 } from "@/lib/actions";
-import { setState, useApp, useStorageWarning } from "@/lib/store";
+import {
+  setState,
+  startNewChatThread,
+  useApp,
+  useStorageWarning,
+} from "@/lib/store";
 import { canSpeak, speak, stopSpeaking, useDictation } from "@/lib/voice";
 
 /** Suggestions on the empty screen; `photo` opens the camera instead of sending. */
@@ -72,7 +78,7 @@ const isTouch = () =>
   window.matchMedia("(pointer: coarse)").matches;
 
 function Coach() {
-  const { chat, profile } = useApp();
+  const { chat, threads, activeThreadId, profile } = useApp();
   const busy = useCoachBusy();
   const toolStatus = useCoachToolStatus();
   const storageWarning = useStorageWarning();
@@ -81,6 +87,7 @@ function Coach() {
     null,
   );
   const [photoErr, setPhotoErr] = useState("");
+  const [showThreads, setShowThreads] = useState(false);
   const params = useSearchParams();
   const router = useRouter();
   const endRef = useRef<HTMLDivElement>(null);
@@ -98,6 +105,7 @@ function Coach() {
     if (!q || sentQ.current === q) return;
     sentQ.current = q;
     router.replace("/coach");
+    startNewChatThread();
     void sendToCoach(q);
   }, [q, router]);
 
@@ -174,18 +182,34 @@ function Coach() {
   const hour = new Date().getHours();
   const hello = hour < 11 ? "早上好" : hour < 18 ? "下午好" : "晚上好";
   const canSend = !busy && (!!text.trim() || !!photo);
+  const currentThread = threads.find((t) => t.id === activeThreadId);
   const iconBtn =
     "flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sub active:bg-primary-soft disabled:opacity-40";
 
   return (
     <div className="flex flex-col">
       <header className="sticky top-0 z-20 -mx-4 -mt-5 mb-2 flex items-center justify-between gap-2 border-b border-line/60 bg-bg/92 px-4 pt-3 pb-2.5 backdrop-blur-md">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft">
-            <CoachMascot size={34} thinking={busy} label="哑铃教练" />
+        <div className="flex min-w-0 items-center gap-2">
+          <button
+            type="button"
+            aria-label="对话记录"
+            onClick={() => setShowThreads(true)}
+            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-card text-ink active:bg-primary-soft"
+          >
+            <Icon name="menu" size={18} />
+            {threads.length > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                {threads.length}
+              </span>
+            )}
+          </button>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft">
+            <CoachMascot size={30} thinking={busy} label="哑铃教练" />
           </span>
           <div className="min-w-0">
-            <div className="text-[17px] font-bold leading-tight">AI 教练</div>
+            <div className="truncate text-[16px] font-bold leading-tight">
+              {currentThread?.title || "AI 教练"}
+            </div>
             <div className="flex items-center gap-1.5 text-xs text-sub">
               {busy ? (
                 <>
@@ -212,13 +236,13 @@ function Coach() {
                   profile: { ...s.profile, speak: !s.profile.speak },
                 }));
               }}
-              className={`flex h-11 w-11 items-center justify-center rounded-full border ${
+              className={`flex h-10 w-10 items-center justify-center rounded-full border ${
                 profile.speak
                   ? "border-primary bg-primary-soft text-deep"
                   : "border-line bg-card text-sub"
               }`}
             >
-              <Icon name={profile.speak ? "volume" : "mute"} size={19} />
+              <Icon name={profile.speak ? "volume" : "mute"} size={18} />
             </button>
           )}
           {chat.length > 0 && (
@@ -227,16 +251,12 @@ function Coach() {
               aria-label="新对话"
               disabled={busy}
               onClick={() => {
-                if (
-                  confirm(
-                    "开始新对话？（聊天记录会清空，训练记录和计划不会被删除）",
-                  )
-                )
-                  setState((s) => ({ ...s, chat: [] }));
+                stopSpeaking();
+                startNewChatThread();
               }}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-card text-ink disabled:opacity-40"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-card text-ink active:bg-primary-soft disabled:opacity-40"
             >
-              <Icon name="pen" size={19} />
+              <Icon name="pen" size={18} />
             </button>
           )}
         </div>
@@ -513,6 +533,13 @@ function Coach() {
           </p>
         </div>
       </div>
+
+      {showThreads && (
+        <ChatThreadsSheet
+          disabled={busy}
+          onClose={() => setShowThreads(false)}
+        />
+      )}
     </div>
   );
 }

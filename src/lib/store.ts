@@ -3,6 +3,8 @@ import { useSyncExternalStore } from "react";
 import { getProfileGyms } from "./equipment";
 import type {
   AppState,
+  ChatMsg,
+  ChatThread,
   CustomExercise,
   GymEnvironment,
   MealLog,
@@ -14,9 +16,17 @@ import type {
 
 const KEY = "gymcoach:v1";
 const MAX_MEAL_THUMBS = 12;
+const MAX_CHAT_THREADS = 30;
 
 export const uid = () =>
   Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+export function deriveThreadTitle(messages: ChatMsg[]): string {
+  const firstUser = messages.find((m) => m.role === "user" && m.text.trim());
+  if (!firstUser) return "新对话";
+  const clean = firstUser.text.replace(/\s+/g, " ").trim();
+  return clean.length > 22 ? `${clean.slice(0, 22)}…` : clean;
+}
 
 export function emptyProfile(id = "default", patch: Partial<Profile> = {}): Profile {
   const baseEquipment = patch.equipment ?? "";
@@ -58,6 +68,8 @@ export function emptyWorkspace(id = "default", patch: Partial<Profile> = {}): Pe
     active: null,
     workouts: [],
     chat: [],
+    threads: [],
+    activeThreadId: null,
     meals: [],
   };
 }
@@ -91,6 +103,8 @@ function project(root: RootStore): AppState {
     active: activeWs.active,
     workouts: activeWs.workouts,
     chat: activeWs.chat,
+    threads: activeWs.threads ?? [],
+    activeThreadId: activeWs.activeThreadId ?? null,
     customExercises: root.customExercises,
     meals: activeWs.meals,
     aiModel: root.aiModel,
@@ -145,6 +159,43 @@ function sanitizeCustomExercises(list: unknown): CustomExercise[] {
     }));
 }
 
+function syncWorkspaceThreads(ws: PersonWorkspace): PersonWorkspace {
+  const rawThreads = ws.threads ?? [];
+  if (!ws.chat.length) {
+    return { ...ws, threads: rawThreads.slice(0, MAX_CHAT_THREADS) };
+  }
+  const activeId = ws.activeThreadId || `t-${uid()}`;
+  const updatedAt = ws.chat[ws.chat.length - 1]?.ts || new Date().toISOString();
+  const existing = rawThreads.find((t) => t.id === activeId);
+  const title =
+    existing?.title && existing.title !== "新对话"
+      ? existing.title
+      : deriveThreadTitle(ws.chat);
+  const current: ChatThread = {
+    id: activeId,
+    title,
+    updatedAt,
+    messages: ws.chat,
+  };
+  const others = rawThreads
+    .filter((t) => t.id !== activeId)
+    .map((t, idx) =>
+      // Strip base64 thumbnails from older archived threads beyond top 4 to keep localStorage lean
+      idx < 4
+        ? t
+        : {
+            ...t,
+            messages: t.messages.map((m) => (m.image ? { ...m, image: "" } : m)),
+          },
+    );
+  const threads = [current, ...others].slice(0, MAX_CHAT_THREADS);
+  return {
+    ...ws,
+    activeThreadId: activeId,
+    threads,
+  };
+}
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function normalizeWorkspace(raw: any, fallbackId: string, sharedPasscode: string): PersonWorkspace {
   const base = emptyWorkspace(raw?.profile?.id || fallbackId);
@@ -157,7 +208,16 @@ function normalizeWorkspace(raw: any, fallbackId: string, sharedPasscode: string
     passcode: sharedPasscode || p.passcode || "",
   };
   const { gyms, activeGym } = getProfileGyms(merged);
-  return {
+  const chat: ChatMsg[] = Array.isArray(raw?.chat) ? raw.chat : [];
+  const rawThreads: ChatThread[] = Array.isArray(raw?.threads)
+    ? raw.threads.filter(
+        (t: any) => t && typeof t.id === "string" && Array.isArray(t.messages),
+      )
+    : [];
+  const activeThreadId =
+    typeof raw?.activeThreadId === "string" ? raw.activeThreadId : null;
+
+  return syncWorkspaceThreads({
     profile: {
       ...merged,
       gyms,
@@ -167,9 +227,11 @@ function normalizeWorkspace(raw: any, fallbackId: string, sharedPasscode: string
     plan: raw?.plan ?? null,
     active: raw?.active ?? null,
     workouts: Array.isArray(raw?.workouts) ? raw.workouts : [],
-    chat: Array.isArray(raw?.chat) ? raw.chat : [],
+    chat,
+    threads: rawThreads,
+    activeThreadId,
     meals: Array.isArray(raw?.meals) ? raw.meals : [],
-  };
+  });
 }
 
 function parseRootData(p: any): RootStore | null {
@@ -299,14 +361,16 @@ export function setState(fn: (s: AppState) => AppState) {
         ? ws
         : { ...ws, profile: { ...ws.profile, passcode } };
     }
-    return {
+    return syncWorkspaceThreads({
       profile: { ...next.profile, id: ws.profile.id, passcode },
       plan: next.plan,
       active: next.active,
       workouts: next.workouts,
       chat: next.chat,
+      threads: next.threads,
+      activeThreadId: next.activeThreadId,
       meals: next.meals,
-    };
+    });
   });
 
   commit({
@@ -362,9 +426,61 @@ export function setStateForProfile(
 ) {
   load();
   const profiles = rootState.profiles.map((ws) =>
-    ws.profile.id === profileId ? fn(ws) : ws,
+    ws.profile.id === profileId ? syncWorkspaceThreads(fn(ws)) : ws,
   );
   commit({ ...rootState, profiles }, opts);
+}
+
+/** Archives the current chat into `threads` (if non-empty) and opens a fresh conversation. */
+export function startNewChatThread() {
+  load();
+  const activeId = rootState.activeProfileId;
+  const profiles = rootState.profiles.map((ws) => {
+    if (ws.profile.id !== activeId) return ws;
+    const synced = syncWorkspaceThreads(ws);
+    return {
+      ...synced,
+      chat: [],
+      activeThreadId: null,
+    };
+  });
+  commit({ ...rootState, profiles });
+}
+
+/** Switches the active conversation to an existing thread from history. */
+export function selectChatThread(threadId: string) {
+  load();
+  const activeId = rootState.activeProfileId;
+  const profiles = rootState.profiles.map((ws) => {
+    if (ws.profile.id !== activeId) return ws;
+    const synced = syncWorkspaceThreads(ws);
+    const hit = (synced.threads ?? []).find((t) => t.id === threadId);
+    if (!hit) return synced;
+    return {
+      ...synced,
+      chat: hit.messages,
+      activeThreadId: hit.id,
+    };
+  });
+  commit({ ...rootState, profiles });
+}
+
+/** Deletes a saved conversation thread; clears the view if it was currently open. */
+export function deleteChatThread(threadId: string) {
+  load();
+  const activeId = rootState.activeProfileId;
+  const profiles = rootState.profiles.map((ws) => {
+    if (ws.profile.id !== activeId) return ws;
+    const remaining = (ws.threads ?? []).filter((t) => t.id !== threadId);
+    const wasActive = ws.activeThreadId === threadId;
+    return {
+      ...ws,
+      threads: remaining,
+      chat: wasActive ? [] : ws.chat,
+      activeThreadId: wasActive ? null : ws.activeThreadId,
+    };
+  });
+  commit({ ...rootState, profiles });
 }
 
 export function switchProfile(profileId: string) {

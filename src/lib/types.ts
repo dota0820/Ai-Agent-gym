@@ -310,12 +310,21 @@ export interface ChatMsg {
   ts: string;
 }
 
+export interface ChatThread {
+  id: string;
+  title: string;
+  updatedAt: string;
+  messages: ChatMsg[];
+}
+
 export interface PersonWorkspace {
   profile: Profile;
   plan: Plan | null;
   active: Workout | null;
   workouts: Workout[];
   chat: ChatMsg[];
+  threads?: ChatThread[];
+  activeThreadId?: string | null;
   meals: MealLog[];
 }
 
@@ -327,6 +336,8 @@ export interface AppState {
   active: Workout | null;
   workouts: Workout[];
   chat: ChatMsg[];
+  threads: ChatThread[];
+  activeThreadId: string | null;
   customExercises: CustomExercise[];
   meals: MealLog[];
   aiModel: string;
