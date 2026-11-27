@@ -423,3 +423,26 @@ html:not([data-mode="gym"])[data-theme] .bg-ink [class*="text-white"] {
   font-weight: 700;
   letter-spacing: -0.04em;
 }
+
+/* coach greeting: each character fades and rises in turn */
+@keyframes type-in {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.type-in {
+  display: inline-block;
+  opacity: 0;
+  animation: type-in 0.35s ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .type-in {
+    opacity: 1;
+    animation: none;
+  }
+}

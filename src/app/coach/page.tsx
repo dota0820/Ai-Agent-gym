@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import ChatThreadsSheet from "@/components/ChatThreadsSheet";
-import CoachMascot, { CoachThinking } from "@/components/CoachMascot";
+import { CoachThinking } from "@/components/CoachMascot";
 import Icon, { type IconName } from "@/components/Icon";
 import MD from "@/components/MD";
 import PlanCard from "@/components/PlanCard";
@@ -37,7 +37,7 @@ const STARTERS: {
   {
     icon: "calendar",
     label: "安排今日训练",
-    send: "帮我安排今天的训练,根据我最近的记录决定练哪里",
+    send: "帮我安排今天的训练,根据我最近的记录决定练哪里,排好后保存成计划",
   },
   { icon: "target", label: "下次练什么", send: "下次我应该练什么?" },
   {
@@ -278,14 +278,7 @@ function Coach() {
       {chat.length === 0 ? (
         <div className="flex min-h-[calc(100dvh-230px)] flex-col pb-[96px]">
           <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
-            <span className="flex h-24 w-24 items-center justify-center rounded-full bg-primary-soft">
-              <CoachMascot size={72} label="哑铃教练" />
-            </span>
-            <h2 className="mt-5 text-[28px] font-bold leading-tight">
-              {hello}
-              {profile.name ? `，${profile.name}` : ""}
-            </h2>
-            <p className="mt-2 text-[15px] text-sub">今天想练什么？</p>
+            <Greeting hello={hello} name={profile.name} />
           </div>
           <div className="space-y-2">
             {STARTERS.map((s) => (
@@ -339,7 +332,7 @@ function Coach() {
               <div key={m.id} className="space-y-3">
                 <div className="space-y-3">
                   <div className="flex items-center gap-1.5 text-[12px] font-bold text-sub">
-                    <CoachMascot size={20} />
+                    <Icon name="sparkles" size={16} className="text-deep" />
                     AI 教练
                   </div>
                   {(shown || streaming) &&
@@ -360,6 +353,20 @@ function Coach() {
                     ))}
                   {m.plan && (
                     <ChatPlan plan={m.plan} current={m.plan.id === plan?.id} />
+                  )}
+                  {!m.plan && isLast && !busy && looksLikePlan(shown) && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void sendToCoach(
+                          "把你刚才安排的训练调用 save_workout_plan 保存成计划,不用再重复解释。",
+                        )
+                      }
+                      className="flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-[14px] font-bold"
+                    >
+                      <Icon name="plus" size={18} />
+                      存成训练计划
+                    </button>
                   )}
                   {(m.logged || m.exerciseAdded || m.mealLogged) && (
                     <div className="flex flex-wrap gap-1.5">
@@ -550,6 +557,51 @@ function Coach() {
           onClose={() => setShowThreads(false)}
         />
       )}
+    </div>
+  );
+}
+
+/** A reply that lists exercises with sets but was not saved as a plan. */
+function looksLikePlan(text: string): boolean {
+  const sets = text.match(/\d+\s*(组|sets?)/gi)?.length ?? 0;
+  return sets >= 2 && /[×xX*]\s*\d|\d+\s*次|\d+\s*-\s*\d+/.test(text);
+}
+
+const QUESTIONS = [
+  "今天想练什么？",
+  "今天打算练哪里？",
+  "今天状态怎么样？",
+  "今天有多少时间可以练？",
+  "要不要我帮你排一份计划？",
+  "最近哪里觉得酸？跟我说说。",
+  "今天想轻松一点，还是拼一点？",
+  "上半身还是下半身？",
+];
+
+/** Greeting that types itself in, with a different question each visit. */
+function Greeting({ hello, name }: { hello: string; name: string }) {
+  const [q] = useState(
+    () => QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)],
+  );
+  const line1 = `${hello}${name ? `，${name}` : ""}`;
+  const chars = (t: string, from: number) =>
+    [...t].map((c, i) => (
+      <span
+        key={i}
+        className="type-in"
+        style={{ animationDelay: `${(from + i) * 45}ms` }}
+      >
+        {c}
+      </span>
+    ));
+  return (
+    <div aria-label={`${line1}。${q}`}>
+      <h2 aria-hidden className="text-[30px] font-bold leading-tight">
+        {chars(line1, 0)}
+      </h2>
+      <p aria-hidden className="mt-3 text-[20px] font-semibold text-sub">
+        {chars(q, [...line1].length + 4)}
+      </p>
     </div>
   );
 }
