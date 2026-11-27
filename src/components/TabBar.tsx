@@ -18,7 +18,7 @@ export default function TabBar() {
   return (
     <nav
       aria-label="主导航"
-      className="safe-b fixed inset-x-0 bottom-0 z-20 border-t border-line bg-card/95 backdrop-blur"
+      className="safe-b fixed inset-x-0 bottom-0 z-20 border-t border-line bg-bg/95 backdrop-blur"
     >
       <ul className="mx-auto flex max-w-md">
         {TABS.map((t) => {

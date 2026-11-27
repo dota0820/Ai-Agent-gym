@@ -155,7 +155,7 @@ function Detail() {
               }
             />
           ) : (
-            <h1 className="text-2xl font-bold tracking-tight">{w.title}</h1>
+            <h1 className="text-[28px] font-extrabold leading-tight tracking-tight">{w.title}</h1>
           )}
           <button
             type="button"

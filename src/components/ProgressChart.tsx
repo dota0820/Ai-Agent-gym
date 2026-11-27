@@ -119,7 +119,7 @@ export default function ProgressChart({ items }: { items: ExerciseProgress[] }) 
         <path
           d={linePath}
           fill="none"
-          stroke="var(--c-primary)"
+          stroke="var(--c-deep)"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -134,7 +134,7 @@ export default function ProgressChart({ items }: { items: ExerciseProgress[] }) 
                 cy={c.y}
                 r={i === coords.length - 1 ? 4.2 : 2.8}
                 fill={i === coords.length - 1 ? "var(--c-primary)" : "var(--c-card)"}
-                stroke="var(--c-primary)"
+                stroke="var(--c-deep)"
                 strokeWidth="2"
               />
               {isEdge && (

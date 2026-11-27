@@ -24,7 +24,7 @@ export default function CoachMascot({
         <rect x="27" y="8" width="7" height="24" rx="3.5" fill="var(--c-primary)" />
         <rect x="8" y="10.5" width="2" height="7" rx="1" fill="var(--c-card)" opacity="0.55" />
         <rect x="29" y="10.5" width="2" height="7" rx="1" fill="var(--c-card)" opacity="0.55" />
-        <rect x="12" y="14" width="16" height="12" rx="6" fill="var(--c-card)" stroke="var(--c-primary)" strokeWidth="2" />
+        <rect x="12" y="14" width="16" height="12" rx="6" fill="var(--c-card)" stroke="var(--c-deep)" strokeWidth="2" />
         {thinking ? (
           <>
             <path d="M15.8 19.4q1.2-1.2 2.4 0" stroke="var(--c-ink)" strokeWidth="1.3" fill="none" strokeLinecap="round" />

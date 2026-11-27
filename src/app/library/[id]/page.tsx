@@ -165,7 +165,7 @@ function Detail() {
                 </span>
               )}
             </div>
-            <h1 className="text-2xl font-bold tracking-tight">{e.name}</h1>
+            <h1 className="text-[28px] font-extrabold leading-tight tracking-tight">{e.name}</h1>
             <p className="text-sm text-sub">
               {e.nameEn ? `${e.nameEn} · ` : ""}新手起始 {e.startWeight}
             </p>
