@@ -63,6 +63,9 @@ const MS = {
   bed: "hotel",
   bell: "notifications",
   swap: "swap_horiz",
+  sunrise: "wb_twilight",
+  sun: "light_mode",
+  moon: "dark_mode",
 } as const;
 
 export type IconName = keyof typeof MS;

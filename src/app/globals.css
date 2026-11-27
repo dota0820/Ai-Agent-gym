@@ -135,7 +135,7 @@
   --color-primary: var(--c-primary);
   --color-primary-soft: var(--c-primary-soft);
   --color-deep: var(--c-deep);
-  --color-forest: var(--c-forest, #163300);
+  --color-forest: var(--c-forest, var(--c-ink));
   --color-mint: var(--c-mint);
   --color-mint-soft: var(--c-mint-soft);
   --font-sans: "Inter Variable", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC",

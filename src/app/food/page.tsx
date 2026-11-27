@@ -27,7 +27,12 @@ import {
   useApp,
   useHydrated,
 } from "@/lib/store";
-import { MEAL_TYPES, type MealItem, type MealLog, type MealType } from "@/lib/types";
+import {
+  MEAL_TYPES,
+  type MealItem,
+  type MealLog,
+  type MealType,
+} from "@/lib/types";
 import { useDictation } from "@/lib/voice";
 import { btnGhost, btnPrimary, Card, input } from "@/components/ui";
 
@@ -45,35 +50,6 @@ interface MealDraft {
   image?: string;
 }
 
-function MacroBar({
-  label,
-  val,
-  target,
-  unit,
-  barColor,
-}: {
-  label: string;
-  val: number;
-  target: number;
-  unit: string;
-  barColor: string;
-}) {
-  const pct = target > 0 ? Math.min(100, Math.round((val / target) * 100)) : 0;
-  return (
-    <div>
-      <div className="flex items-baseline justify-between text-xs">
-        <span className="font-semibold text-ink">{label}</span>
-        <span className="tabular-nums text-sub">
-          <strong className="text-ink">{Math.round(val)}</strong> / {target} {unit}
-        </span>
-      </div>
-      <div className="mt-1 h-2 overflow-hidden rounded-full bg-bg">
-        <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
-      </div>
-    </div>
-  );
-}
-
 function FoodContent() {
   const { meals, profile, workouts } = useApp();
   const searchParams = useSearchParams();
@@ -81,7 +57,8 @@ function FoodContent() {
 
   const today = localDateKey();
   const rawDate = searchParams.get("date");
-  const validParamDate = rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
+  const validParamDate =
+    rawDate && /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : null;
   const [dateKey, setDateKey] = useState(validParamDate ?? today);
   const lastParamDate = useRef(validParamDate);
   useEffect(() => {
@@ -90,9 +67,13 @@ function FoodContent() {
     }
     lastParamDate.current = validParamDate;
   }, [validParamDate]);
-  const [mealType, setMealType] = useState<MealType>(() => defaultMealTypeForHour());
+  const [mealType, setMealType] = useState<MealType>(() =>
+    defaultMealTypeForHour(),
+  );
   const [text, setText] = useState("");
-  const [photo, setPhoto] = useState<{ full: string; thumb: string } | null>(null);
+  const [photo, setPhoto] = useState<{ full: string; thumb: string } | null>(
+    null,
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [draft, setDraft] = useState<MealDraft | null>(null);
@@ -111,8 +92,13 @@ function FoodContent() {
   const targets = computeNutritionTargets(profile);
   const dayMeals = mealsForDate(meals, dateKey);
   const totals = sumMealMacros(dayMeals);
-  const dayWorkouts = workouts.filter((w) => localDateKey(w.startedAt) === dateKey);
-  const workoutCals = dayWorkouts.reduce((n, w) => n + (w.watch?.calories ?? 0), 0);
+  const dayWorkouts = workouts.filter(
+    (w) => localDateKey(w.startedAt) === dateKey,
+  );
+  const workoutCals = dayWorkouts.reduce(
+    (n, w) => n + (w.watch?.calories ?? 0),
+    0,
+  );
 
   async function onPickPhoto(file: File) {
     setError("");
@@ -133,7 +119,11 @@ function FoodContent() {
     setError("");
     try {
       const genderLabel =
-        profile.gender === "male" ? "男" : profile.gender === "female" ? "女" : "未知";
+        profile.gender === "male"
+          ? "男"
+          : profile.gender === "female"
+            ? "女"
+            : "未知";
       const ctxLines = [
         `当前人物档案: ${profile.name || "默认人物"} (性别: ${genderLabel}, 年龄: ${profile.age || "?"}岁, 身高: ${profile.heightCm || "?"} cm, 体重: ${profile.weightKg || "?"} kg, 目标: ${profile.goal || "保持健康"}, 每周训练: ${profile.daysPerWeek || "?"} 次)`,
         dayWorkouts.length
@@ -161,7 +151,9 @@ function FoodContent() {
         return;
       }
       if (!j.is_food) {
-        setError("这看起来不太像食物或饮品哦，请拍餐食照片或文字描述吃了什么。");
+        setError(
+          "这看起来不太像食物或饮品哦，请拍餐食照片或文字描述吃了什么。",
+        );
         return;
       }
       setDraft({
@@ -182,11 +174,12 @@ function FoodContent() {
     }
   }
 
-  function openManualDraft() {
+  function openManualDraft(type: MealType = mealType) {
     setError("");
     setManualMode(true);
+    setMealType(type);
     setDraft({
-      mealType,
+      mealType: type,
       summary: text.trim() || "手动记录一餐",
       calories: 0,
       protein: 0,
@@ -221,7 +214,9 @@ function FoodContent() {
     const isToday = dateKey === today;
     const loggedAt =
       draft.loggedAt ??
-      (isToday ? new Date().toISOString() : new Date(`${dateKey}T12:00:00`).toISOString());
+      (isToday
+        ? new Date().toISOString()
+        : new Date(`${dateKey}T12:00:00`).toISOString());
     const meal: MealLog = {
       id: draft.editingId ?? uid(),
       loggedAt,
@@ -255,17 +250,36 @@ function FoodContent() {
     setPhoto(null);
   }
 
-  function updateItemMacro(idx: number, key: "calories" | "protein" | "carbs" | "fat", val: number) {
+  function updateItemMacro(
+    idx: number,
+    key: "calories" | "protein" | "carbs" | "fat",
+    val: number,
+  ) {
     if (!draft) return;
-    const items = draft.items.map((it, i) => (i === idx ? { ...it, [key]: val } : it));
+    const items = draft.items.map((it, i) =>
+      i === idx ? { ...it, [key]: val } : it,
+    );
     const calories = items.reduce((s, x) => s + (x.calories || 0), 0);
-    const protein = Math.round(items.reduce((s, x) => s + (x.protein || 0), 0) * 10) / 10;
-    const carbs = Math.round(items.reduce((s, x) => s + (x.carbs || 0), 0) * 10) / 10;
-    const fat = Math.round(items.reduce((s, x) => s + (x.fat || 0), 0) * 10) / 10;
-    setDraft({ ...draft, items, calories: Math.round(calories), protein, carbs, fat });
+    const protein =
+      Math.round(items.reduce((s, x) => s + (x.protein || 0), 0) * 10) / 10;
+    const carbs =
+      Math.round(items.reduce((s, x) => s + (x.carbs || 0), 0) * 10) / 10;
+    const fat =
+      Math.round(items.reduce((s, x) => s + (x.fat || 0), 0) * 10) / 10;
+    setDraft({
+      ...draft,
+      items,
+      calories: Math.round(calories),
+      protein,
+      carbs,
+      fat,
+    });
   }
 
-  function updateTarget(key: "calories" | "protein" | "carbs" | "fat", raw: string) {
+  function updateTarget(
+    key: "calories" | "protein" | "carbs" | "fat",
+    raw: string,
+  ) {
     const num = raw.trim() === "" ? null : Math.max(0, Number(raw));
     if (num !== null && isNaN(num)) return;
     setState((s) => ({
@@ -308,37 +322,144 @@ function FoodContent() {
         </div>
       </div>
 
-      <Card className="space-y-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="num flex items-baseline gap-1.5 leading-none">
-            <span className="text-5xl font-bold tracking-tight text-ink">{totals.calories}</span>
-            <span className="text-lg font-semibold text-sub">/ {targets.calories}</span>
-            <span className="text-xs font-semibold text-sub">kcal</span>
-          </div>
-          <button
-            type="button"
-            className="mt-1 rounded-full bg-bg px-3 py-1 text-xs font-semibold text-sub"
-            onClick={() => setEditTargets(!editTargets)}
-          >
-            {editTargets ? "完成" : "目标"}
-          </button>
+      {/* energy hero */}
+      <div className="relative overflow-hidden rounded-[28px] bg-forest p-5 text-white">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary/10 blur-2xl" />
+        <div className="relative flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-[13px] font-bold">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+            {dateKey === today
+              ? "今日能量结算"
+              : `${fmtDateKey(dateKey)}能量结算`}
+          </span>
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold text-primary">
+            {totals.calories > targets.calories
+              ? "已超出目标"
+              : totals.calories
+                ? "进行中"
+                : "还没开始"}
+          </span>
         </div>
-
-        <div className="h-2.5 overflow-hidden rounded-full bg-bg">
+        <div className="relative mt-4 flex items-baseline gap-2">
+          <span className="display-num text-[48px] leading-none">
+            {totals.calories.toLocaleString()}
+          </span>
+          <span className="text-[15px] text-white/60">
+            / {targets.calories.toLocaleString()} kcal
+          </span>
+        </div>
+        <p className="relative mt-2 text-[13px] text-white/75">
+          还可摄入{" "}
+          <span className="display-num text-[20px] text-primary">
+            {Math.max(0, targets.calories - totals.calories).toLocaleString()}
+          </span>{" "}
+          kcal · 目标达成{" "}
+          {Math.min(
+            100,
+            Math.round((totals.calories / Math.max(1, targets.calories)) * 100),
+          )}
+          %
+        </p>
+        <div className="relative mt-4 flex h-2.5 gap-1 overflow-hidden rounded-full bg-white/10">
           <div
-            className={`h-full rounded-full transition-all ${
-              totals.calories > targets.calories * 1.1 ? "bg-amber-500" : "bg-primary"
-            }`}
+            className="h-full rounded-full bg-primary"
             style={{
               width: `${Math.min(100, Math.round((totals.calories / Math.max(1, targets.calories)) * 100))}%`,
             }}
           />
+          {workoutCals > 0 && (
+            <div
+              className="h-full rounded-full bg-[#ff5a36]"
+              style={{
+                width: `${Math.min(30, Math.round((workoutCals / Math.max(1, targets.calories)) * 100))}%`,
+              }}
+            />
+          )}
         </div>
+        <div className="relative mt-2 flex justify-between text-[11px] text-white/65">
+          <span className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-primary" />
+            饮食摄入 {totals.calories} kcal
+          </span>
+          {workoutCals > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-[#ff5a36]" />
+              运动消耗 -{workoutCals} kcal
+            </span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (draft) setDraft(null);
+            setTimeout(() => fileRef.current?.click(), 0);
+          }}
+          className="relative mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-[16px] font-bold text-forest shadow-[0_8px_24px_rgba(159,232,112,0.25)]"
+        >
+          <Icon name="camera" size={22} />
+          AI 拍照识餐
+        </button>
+      </div>
 
-        <div className="space-y-2.5">
-          <MacroBar label="蛋白质" val={totals.protein} target={targets.protein} unit="g" barColor="bg-[#2563eb]" />
-          <MacroBar label="碳水" val={totals.carbs} target={targets.carbs} unit="g" barColor="bg-amber-500" />
-          <MacroBar label="脂肪" val={totals.fat} target={targets.fat} unit="g" barColor="bg-[#9333ea]" />
+      {/* macros */}
+      <div className="lift space-y-4 rounded-[28px] bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-soft text-forest">
+              <Icon name="nutrition" size={21} />
+            </span>
+            <h2 className="text-[17px] font-bold">三大营养素</h2>
+          </div>
+          <button
+            type="button"
+            className="rounded-full bg-bg px-3 py-1.5 text-[12px] font-bold text-forest"
+            onClick={() => setEditTargets(!editTargets)}
+          >
+            {editTargets ? "完成" : "改目标"}
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {(
+            [
+              ["蛋白质", totals.protein, targets.protein, "#2f6c00"],
+              ["碳水", totals.carbs, targets.carbs, "#fbbf24"],
+              ["脂肪", totals.fat, targets.fat, "#ff5a36"],
+            ] as const
+          ).map(([l, v, t, c]) => {
+            const p = t ? Math.min(100, Math.round((v / t) * 100)) : 0;
+            const gap = Math.round(t - v);
+            return (
+              <div key={l}>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-[12px] font-semibold text-sub">
+                    {l}
+                  </span>
+                  <span className="text-[11px] font-bold" style={{ color: c }}>
+                    {p}%
+                  </span>
+                </div>
+                <div className="mt-1 flex items-baseline">
+                  <span className="display-num text-[22px] leading-none text-forest">
+                    {Math.round(v)}
+                  </span>
+                  <span className="text-[11px] text-sub">/{t}g</span>
+                </div>
+                <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-bg">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${p}%`, background: c }}
+                  />
+                </div>
+                <div
+                  className={`mt-1.5 text-[11px] ${gap > 0 && l === "蛋白质" ? "font-bold text-[#e0482a]" : "text-sub"}`}
+                >
+                  {gap > 0
+                    ? `${l === "蛋白质" ? "缺口" : "余"} ${gap}g`
+                    : "已达标"}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {editTargets && (
@@ -400,19 +521,19 @@ function FoodContent() {
             问下一餐 ›
           </Link>
         </div>
-      </Card>
+      </div>
 
       <Card className="space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-sm font-bold">
-            <Icon name="camera" size={16} className="text-deep" />
-            拍照扫描
+          <div className="flex items-center gap-1.5 text-[15px] font-bold">
+            <Icon name="addPhoto" size={20} className="text-deep" />
+            记一餐
           </div>
           {!draft && (
             <button
               type="button"
               className="text-xs font-semibold text-sub"
-              onClick={openManualDraft}
+              onClick={() => openManualDraft()}
             >
               手动填
             </button>
@@ -430,8 +551,8 @@ function FoodContent() {
               }}
               className={`rounded-xl py-2 text-xs font-semibold ${
                 (draft ? draft.mealType : mealType) === t.id
-                  ? "bg-primary text-white"
-                  : "border border-line bg-bg text-ink"
+                  ? "bg-forest text-white"
+                  : "bg-bg text-ink"
               }`}
             >
               {t.emoji} {t.label}
@@ -455,8 +576,14 @@ function FoodContent() {
 
             {photo && (
               <div className="flex items-center gap-3 rounded-2xl border border-line bg-bg p-2">
-                <img src={photo.thumb} alt="食物照片" className="h-14 w-14 rounded-xl object-cover" />
-                <div className="flex-1 text-xs text-sub">已选照片，可补说明</div>
+                <img
+                  src={photo.thumb}
+                  alt="食物照片"
+                  className="h-14 w-14 rounded-xl object-cover"
+                />
+                <div className="flex-1 text-xs text-sub">
+                  已选照片，可补说明
+                </div>
                 <button
                   type="button"
                   className="px-2 text-xs text-sub"
@@ -494,12 +621,18 @@ function FoodContent() {
                     if (dictation.listening) {
                       dictation.stop();
                     } else {
-                      dictPrefixRef.current = text.trim() ? `${text.trim()} ` : "";
+                      dictPrefixRef.current = text.trim()
+                        ? `${text.trim()} `
+                        : "";
                       dictation.start();
                     }
                   }}
                 >
-                  <Icon name={dictation.listening ? "stop" : "mic"} size={18} className="mr-1" />
+                  <Icon
+                    name={dictation.listening ? "stop" : "mic"}
+                    size={18}
+                    className="mr-1"
+                  />
                   {dictation.listening ? "停止" : "语音"}
                 </button>
               )}
@@ -514,9 +647,13 @@ function FoodContent() {
               </button>
             </div>
 
-            {dictation.error && <p className="text-xs text-deep">{dictation.error}</p>}
+            {dictation.error && (
+              <p className="text-xs text-deep">{dictation.error}</p>
+            )}
             {error && (
-              <div className="rounded-xl bg-primary-soft px-3 py-2 text-xs text-deep">{error}</div>
+              <div className="rounded-xl bg-primary-soft px-3 py-2 text-xs text-deep">
+                {error}
+              </div>
             )}
           </>
         ) : (
@@ -548,7 +685,9 @@ function FoodContent() {
               <input
                 className={`${input} mt-1`}
                 value={draft.summary}
-                onChange={(e) => setDraft({ ...draft, summary: e.target.value })}
+                onChange={(e) =>
+                  setDraft({ ...draft, summary: e.target.value })
+                }
               />
             </label>
 
@@ -574,7 +713,10 @@ function FoodContent() {
             </div>
 
             {draft.items.length > 0 && (
-              <details className="rounded-xl border border-line bg-bg px-3 py-2" open>
+              <details
+                className="rounded-xl border border-line bg-bg px-3 py-2"
+                open
+              >
                 <summary className="cursor-pointer text-xs font-semibold text-sub">
                   明细 ({draft.items.length})
                 </summary>
@@ -583,7 +725,11 @@ function FoodContent() {
                     <div key={idx} className="rounded-xl bg-card p-2 text-xs">
                       <div className="font-semibold">
                         {it.name}
-                        {it.portion ? <span className="ml-1 font-normal text-sub">({it.portion})</span> : null}
+                        {it.portion ? (
+                          <span className="ml-1 font-normal text-sub">
+                            ({it.portion})
+                          </span>
+                        ) : null}
                       </div>
                       <div className="mt-1.5 grid grid-cols-4 gap-1.5">
                         {(
@@ -611,102 +757,174 @@ function FoodContent() {
               </details>
             )}
 
-            <button type="button" className={`${btnPrimary} w-full`} onClick={saveDraft}>
+            <button
+              type="button"
+              className={`${btnPrimary} w-full`}
+              onClick={saveDraft}
+            >
               {draft.editingId ? "保存修改" : "保存"}
             </button>
           </div>
         )}
       </Card>
 
-      <section className="space-y-2.5">
-        <div className="text-xs font-semibold text-sub">
-          {fmtDateKey(dateKey)} · {dayMeals.length} 餐
+      <section className="space-y-3">
+        <div className="flex items-center justify-between px-1 pt-1">
+          <h2 className="text-[18px] font-bold">分餐记录</h2>
+          <span className="text-[12px] font-semibold text-sub">
+            {fmtDateKey(dateKey)} · {dayMeals.length} 餐
+          </span>
         </div>
 
-        {dayMeals.length === 0 ? (
-          <Card>
-            <p className="py-2 text-center text-sm text-sub">暂无记录</p>
-          </Card>
-        ) : (
-          dayMeals.map((m) => {
-            const mt = MEAL_TYPES.find((x) => x.id === m.mealType) ?? MEAL_TYPES[3];
-            const time = new Date(m.loggedAt).toTimeString().slice(0, 5);
+        {(["breakfast", "lunch", "snack", "dinner"] as const).map((type) => {
+          const mt = MEAL_TYPES.find((x) => x.id === type)!;
+          const list = dayMeals.filter((m) => m.mealType === type);
+          const sum = sumMealMacros(list);
+          const icon = (
+            {
+              breakfast: "sunrise",
+              lunch: "sun",
+              snack: "bolt",
+              dinner: "moon",
+            } as const
+          )[type];
+          if (!list.length) {
             return (
-              <Card key={m.id} className="space-y-2">
-                <div className="flex items-start gap-3">
-                  {m.image && (
-                    <img
-                      src={m.image}
-                      alt={m.summary}
-                      className="h-16 w-16 shrink-0 rounded-xl object-cover"
-                    />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-deep">
-                        {mt.emoji} {mt.label} · {time}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        <button
-                          type="button"
-                          className="min-h-8 text-xs font-semibold text-deep"
-                          onClick={() => startEditMeal(m)}
-                        >
-                          编辑
-                        </button>
-                        <button
-                          type="button"
-                          className="min-h-8 text-xs text-sub underline"
-                          onClick={() => {
-                            if (confirm(`删除「${m.summary}」这条饮食记录？`)) {
-                              removeMealLog(m.id);
-                            }
-                          }}
-                        >
-                          删除
-                        </button>
-                      </div>
-                    </div>
-                    <div className="mt-1 font-bold">{m.summary}</div>
-                    <div className="mt-1 flex flex-wrap gap-x-2.5 gap-y-0.5 text-xs text-sub tabular-nums">
-                      <span className="font-semibold text-ink">{m.calories} kcal</span>
-                      <span>蛋白 {m.protein}g</span>
-                      <span>碳水 {m.carbs}g</span>
-                      <span>脂肪 {m.fat}g</span>
-                    </div>
+              <div
+                key={type}
+                className="rounded-[28px] border border-dashed border-line bg-bg p-4"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-card text-sub">
+                    <Icon name={icon} size={21} />
+                  </span>
+                  <span className="flex-1 text-[16px] font-bold text-sub">
+                    {mt.label}(待记录)
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      openManualDraft(type);
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className="flex h-11 items-center justify-center gap-1.5 rounded-full bg-forest text-[13px] font-bold text-white"
+                  >
+                    <Icon name="plus" size={18} />
+                    录入{mt.label}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMealType(type);
+                      if (draft) setDraft(null);
+                      setTimeout(() => fileRef.current?.click(), 0);
+                    }}
+                    className="lift flex h-11 items-center justify-center gap-1.5 rounded-full bg-card text-[13px] font-bold text-forest"
+                  >
+                    <Icon name="camera" size={18} />
+                    拍照录入
+                  </button>
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div
+              key={type}
+              className="lift space-y-3 rounded-[28px] bg-card p-4"
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft text-forest">
+                  <Icon name={icon} size={21} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[18px] font-bold text-forest">
+                    {mt.label}
+                  </div>
+                  <div className="text-[12px] text-sub">
+                    {list
+                      .map((m) =>
+                        new Date(m.loggedAt).toTimeString().slice(0, 5),
+                      )
+                      .join(" · ")}{" "}
+                    记录
                   </div>
                 </div>
-
-                {m.advice && (
-                  <p className="rounded-xl bg-mint-soft px-3 py-2 text-xs leading-relaxed text-mint">
-                    {m.advice}
-                  </p>
-                )}
-
-                {m.items.length > 1 && (
-                  <details className="text-xs text-sub">
-                    <summary className="cursor-pointer font-semibold">
-                      查看单品明细 ({m.items.length})
-                    </summary>
-                    <ul className="mt-1.5 space-y-1 pl-2">
+                <div className="text-right">
+                  <div className="flex items-baseline justify-end gap-1 text-forest">
+                    <span className="display-num text-[24px] leading-none">
+                      {sum.calories}
+                    </span>
+                    <span className="text-[12px]">kcal</span>
+                  </div>
+                  <div className="mt-1 text-[11px] font-bold text-deep">
+                    蛋 {Math.round(sum.protein)}g · 碳 {Math.round(sum.carbs)}g
+                  </div>
+                </div>
+              </div>
+              {list.map((m) => (
+                <div key={m.id} className="space-y-2 rounded-2xl bg-bg p-3">
+                  <div className="flex items-start gap-3">
+                    {m.image && (
+                      <img
+                        src={m.image}
+                        alt={m.summary}
+                        className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                      />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <div className="text-[14px] font-bold">{m.summary}</div>
+                      <div className="mt-0.5 text-[12px] text-sub tabular-nums">
+                        {m.calories} kcal · 蛋白 {m.protein}g · 碳水 {m.carbs}g
+                        · 脂肪 {m.fat}g
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="编辑"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-card text-forest"
+                      onClick={() => startEditMeal(m)}
+                    >
+                      <Icon name="pen" size={17} />
+                    </button>
+                  </div>
+                  {m.items.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
                       {m.items.map((it, idx) => (
-                        <li key={idx} className="flex justify-between gap-2">
-                          <span>
-                            • {it.name}
-                            {it.portion ? ` (${it.portion})` : ""}
-                          </span>
-                          <span className="shrink-0 tabular-nums">
-                            {it.calories} kcal · 蛋{it.protein} / 碳{it.carbs} / 脂{it.fat}
-                          </span>
-                        </li>
+                        <span
+                          key={idx}
+                          className="rounded-full bg-card px-2.5 py-1 text-[11px] font-semibold"
+                        >
+                          {it.name}
+                          {it.portion ? ` ${it.portion}` : ""}
+                        </span>
                       ))}
-                    </ul>
-                  </details>
-                )}
-              </Card>
-            );
-          })
-        )}
+                    </div>
+                  )}
+                  {m.advice && (
+                    <p className="rounded-xl bg-primary-soft px-3 py-2 text-[12px] leading-relaxed text-forest">
+                      {m.advice}
+                    </p>
+                  )}
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      className="text-[11px] text-sub underline"
+                      onClick={() => {
+                        if (confirm(`删除「${m.summary}」这条饮食记录？`))
+                          removeMealLog(m.id);
+                      }}
+                    >
+                      删除
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </section>
     </div>
   );
