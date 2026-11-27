@@ -11,7 +11,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-3xl bg-card p-5 ${className}`}
+      className={`rounded-3xl border border-line bg-card p-5 ${className}`}
     >
       {children}
     </div>
@@ -21,17 +21,17 @@ export function Card({
 export function H1({ children, sub }: { children: ReactNode; sub?: ReactNode }) {
   return (
     <header className="mb-4">
-      <h1 className="text-[30px] font-extrabold leading-tight tracking-tight">{children}</h1>
+      <h1 className="text-[28px] font-semibold leading-tight">{children}</h1>
       {sub && <p className="mt-1.5 text-[15px] leading-relaxed text-sub">{sub}</p>}
     </header>
   );
 }
 
 export const btn =
-  "inline-flex items-center justify-center rounded-full px-5 py-3.5 text-[15px] font-bold transition active:scale-[0.98] disabled:opacity-50";
+  "inline-flex items-center justify-center rounded-full px-5 py-3.5 text-[16px] font-semibold transition active:scale-[0.98] disabled:opacity-50";
 export const btnPrimary = `${btn} bg-primary text-white`;
-export const btnSoft = `${btn} bg-primary-soft text-deep`;
-export const btnGhost = `${btn} bg-card text-ink`;
+export const btnSoft = `${btn} border border-line bg-card text-ink`;
+export const btnGhost = `${btn} border border-line bg-card text-sub`;
 export const input =
   "w-full rounded-2xl border border-line bg-surface px-3.5 py-3 outline-none focus:border-deep";
 
@@ -71,7 +71,7 @@ export function SubPage({ title, children }: { title: string; children: ReactNod
         >
           <Icon name="chevronLeft" size={22} />
         </Link>
-        <h1 className="text-[26px] font-extrabold tracking-tight">{title}</h1>
+        <h1 className="text-[26px] font-semibold">{title}</h1>
       </header>
       {children}
     </div>

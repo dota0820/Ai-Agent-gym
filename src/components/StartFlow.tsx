@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { repeatWorkout, startFree, startFromPlan } from "@/lib/actions";
 import { subsFor } from "@/lib/exercises";
-import { hoursSinceTrained, RECOVERY_HOURS, todaySuggestion, weekDots } from "@/lib/recovery";
+import {
+  hoursSinceTrained,
+  RECOVERY_HOURS,
+  todaySuggestion,
+  weekDots,
+} from "@/lib/recovery";
 import { useApp } from "@/lib/store";
 import { useTheme } from "@/lib/theme";
 import { GROUPS } from "@/lib/types";
@@ -35,8 +40,12 @@ export default function StartFlow({ name }: { name: string }) {
   const tip = todaySuggestion(workouts, customExercises, now);
   const dots = weekDots(workouts, now);
   const weekCount = dots.filter((d) => d.done).length;
-  const lastWorkout = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
-  const hasRecovering = Object.values(recovery).some((h) => h !== undefined && h < RECOVERY_HOURS);
+  const lastWorkout = [...workouts].sort((a, b) =>
+    b.startedAt.localeCompare(a.startedAt),
+  )[0];
+  const hasRecovering = Object.values(recovery).some(
+    (h) => h !== undefined && h < RECOVERY_HOURS,
+  );
 
   const [no3d, setNo3d] = useState(false);
   const [part, setPart] = useState<BodyPart | null>(null);
@@ -117,7 +126,11 @@ export default function StartFlow({ name }: { name: string }) {
           },
         }
       : tip.part
-        ? { label: `练${GROUPS.find((g) => g.id === tip.part)?.label}`, icon: "play", run: () => pick(tip.part!) }
+        ? {
+            label: `练${GROUPS.find((g) => g.id === tip.part)?.label}`,
+            icon: "play",
+            run: () => pick(tip.part!),
+          }
         : {
             label: "开始训练",
             icon: "play",
@@ -152,101 +165,116 @@ export default function StartFlow({ name }: { name: string }) {
     return { text: `可以练 · ${Math.floor(h / 24)}天`, ready: true };
   };
 
-  const tasks: { icon: IconName; title: string; sub: string; href: string }[] = [
-    ...(active ? [{ icon: "play" as IconName, title: "训练进行中", sub: active.title, href: "/workout" }] : []),
-    ...(plan && !active
-      ? [{ icon: "clipboard" as IconName, title: "教练帮你排好了计划", sub: plan.title, href: "/history" }]
-      : []),
-    ...(!profile.goal
-      ? [{ icon: "target" as IconName, title: "完善目标和器械", sub: "教练的安排会更适合你", href: "/me" }]
-      : []),
-  ];
-  const initial = profile.avatar || (name ? name.slice(0, 1) : "🙂");
+  const tasks: { icon: IconName; title: string; sub: string; href: string }[] =
+    [
+      ...(active
+        ? [
+            {
+              icon: "play" as IconName,
+              title: "训练进行中",
+              sub: active.title,
+              href: "/workout",
+            },
+          ]
+        : []),
+      ...(plan && !active
+        ? [
+            {
+              icon: "clipboard" as IconName,
+              title: "教练帮你排好了计划",
+              sub: plan.title,
+              href: "/history",
+            },
+          ]
+        : []),
+      ...(!profile.goal
+        ? [
+            {
+              icon: "target" as IconName,
+              title: "完善目标和器械",
+              sub: "教练的安排会更适合你",
+              href: "/me",
+            },
+          ]
+        : []),
+    ];
+  const initial = name ? name.slice(0, 1) : "我";
+
+  const today = dots.findIndex((d) => d.today);
 
   return (
-    <section className="space-y-6">
-      {/* top bar: avatar + two pills */}
-      <div className="flex items-center justify-between gap-2">
+    <section className="space-y-7">
+      {/* top bar */}
+      <div className="flex items-center justify-between gap-3">
         <button
           onClick={() => setSheet(true)}
           aria-label="切换人物和健身房"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-line bg-card text-lg font-bold"
+          className="flex min-w-0 items-center gap-3 text-left"
         >
-          {initial}
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-[17px] font-medium text-white">
+            {initial}
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-[17px] font-semibold">
+              您好{name ? `，${name}` : ""}
+            </span>
+            <span className="block text-[13px] text-sub">
+              切换人物 / 健身房
+            </span>
+          </span>
         </button>
-        <div className="flex gap-2">
-          <Link
-            href="/history"
-            className="flex h-11 items-center gap-1.5 rounded-full bg-primary px-4 text-[15px] font-bold"
-          >
-            <Icon name="flame" size={17} />
-            本周 {weekCount} 天
-          </Link>
-          <Link
-            href="/history"
-            className="flex h-11 items-center gap-1 rounded-full bg-primary-soft px-4 text-[15px] font-bold text-deep"
-          >
-            记录
-            <Icon name="plus" size={17} />
-          </Link>
-        </div>
+        <Link
+          href="/history"
+          aria-label="训练记录"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-card"
+        >
+          <Icon name="calendar" size={19} />
+        </Link>
       </div>
 
-      {/* dashboard: one big number */}
+      {/* one number */}
       <div>
-        <p className="text-[16px] text-sub">{`您好${name ? `,${name}` : ""} · 本周训练`}</p>
-        <div className="mt-1 flex items-center gap-3">
-          <span className="text-[44px] font-extrabold leading-none tracking-tight">
+        <p className="text-[15px] text-sub">本周训练</p>
+        <div className="mt-1 flex items-baseline gap-2">
+          <span className="display-num text-[68px] leading-[0.9]">
             {weekCount}
-            <span className="ml-1.5 text-[24px] font-bold">次</span>
           </span>
-          <Link
-            href="/history"
-            aria-label="查看训练记录"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-deep"
-          >
-            <Icon name="calendar" size={19} />
-          </Link>
-          <Link
-            href="/coach"
-            aria-label="问教练"
-            className="flex h-11 w-11 items-center justify-center rounded-full bg-card text-deep"
-          >
-            <Icon name="chat" size={19} />
-          </Link>
+          <span className="text-[18px] text-sub">次</span>
         </div>
-        <div className="mt-3 flex items-center gap-1.5" role="img" aria-label={`本周已经练了 ${weekCount} 天`}>
-          {dots.map((d) => (
-            <span
-              key={d.label}
-              className={`flex h-9 w-9 items-center justify-center rounded-full text-[14px] font-semibold ${
-                d.done
-                  ? "bg-primary"
-                  : d.today
-                    ? "border-2 border-deep text-deep"
-                    : "bg-card text-sub"
-              } ${d.future ? "opacity-50" : ""}`}
-            >
-              {d.done ? <Icon name="check" size={16} stroke={3} /> : d.label}
-            </span>
+        <div
+          className="mt-4 grid grid-cols-7 gap-1.5"
+          role="img"
+          aria-label={`本周已经练了 ${weekCount} 天`}
+        >
+          {dots.map((d, i) => (
+            <div key={d.label} className="text-center">
+              <div
+                className={`h-1.5 rounded-full ${d.done ? "bg-primary" : i === today ? "bg-ink/25" : "bg-line"}`}
+              />
+              <div
+                className={`mt-1.5 text-[13px] ${i === today ? "font-semibold text-ink" : "text-sub"}`}
+              >
+                {d.label}
+              </div>
+            </div>
           ))}
         </div>
       </div>
 
-      {/* action pills */}
-      <div className="no-scrollbar -mx-4 flex gap-2.5 overflow-x-auto px-4">
+      {/* actions: one primary, the rest quiet */}
+      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
         <button
           onClick={main.run}
-          className="flex h-12 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-[16px] font-bold"
+          className="flex h-12 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-[16px] font-semibold"
         >
-          <Icon name={main.icon} size={16} />
+          <Icon name={main.icon} size={15} />
           {main.label}
         </button>
         {actions.map((a) => (
           <button
             key={a.label}
             onClick={a.run}
-            className="flex h-12 shrink-0 items-center gap-2 rounded-full bg-primary-soft px-5 text-[16px] font-bold text-deep"
+            className="flex h-12 shrink-0 items-center gap-2 rounded-full border border-line bg-card px-5 text-[16px] font-medium"
           >
             <Icon name={a.icon} size={17} />
             {a.label}
@@ -254,20 +282,51 @@ export default function StartFlow({ name }: { name: string }) {
         ))}
       </div>
 
-      {/* the big card */}
-      <div className="overflow-hidden rounded-[28px] border border-line bg-surface shadow-[0_6px_24px_rgba(14,15,12,0.06)]">
+      {/* today's suggestion */}
+      {tip.part && (
         <button
           type="button"
-          onClick={() => tip.part && pick(tip.part)}
-          disabled={!tip.part}
-          className="flex w-full items-center justify-between gap-2 bg-primary px-5 py-4 text-left"
+          onClick={() => pick(tip.part!)}
+          className="flex w-full items-center gap-4 rounded-3xl border border-line bg-card p-4 text-left"
         >
-          <span className="text-[16px] font-bold leading-snug">{tip.text}</span>
-          {tip.part && <Icon name="chevronRight" size={20} />}
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-deep">
+            <Icon name="target" size={20} />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[17px] font-semibold">
+              今天练{GROUPS.find((g) => g.id === tip.part)?.label}
+            </span>
+            <span className="mt-0.5 block text-[14px] leading-snug text-sub">
+              {tip.text}
+            </span>
+          </span>
+          <span className="shrink-0 text-sub">
+            <Icon name="chevronRight" size={20} />
+          </span>
         </button>
-        <div className="px-5 pt-4">
-          <h2 className="text-[26px] font-extrabold leading-tight">今天练哪里</h2>
-          <p className="mt-1 text-[16px] text-sub">点身体或下面的部位 · 可以拖动旋转</p>
+      )}
+
+      {/* body + parts */}
+      <div className="overflow-hidden rounded-3xl border border-line bg-card">
+        <div className="flex items-start justify-between gap-3 px-5 pt-5">
+          <div>
+            <h2 className="text-[20px] font-semibold">选择部位</h2>
+            <p className="mt-0.5 text-[14px] text-sub">
+              点身体或下面的列表，可拖动旋转
+            </p>
+          </div>
+          {hasRecovering && (
+            <div className="shrink-0 space-y-1 pt-1 text-[13px] text-sub">
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#c24c40]" />
+                可以练
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-[#aab0bd]" />
+                恢复中
+              </span>
+            </div>
+          )}
         </div>
         {!no3d && (
           <div className="h-[300px]">
@@ -281,103 +340,98 @@ export default function StartFlow({ name }: { name: string }) {
             />
           </div>
         )}
-        {!no3d && hasRecovering && (
-          <div className="flex items-center justify-center gap-5 pb-2 text-[14px] text-sub">
-            <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-[#aab0bd]" />
-              恢复中
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="h-3 w-3 rounded-full bg-[#c24c40]" />
-              可以练
-            </span>
-          </div>
-        )}
-        <ul className="grid grid-cols-2 gap-x-3 px-3 pt-1 pb-2">
-          {parts.map((g) => {
-            const st = status(g.id);
-            return (
-              <li key={g.id}>
-                <button
-                  onClick={() => pick(g.id as BodyPart)}
-                  aria-pressed={part === g.id}
-                  className="flex w-full items-center gap-3 rounded-2xl px-2 py-3 text-left active:bg-card"
-                >
-                  <span
-                    className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-[20px] ${
-                      st.ready ? "bg-primary-soft" : "bg-card grayscale"
-                    }`}
-                  >
-                    {g.emoji}
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[17px] font-bold">{g.label}</span>
-                    <span className="block truncate text-[13px] text-sub">{st.text}</span>
-                  </span>
-                  <span className="shrink-0 text-sub">
-                    <Icon name="chevronRight" size={18} />
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-          <li>
-            <button
-              onClick={() => router.push(`/coach?q=${encodeURIComponent("今天想做有氧,帮我安排一下")}`)}
-              className="flex w-full items-center gap-3 rounded-2xl px-2 py-3 text-left active:bg-card"
+        <ul className="grid grid-cols-2 border-t border-line">
+          {[
+            ...parts.map((g) => ({
+              id: g.id,
+              label: g.label,
+              st: status(g.id),
+              run: () => pick(g.id as BodyPart),
+            })),
+            {
+              id: "cardio",
+              label: "有氧",
+              st: { text: "跑步机等", ready: true },
+              run: () =>
+                router.push(
+                  `/coach?q=${encodeURIComponent("今天想做有氧，帮我安排一下")}`,
+                ),
+            },
+          ].map((x, i) => (
+            <li
+              key={x.id}
+              className={`border-line ${i % 2 === 0 ? "border-r" : ""} ${i >= 2 ? "border-t" : ""}`}
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-[20px]">
-                🏃
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-[17px] font-bold">有氧</span>
-                <span className="block truncate text-[13px] text-sub">跑步机等</span>
-              </span>
-              <span className="shrink-0 text-sub">
-                <Icon name="chevronRight" size={18} />
-              </span>
-            </button>
-          </li>
+              <button
+                onClick={x.run}
+                aria-pressed={part === x.id}
+                className="flex w-full items-center gap-3 px-5 py-4 text-left active:bg-bg"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[17px] font-medium">
+                    {x.label}
+                  </span>
+                  <span className="mt-0.5 block text-[13px] text-sub">
+                    {x.st.text}
+                  </span>
+                </span>
+                <span
+                  aria-hidden
+                  className={`h-2 w-2 shrink-0 rounded-full ${x.st.ready ? "bg-primary" : "bg-[#c5c9c1]"}`}
+                />
+              </button>
+            </li>
+          ))}
         </ul>
-        <div className="flex flex-wrap gap-2 px-5 pb-5">
+        <div className="flex gap-2 border-t border-line px-5 py-4">
           <button
             onClick={() =>
-              router.push(`/coach?q=${encodeURIComponent("我不知道今天该练什么,你根据我的记录帮我决定吧")}`)
+              router.push(
+                `/coach?q=${encodeURIComponent("我不知道今天该练什么，你根据我的记录帮我决定吧")}`,
+              )
             }
-            className="flex h-11 items-center gap-2 rounded-full bg-card px-4 text-[15px] font-bold"
+            className="flex h-11 items-center gap-2 rounded-full border border-line px-4 text-[15px] font-medium"
           >
-            <Icon name="sparkles" size={17} />
-            AI 帮我决定
+            <Icon name="sparkles" size={16} />
+            让教练决定
           </button>
           <button
             onClick={() =>
-              router.push(`/coach?q=${encodeURIComponent("今天想做拉伸和活动度放松,帮我安排一下")}`)
+              router.push(
+                `/coach?q=${encodeURIComponent("今天想做拉伸和活动度放松，帮我安排一下")}`,
+              )
             }
-            className="flex h-11 items-center gap-2 rounded-full bg-card px-4 text-[15px] font-bold"
+            className="flex h-11 items-center rounded-full border border-line px-4 text-[15px] font-medium"
           >
-            🧘 拉伸放松
+            拉伸放松
           </button>
         </div>
       </div>
 
       {tasks.length > 0 && (
         <div>
-          <h2 className="mb-3 text-[20px] font-bold">待办</h2>
-          <ul className="space-y-2.5">
-            {tasks.map((t) => (
-              <li key={t.title}>
+          <h2 className="mb-3 text-[20px] font-semibold">待办</h2>
+          <ul className="overflow-hidden rounded-3xl border border-line bg-card">
+            {tasks.map((t, i) => (
+              <li key={t.title} className={i ? "border-t border-line" : ""}>
                 <Link
                   href={t.href}
-                  className="flex items-center gap-4 rounded-3xl border border-line bg-surface p-4 shadow-[0_4px_16px_rgba(14,15,12,0.04)]"
+                  className="flex items-center gap-4 px-4 py-4 active:bg-bg"
                 >
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-soft text-deep">
-                    <Icon name={t.icon} size={22} />
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-deep">
+                    <Icon name={t.icon} size={20} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-[17px] font-bold leading-snug">{t.title}</span>
-                    <span className="block truncate text-[15px] text-sub">{t.sub}</span>
+                    <span className="block text-[17px] font-semibold leading-snug">
+                      {t.title}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[14px] text-sub">
+                      {t.sub}
+                    </span>
                   </span>
-                  <Icon name="chevronRight" size={20} />
+                  <span className="shrink-0 text-sub">
+                    <Icon name="chevronRight" size={20} />
+                  </span>
                 </Link>
               </li>
             ))}
@@ -388,7 +442,10 @@ export default function StartFlow({ name }: { name: string }) {
       {sheet && <ProfileSheet onClose={() => setSheet(false)} />}
 
       {part && group && (
-        <div className="fixed inset-0 z-40 flex items-end bg-black/50" onClick={closeFromBackdrop}>
+        <div
+          className="fixed inset-0 z-40 flex items-end bg-black/50"
+          onClick={closeFromBackdrop}
+        >
           <div
             role="dialog"
             aria-label={`安排${group.label}的训练`}
@@ -427,7 +484,10 @@ export default function StartFlow({ name }: { name: string }) {
               </p>
             )}
             {step > (subs.length ? 0 : 1) && (
-              <button className="mt-2 text-sm text-sub underline" onClick={() => setStep(step - 1)}>
+              <button
+                className="mt-2 text-sm text-sub underline"
+                onClick={() => setStep(step - 1)}
+              >
                 ← 上一步
               </button>
             )}

@@ -3,7 +3,7 @@ import { useSyncExternalStore } from "react";
 
 /** Colour themes. The CSS variables for each one live in src/app/globals.css. */
 export const THEMES = [
-  { id: "fresh", label: "清爽绿", dark: false, bg: "#ffffff", card: "#f2f4ef", primary: "#9fe870", ink: "#0e0f0c" },
+  { id: "fresh", label: "清爽绿", dark: false, bg: "#f6f7f3", card: "#ffffff", primary: "#9fe870", ink: "#121512" },
   { id: "warm", label: "暖色奶油", dark: false, bg: "#fbf6f1", card: "#ffffff", primary: "#e8615a", ink: "#2a2733" },
   { id: "mint", label: "薄荷清新", dark: false, bg: "#f2faf6", card: "#ffffff", primary: "#128a66", ink: "#1e2f29" },
   { id: "lavender", label: "薰衣草紫", dark: false, bg: "#f7f5fd", card: "#ffffff", primary: "#7054e0", ink: "#2a2440" },

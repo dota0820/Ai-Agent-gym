@@ -10,29 +10,29 @@
 :root,
 [data-theme="fresh"] {
   color-scheme: light;
-  --c-bg: #ffffff;
-  --c-card: #f2f4ef;
+  --c-bg: #f6f7f3;
+  --c-card: #ffffff;
   --c-surface: #ffffff;
-  --c-ink: #0e0f0c;
-  --c-sub: #5d6359;
-  --c-line: #e3e7df;
+  --c-ink: #121512;
+  --c-sub: #646a62;
+  --c-line: #e4e7e0;
   --c-primary: #9fe870;
-  --c-primary-soft: #e3f6d6;
+  --c-primary-soft: #eef7e6;
   --c-mint: #9fe870;
-  --c-mint-soft: #e3f6d6;
+  --c-mint-soft: #eef7e6;
   --c-on-accent: #163300;
-  --c-body: #e3e7df;
+  --c-body: #e4e7e0;
   --c-muscle: #9fe870;
   --c-muscle-2: #cdeeb6;
-  --c-deep: #163300;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.375rem;
-  --radius-3xl: 1.75rem;
+  --c-deep: #24400f;
+  --radius-xl: 0.875rem;
+  --radius-2xl: 1.125rem;
+  --radius-3xl: 1.5rem;
   /* one tidy type scale: nothing smaller than 13px */
   --text-xs: 0.8125rem;
-  --text-xs--line-height: 1.35;
+  --text-xs--line-height: 1.4;
   --text-sm: 0.9375rem;
-  --text-sm--line-height: 1.45;
+  --text-sm--line-height: 1.5;
 }
 [data-theme="frost"] {
   color-scheme: light;
@@ -136,7 +136,7 @@
   --color-deep: var(--c-deep);
   --color-mint: var(--c-mint);
   --color-mint-soft: var(--c-mint-soft);
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
+  --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
     "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
 }
 
@@ -345,21 +345,43 @@ html[data-mode="gym"] .bg-amber-50 {
   }
 }
 
-/* ───────── Fresh theme details ───────── */
-/* lime is for fills; as text on white it is unreadable, so success text uses forest green */
-html:not([data-mode="gym"])[data-theme="fresh"] .text-mint {
-  color: #2f5711;
+/* ───────── Fresh theme details ─────────
+ * Hierarchy comes from size and colour, not weight: Chinese system fonts look
+ * heavy and cheap when synthesised past semibold, so cap weights here.
+ */
+[data-theme="fresh"] body {
+  letter-spacing: 0.005em;
+}
+[data-theme="fresh"] .font-extrabold,
+[data-theme="fresh"] .font-black {
+  font-weight: 600;
+}
+[data-theme="fresh"] .font-bold {
+  font-weight: 600;
+}
+[data-theme="fresh"] .font-semibold {
+  font-weight: 500;
 }
 [data-theme="fresh"] h1,
 [data-theme="fresh"] h2 {
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
+}
+/* lime is for fills; as text on white it is unreadable, so success text uses moss */
+html:not([data-mode="gym"])[data-theme="fresh"] .text-mint {
+  color: #2f5711;
 }
 [data-theme="fresh"] .send-btn,
 [data-theme="fresh"] .bg-primary {
   color: var(--c-on-accent);
 }
-/* dark fills keep white text (the rule above would make it dark green) */
+/* dark fills keep white text (the generic on-accent rule would make it moss) */
 html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink.text-white,
 html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink [class*="text-white"] {
   color: #ffffff;
+}
+.display-num {
+  font-family: "Geist Variable", var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.04em;
 }
