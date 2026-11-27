@@ -4,7 +4,7 @@ import { formatGymsContext } from "./equipment";
 import { allExerciseNamesForPrompt, findExerciseById } from "./exercise-lookup";
 import { customExerciseFromGuide, guideFromCoach } from "./custom-exercise";
 import { nutritionContextForCoach } from "./nutrition";
-import { parseRepRange, targetRirWords } from "./rir";
+import { parseRepRange, planNextSession, targetRirWords } from "./rir";
 import {
   addCustomExercise,
   addMealLog,
@@ -43,25 +43,42 @@ export function newExercise(
     weight?: string;
     note?: string;
     targetRir?: number;
+    /** When the plan was made: a session done after that overrides the plan's weight. */
+    plannedAt?: string;
   } = {},
 ): WorkoutExercise {
-  const last = lastPerformance(getState().workouts, base);
+  const state = getState();
+  const last = lastPerformance(state.workouts, base);
   const lastDone = last?.exercise.sets.filter((s) => s.done) ?? [];
   const n = opts.sets ?? (lastDone.length || 3);
-  const planned = parseWeightKg(opts.weight);
+  const repRange = parseRepRange(opts.reps) ?? last?.exercise.repRange;
+  const lib = findExerciseById(base.exerciseId, state.customExercises);
+  // progress from last time unless the plan was written after that session
+  const planIsNewer = !!opts.plannedAt && (!last || last.workout.startedAt < opts.plannedAt);
+  const next =
+    last && !planIsNewer
+      ? planNextSession(lastDone, opts.targetRir ?? last.exercise.targetRir ?? 2, repRange, lib)
+      : undefined;
+  const planned = planIsNewer || !last ? parseWeightKg(opts.weight) : undefined;
+  const nextWeights = next?.weights;
+  const shownWeight = next?.weight != null ? `${next.weight}kg` : planned != null || !last ? opts.weight : undefined;
   return {
     ...base,
     target: opts.reps
-      ? `${n} 组 × ${opts.reps}${opts.weight ? ` · ${opts.weight}` : ""}${
+      ? `${n} 组 × ${opts.reps}${shownWeight ? ` · ${shownWeight}` : ""}${
           opts.targetRir != null ? ` · ${targetRirWords(opts.targetRir)}` : ""
         }`
       : undefined,
     targetRir: opts.targetRir,
-    repRange: parseRepRange(opts.reps),
+    repRange,
     restSec: opts.restSec ?? 75,
     note: opts.note,
     sets: Array.from({ length: n }, (_, i) => ({
-      weight: planned ?? lastDone[Math.min(i, lastDone.length - 1)]?.weight ?? null,
+      weight:
+        planned ??
+        nextWeights?.[Math.min(i, nextWeights.length - 1)] ??
+        lastDone[Math.min(i, lastDone.length - 1)]?.weight ??
+        null,
       reps: null,
       done: false,
     })),
@@ -84,6 +101,7 @@ export function startFromPlan(plan: Plan) {
           weight: it.weight,
           note: it.note,
           targetRir: it.targetRir,
+          plannedAt: plan.createdAt,
         },
       ),
     ),
@@ -116,6 +134,7 @@ export function repeatWorkout(w: Workout) {
         { exerciseId: e.exerciseId, name: e.name, nameEn: e.nameEn, custom: e.custom },
         {
           sets: e.sets.filter((s) => s.done).length || e.sets.length,
+          reps: e.repRange ? `${e.repRange[0]}-${e.repRange[1]}` : undefined,
           restSec: e.restSec,
           targetRir: e.targetRir,
         },
@@ -226,7 +245,10 @@ function buildContext(): string {
       : "",
     "",
     "## 最近的训练记录(新的在前)",
-    historyForCoach(s.workouts),
+    historyForCoach(s.workouts),,
+    "",
+    "## 每个动作的下次进步目标(App 按双重递增法算出,排计划时以此为准)",
+    progressionForCoach(s.workouts, s.customExercises),
     "",
     "## 用户自定义的动作库",
     allExerciseNamesForPrompt(s.customExercises),
@@ -236,6 +258,25 @@ function buildContext(): string {
   ];
   const full = lines.join("\n");
   return full.length > MAX_CONTEXT_CHARS ? full.slice(0, MAX_CONTEXT_CHARS) + "\n...(部分历史已省略)" : full;
+}
+
+/** One line per recently trained exercise: what to do next time to beat last time. */
+function progressionForCoach(workouts: Workout[], custom: ReturnType<typeof getState>["customExercises"]): string {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  const sorted = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  for (const w of sorted) {
+    for (const e of w.exercises) {
+      const key = e.exerciseId ?? e.name;
+      if (seen.has(key) || !e.sets.some((x) => x.done)) continue;
+      seen.add(key);
+      const lib = findExerciseById(e.exerciseId, custom);
+      const next = planNextSession(e.sets, e.targetRir ?? 2, e.repRange, lib);
+      if (next) lines.push(`- ${e.name}${e.exerciseId ? ` [${e.exerciseId}]` : ""}: ${next.text}`);
+      if (lines.length >= 15) return lines.join("\n");
+    }
+  }
+  return lines.join("\n") || "(还没有记录)";
 }
 
 function historyForApi(chat: ChatMsg[]) {

@@ -8,7 +8,7 @@ import ExercisePicker from "@/components/ExercisePicker";
 import Guide, { guideFor } from "@/components/Guide";
 import NumInput from "@/components/NumInput";
 import {
-  adviseNextSession,
+  planNextSession,
   adviseNextSet,
   DEFAULT_TARGET_RIR,
   isTimedExercise,
@@ -317,14 +317,15 @@ export default function WorkoutPage() {
         const timed = isTimedExercise(libEx, ex);
         const sessionAdvice =
           !timed && last && !ex.sets.some((x) => x.done)
-            ? adviseNextSession(
+            ? planNextSession(
                 last.exercise.sets,
                 targetRir,
                 ex.repRange,
                 libEx,
               )
             : undefined;
-        const showSessionAdvice =
+        const showSessionAdvice = !!sessionAdvice;
+        const canApply =
           sessionAdvice?.weight != null &&
           ex.sets.some((x) => !x.done && x.weight !== sessionAdvice.weight);
         const hasBigVisual =
@@ -397,7 +398,7 @@ export default function WorkoutPage() {
                 <div className="mt-1.5">
                   <AdviceLine
                     advice={sessionAdvice}
-                    onApply={() => applyWeight(i, sessionAdvice.weight!)}
+                    onApply={canApply ? () => applyWeight(i, sessionAdvice.weight!) : undefined}
                   />
                 </div>
               )}
