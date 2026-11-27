@@ -4,6 +4,11 @@ import { useSyncExternalStore } from "react";
 /** Colour themes. The CSS variables for each one live in src/app/globals.css. */
 export const THEMES = [
   { id: "fresh", label: "清爽绿", desc: "高对比清爽，利落干净", dark: false, bg: "#f1f4f6", card: "#ffffff", primary: "#9fe870", ink: "#163300" },
+  { id: "coral", label: "珊瑚粉", desc: "白底配珊瑚粉，干净又温暖", dark: false, bg: "#f7f7f7", card: "#ffffff", primary: "#ff385c", ink: "#222222" },
+  { id: "blossom", label: "樱花粉白", desc: "柔和樱花粉，甜而不腻", dark: false, bg: "#fff6f8", card: "#ffffff", primary: "#f06292", ink: "#5b2a3c" },
+  { id: "mono", label: "黑白极简", desc: "只有黑和白，最专注", dark: false, bg: "#f4f4f4", card: "#ffffff", primary: "#111111", ink: "#111111" },
+  { id: "orange", label: "活力橙", desc: "明亮橙色，一看就有劲", dark: false, bg: "#fff8f2", card: "#ffffff", primary: "#ff6b00", ink: "#3b1f0b" },
+  { id: "peach", label: "蜜桃橙", desc: "温柔蜜桃色，暖暖的", dark: false, bg: "#fff7f3", card: "#ffffff", primary: "#ff8a65", ink: "#4a2c25" },
 ] as const;
 
 export type Theme = (typeof THEMES)[number]["id"];

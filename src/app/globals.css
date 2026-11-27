@@ -35,96 +35,104 @@
   --text-sm: 0.9375rem;
   --text-sm--line-height: 1.5;
 }
-[data-theme="frost"] {
+[data-theme="coral"] {
   color-scheme: light;
-  --c-bg: #f2f6fc;
+  --c-bg: #f7f7f7;
   --c-card: #ffffff;
   --c-surface: #ffffff;
-  --c-ink: #14213a;
-  --c-sub: #5a6984;
-  --c-line: #dde6f2;
-  --c-primary: #2f6bff;
-  --c-primary-soft: #e5edff;
-  --c-mint: #0f9d7a;
-  --c-mint-soft: #dcf5ec;
+  --c-ink: #222222;
+  --c-sub: #6a6a6a;
+  --c-line: #ebebeb;
+  --c-primary: #ff385c;
+  --c-primary-soft: #ffe8ec;
+  --c-mint: #ff385c;
+  --c-mint-soft: #ffe8ec;
   --c-on-accent: #ffffff;
-  --c-body: #d3dceb;
-  --c-muscle: #2f6bff;
-  --c-muscle-2: #a9c2ff;
-  --c-deep: #1f55d8;
+  --c-body: #ebebeb;
+  --c-muscle: #ff385c;
+  --c-muscle-2: #ffb3c1;
+  --c-deep: #d70466;
+  --c-forest: #222222;
 }
-[data-theme="warm"] {
+[data-theme="blossom"] {
   color-scheme: light;
-  --c-bg: #fbf6f1;
+  --c-bg: #fff6f8;
   --c-card: #ffffff;
   --c-surface: #ffffff;
-  --c-ink: #2a2733;
-  --c-sub: #6f6879;
-  --c-line: #efe6de;
-  --c-primary: #e8615a;
-  --c-primary-soft: #fde9e5;
-  --c-mint: #2fa98c;
-  --c-mint-soft: #e2f5ef;
+  --c-ink: #3a2a30;
+  --c-sub: #8a6f78;
+  --c-line: #f6e3e8;
+  --c-primary: #f06292;
+  --c-primary-soft: #ffe4ec;
+  --c-mint: #f06292;
+  --c-mint-soft: #ffe4ec;
   --c-on-accent: #ffffff;
-  --c-body: #e6dfd8;
-  --c-muscle: #e8615a;
-  --c-muscle-2: #f6b8a8;
-  --c-deep: #b93a33;
+  --c-body: #f6e3e8;
+  --c-muscle: #f06292;
+  --c-muscle-2: #f9bcd0;
+  --c-deep: #c2416c;
+  --c-forest: #5b2a3c;
 }
-[data-theme="mint"] {
+[data-theme="mono"] {
   color-scheme: light;
-  --c-bg: #f2faf6;
+  --c-bg: #f4f4f4;
   --c-card: #ffffff;
   --c-surface: #ffffff;
-  --c-ink: #1e2f29;
-  --c-sub: #566b62;
-  --c-line: #d9ebe2;
-  --c-primary: #128a66;
-  --c-primary-soft: #dbf3e9;
-  --c-mint: #2380c9;
-  --c-mint-soft: #e0effa;
+  --c-ink: #111111;
+  --c-sub: #6b6b6b;
+  --c-line: #e4e4e4;
+  --c-primary: #111111;
+  --c-primary-soft: #ececec;
+  --c-mint: #111111;
+  --c-mint-soft: #ececec;
   --c-on-accent: #ffffff;
-  --c-body: #d6e6de;
-  --c-muscle: #128a66;
-  --c-muscle-2: #9ed9c3;
-  --c-deep: #0e7254;
+  --c-body: #e4e4e4;
+  --c-muscle: #4a4a4a;
+  --c-muscle-2: #bdbdbd;
+  --c-deep: #111111;
+  --c-forest: #111111;
+  --c-hero-accent: #ffffff;
+  --c-hero-on: #111111;
 }
-[data-theme="lavender"] {
+[data-theme="orange"] {
   color-scheme: light;
-  --c-bg: #f7f5fd;
+  --c-bg: #fff8f2;
   --c-card: #ffffff;
   --c-surface: #ffffff;
-  --c-ink: #2a2440;
-  --c-sub: #665f80;
-  --c-line: #e6e1f5;
-  --c-primary: #7054e0;
-  --c-primary-soft: #ece7fc;
-  --c-mint: #2fa98c;
-  --c-mint-soft: #e2f5ef;
+  --c-ink: #2b1d12;
+  --c-sub: #7a6658;
+  --c-line: #f3e6da;
+  --c-primary: #ff6b00;
+  --c-primary-soft: #ffeadb;
+  --c-mint: #ff6b00;
+  --c-mint-soft: #ffeadb;
   --c-on-accent: #ffffff;
-  --c-body: #dfd9ef;
-  --c-muscle: #7054e0;
-  --c-muscle-2: #c3b6f3;
-  --c-deep: #5a3fc8;
+  --c-body: #f3e6da;
+  --c-muscle: #ff6b00;
+  --c-muscle-2: #ffc299;
+  --c-deep: #c2410c;
+  --c-forest: #3b1f0b;
 }
-[data-theme="sakura"] {
+[data-theme="peach"] {
   color-scheme: light;
-  --c-bg: #fff5f8;
+  --c-bg: #fff7f3;
   --c-card: #ffffff;
   --c-surface: #ffffff;
-  --c-ink: #3a2630;
-  --c-sub: #7a6170;
-  --c-line: #f5dfe7;
-  --c-primary: #d6447c;
-  --c-primary-soft: #fde5ee;
-  --c-mint: #2fa98c;
-  --c-mint-soft: #e2f5ef;
+  --c-ink: #33251f;
+  --c-sub: #85706a;
+  --c-line: #f5e4dc;
+  --c-primary: #ff8a65;
+  --c-primary-soft: #ffe7df;
+  --c-mint: #ff8a65;
+  --c-mint-soft: #ffe7df;
   --c-on-accent: #ffffff;
-  --c-body: #f0dbe3;
-  --c-muscle: #d6447c;
-  --c-muscle-2: #f3b2cb;
-  --c-deep: #ad2a5e;
+  --c-body: #f5e4dc;
+  --c-muscle: #ff8a65;
+  --c-muscle-2: #ffc7b5;
+  --c-deep: #d0573a;
+  --c-forest: #4a2c25;
 }
+
 @theme inline {
   --color-bg: var(--c-bg);
   --color-card: var(--c-card);
@@ -207,23 +215,11 @@ html[data-mode="gym"][data-theme="fresh"] {
   --c-bg: #0e0f0c; --c-card: #1b1d18; --c-surface: #1b1d18; --c-line: #2b2e27; --c-primary-soft: #24331a;
   --c-primary: #9fe870; --c-muscle: #9fe870; --c-muscle-2: #4d7a2e; --c-mint: #9fe870; --c-mint-soft: #24331a;
 }
-html[data-mode="gym"][data-theme="warm"] { --c-primary: #ff8a80; --c-muscle: #ff8a80; --c-muscle-2: #8a4a44; }
-html[data-mode="gym"][data-theme="sakura"] {
-  --c-bg: #170f14; --c-card: #241820; --c-surface: #241820; --c-line: #38262f; --c-primary-soft: #3a2230;
-  --c-primary: #ff7fad; --c-muscle: #ff7fad; --c-muscle-2: #8a3d5a;
-}
-html[data-mode="gym"][data-theme="lavender"] {
-  --c-bg: #110f1a; --c-card: #1c1928; --c-surface: #1c1928; --c-line: #2d2940; --c-primary-soft: #2a2545;
-  --c-primary: #a996ff; --c-muscle: #a996ff; --c-muscle-2: #4f4590;
-}
-html[data-mode="gym"][data-theme="mint"] {
-  --c-bg: #0c1411; --c-card: #15201b; --c-surface: #15201b; --c-line: #24332c; --c-primary-soft: #183429;
-  --c-primary: #4fd6a5; --c-muscle: #4fd6a5; --c-muscle-2: #23624b;
-}
-html[data-mode="gym"][data-theme="frost"] {
-  --c-bg: #0a0f1a; --c-card: #131b2b; --c-surface: #131b2b; --c-line: #223049; --c-primary-soft: #1b2a4a;
-  --c-primary: #7aa5ff; --c-muscle: #7aa5ff; --c-muscle-2: #34508f;
-}
+html[data-mode="gym"][data-theme="coral"] { --c-primary: #ff5a75; --c-muscle: #ff5a75; --c-muscle-2: #8a3344; }
+html[data-mode="gym"][data-theme="blossom"] { --c-primary: #ff7fad; --c-muscle: #ff7fad; --c-muscle-2: #8a3d5a; }
+html[data-mode="gym"][data-theme="mono"] { --c-primary: #ffffff; --c-on-accent: #111111; --c-muscle: #e5e5e5; --c-muscle-2: #555555; }
+html[data-mode="gym"][data-theme="orange"] { --c-primary: #ff8a3d; --c-muscle: #ff8a3d; --c-muscle-2: #8a4a1e; }
+html[data-mode="gym"][data-theme="peach"] { --c-primary: #ffa284; --c-muscle: #ffa284; --c-muscle-2: #8a4c3a; }
 html[data-mode="gym"] .bg-red-50 {
   background: rgba(255, 90, 90, 0.14);
 }
@@ -351,27 +347,27 @@ html[data-mode="gym"] .bg-amber-50 {
  * Headings and big numbers in Space Grotesk (CJK falls back to Noto Sans SC),
  * forest-green headings, white cards lifted by a soft shadow instead of lines.
  */
-[data-theme="fresh"] h1,
-[data-theme="fresh"] h2 {
+[data-theme] h1,
+[data-theme] h2 {
   font-family: "Space Grotesk", var(--font-sans);
   letter-spacing: -0.02em;
 }
-html:not([data-mode="gym"])[data-theme="fresh"] h1,
-html:not([data-mode="gym"])[data-theme="fresh"] h2 {
+html:not([data-mode="gym"])[data-theme] h1,
+html:not([data-mode="gym"])[data-theme] h2 {
   color: var(--c-forest);
 }
-html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink h1,
-html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink h2,
-html:not([data-mode="gym"])[data-theme="fresh"] .bg-forest h1,
-html:not([data-mode="gym"])[data-theme="fresh"] .bg-forest h2 {
+html:not([data-mode="gym"])[data-theme] .bg-ink h1,
+html:not([data-mode="gym"])[data-theme] .bg-ink h2,
+html:not([data-mode="gym"])[data-theme] .bg-forest h1,
+html:not([data-mode="gym"])[data-theme] .bg-forest h2 {
   color: #ffffff;
 }
-html:not([data-mode="gym"])[data-theme="fresh"] .bg-card.border-line,
-html:not([data-mode="gym"])[data-theme="fresh"] .bg-card.border {
+html:not([data-mode="gym"])[data-theme] .bg-card.border-line,
+html:not([data-mode="gym"])[data-theme] .bg-card.border {
   border-color: transparent;
 }
-[data-theme="fresh"] .msg-user {
-  background: #163300;
+[data-theme] .msg-user {
+  background: var(--c-forest, #163300);
   color: #ffffff;
 }
 .lift {
@@ -398,13 +394,27 @@ html:not([data-mode="gym"])[data-theme="fresh"] .bg-card.border {
 html:not([data-mode="gym"])[data-theme="fresh"] .text-mint {
   color: #2f6b12;
 }
-[data-theme="fresh"] .bg-primary {
+[data-theme] .bg-primary,
+[data-theme] .bg-primary .text-forest,
+[data-theme] .bg-primary.text-forest {
   color: var(--c-on-accent);
+}
+/* inside the dark hero cards the accent may need its own colour (black-and-white theme) */
+.bg-forest .text-primary {
+  color: var(--c-hero-accent, var(--c-primary));
+}
+.bg-forest .bg-primary {
+  background: var(--c-hero-accent, var(--c-primary));
+}
+.bg-forest .bg-primary,
+.bg-forest .bg-primary .text-forest,
+.bg-forest .bg-primary.text-forest {
+  color: var(--c-hero-on, var(--c-on-accent));
 }
 
 /* dark fills keep white text (the generic on-accent rule would make it moss) */
-html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink.text-white,
-html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink [class*="text-white"] {
+html:not([data-mode="gym"])[data-theme] .bg-ink.text-white,
+html:not([data-mode="gym"])[data-theme] .bg-ink [class*="text-white"] {
   color: #ffffff;
 }
 .display-num {

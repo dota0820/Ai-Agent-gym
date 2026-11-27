@@ -394,7 +394,7 @@ function FoodContent() {
             if (draft) setDraft(null);
             setTimeout(() => fileRef.current?.click(), 0);
           }}
-          className="relative mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-[16px] font-bold text-forest shadow-[0_8px_24px_rgba(159,232,112,0.25)]"
+          className="relative mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-[16px] font-bold text-forest shadow-[0_8px_24px_color-mix(in_srgb,var(--c-primary)_25%,transparent)]"
         >
           <Icon name="camera" size={22} />
           AI 拍照识餐
@@ -421,9 +421,9 @@ function FoodContent() {
         <div className="grid grid-cols-3 gap-3">
           {(
             [
-              ["蛋白质", totals.protein, targets.protein, "#2f6c00"],
-              ["碳水", totals.carbs, targets.carbs, "#6fae45"],
-              ["脂肪", totals.fat, targets.fat, "#9fe870"],
+              ["蛋白质", totals.protein, targets.protein, "var(--c-deep)"],
+              ["碳水", totals.carbs, targets.carbs, "var(--c-primary)"],
+              ["脂肪", totals.fat, targets.fat, "var(--c-muscle-2)"],
             ] as const
           ).map(([l, v, t, c]) => {
             const p = t ? Math.min(100, Math.round((v / t) * 100)) : 0;
@@ -434,7 +434,7 @@ function FoodContent() {
                   <span className="text-[12px] font-semibold text-sub">
                     {l}
                   </span>
-                  <span className="text-[11px] font-bold" style={{ color: c }}>
+                  <span className="text-[11px] font-bold text-deep">
                     {p}%
                   </span>
                 </div>

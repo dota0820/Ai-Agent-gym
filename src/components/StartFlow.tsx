@@ -20,6 +20,34 @@ import Body3D, { type BodyPart } from "./Body3D";
 import Icon, { type IconName } from "./Icon";
 import ProfileSheet from "./ProfileSheet";
 
+// a different line every time the home screen opens
+const QUOTES = [
+  "每一次，都算进步。",
+  "今天流的汗，是明天的底气。",
+  "慢一点没关系，别停就好。",
+  "你不需要很厉害才开始，开始了才会很厉害。",
+  "身体会记住你的每一次坚持。",
+  "比昨天的自己强一点点就够了。",
+  "练完的你，一定会感谢现在的你。",
+  "累了就休息，但别放弃。",
+  "动作做标准，比重量更重要。",
+  "最难的一组，往往是最有用的一组。",
+  "去健身房的路，是最好的热身。",
+  "自律给你自由。",
+  "今天也为自己出发一次。",
+  "肌肉不会说谎，它都记得。",
+  "不用完美，只要出现。",
+  "一点一点，也是在变强。",
+  "你已经比躺着的自己赢了。",
+  "汗水是脂肪在哭。",
+  "好身材是练出来的，也是吃出来的。",
+  "今天的目标：比上次多做一下。",
+  "坚持的人，运气都不会太差。",
+  "呼吸，发力，再来一次。",
+  "强壮，是送给自己最好的礼物。",
+  "别和别人比，和上周的自己比。",
+];
+
 const TIMES = ["30 分钟", "45 分钟", "60 分钟"];
 const ENERGY = [
   { label: "有点累", say: "今天有点累,想轻松一点" },
@@ -39,6 +67,9 @@ export default function StartFlow({ name }: { name: string }) {
   const [sheet, setSheet] = useState(false);
   const { workouts, customExercises, active, plan, profile } = useApp();
   const [now] = useState(() => Date.now());
+  const [quote] = useState(
+    () => QUOTES[Math.floor(Math.random() * QUOTES.length)],
+  );
   const recovery = hoursSinceTrained(workouts, customExercises, now);
   const tip = todaySuggestion(workouts, customExercises, now);
   const dots = weekDots(workouts, now);
@@ -253,9 +284,7 @@ export default function StartFlow({ name }: { name: string }) {
             </button>
           </div>
         </div>
-        <h1 className="mt-4 text-[30px] font-bold leading-tight">
-          每一次，都算进步。
-        </h1>
+        <h1 className="mt-4 text-[30px] font-bold leading-tight">{quote}</h1>
 
         <p className="mt-5 text-[13px] font-medium text-sub">本周训练</p>
         <div className="flex items-end justify-between gap-3">
@@ -267,9 +296,13 @@ export default function StartFlow({ name }: { name: string }) {
               / {goal} 次
             </span>
           </div>
-          <span className="mb-3 shrink-0 rounded-full bg-primary px-4 py-2 text-[12px] font-medium">
+          <Link
+            href="/me#goal"
+            aria-label="修改每周目标"
+            className="mb-3 shrink-0 rounded-full bg-primary px-4 py-2 text-[12px] font-medium"
+          >
             {left > 0 ? `离目标只差 ${left} 次` : "本周目标达成"}
-          </span>
+          </Link>
         </div>
 
         <ul
@@ -304,13 +337,13 @@ export default function StartFlow({ name }: { name: string }) {
             <h2 className="mt-2 text-[30px] font-bold leading-tight text-white">
               {hero.title}
             </h2>
-            <p className="mt-2 text-[13px] leading-snug text-[#cedcc5]">
+            <p className="mt-2 text-[13px] leading-snug text-white/70">
               {hero.sub}
             </p>
-            <p className="mt-2 text-[12px] text-[#cedcc5]">{hero.meta}</p>
+            <p className="mt-2 text-[12px] text-white/70">{hero.meta}</p>
           </div>
           {hero.minutes != null && (
-            <div className="flex h-[70px] w-[78px] shrink-0 flex-col items-center justify-center rounded-[18px] bg-[#294715] text-primary">
+            <div className="flex h-[70px] w-[78px] shrink-0 flex-col items-center justify-center rounded-[18px] bg-white/10 text-primary">
               <span className="display-num text-[30px] leading-none">
                 {hero.minutes}
               </span>

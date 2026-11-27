@@ -22,12 +22,12 @@ const PERIODS = [
 ] as const;
 
 const PART_COLORS = [
-  "#163300",
-  "#2f6c00",
-  "#9fe870",
-  "#c5eba3",
-  "#6fae45",
-  "#5c6457",
+  "var(--c-forest, var(--c-ink))",
+  "var(--c-deep)",
+  "var(--c-primary)",
+  "var(--c-muscle-2)",
+  "var(--c-sub)",
+  "var(--c-line)",
 ];
 
 /** Training summary for the 记录 tab: trend, volume by body part and personal bests. */
@@ -176,17 +176,18 @@ export default function HistorySummary() {
         </div>
         <svg
           viewBox={`-6 0 ${W + 12} ${H}`}
-          className="mt-4 h-[70px] w-full"
+          className="mt-4 h-[70px] w-full text-primary"
           aria-hidden
         >
           <path
             d={`${line} L${W},${H} L0,${H} Z`}
-            fill="rgba(159,232,112,.12)"
+            fill="currentColor"
+            fillOpacity={0.12}
           />
           <path
             d={line}
             fill="none"
-            stroke="#9fe870"
+            stroke="currentColor"
             strokeWidth="2.5"
             strokeLinejoin="round"
           />
@@ -196,7 +197,7 @@ export default function HistorySummary() {
               cx={x}
               cy={y}
               r={i === pts.length - 1 ? 5 : 3.5}
-              fill={i === pts.length - 1 ? "#fff" : "#9fe870"}
+              fill={i === pts.length - 1 ? "#fff" : "currentColor"}
             />
           ))}
         </svg>

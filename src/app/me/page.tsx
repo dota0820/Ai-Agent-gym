@@ -8,7 +8,8 @@ import { computeStreakWeeks } from "@/lib/analytics";
 import { getProfileGyms, parseEquipmentList } from "@/lib/equipment";
 import { AI_MODELS } from "@/lib/models";
 import { computeNutritionTargets } from "@/lib/nutrition";
-import { useApp, useHydrated } from "@/lib/store";
+import { setState, useApp, useHydrated } from "@/lib/store";
+import { setTheme, THEMES, useTheme } from "@/lib/theme";
 import { compactNum, totalVolume, trainingDays } from "@/lib/summary";
 
 function SectionHead({
@@ -77,6 +78,7 @@ function LinkRow({
 
 export default function Me() {
   const { profile, aiModel, workouts } = useApp();
+  const theme = useTheme();
   const ready = useHydrated();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [now] = useState(() => Date.now());
@@ -143,6 +145,102 @@ export default function Me() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* weekly goal */}
+      <div id="goal" className="lift scroll-mt-4 rounded-[28px] bg-card p-4">
+        <SectionHead
+          icon="calendar"
+          title="每周去健身房几天"
+          sub="首页的本周目标会跟着变"
+        />
+        <div
+          className="mt-4 grid grid-cols-7 gap-1.5"
+          role="radiogroup"
+          aria-label="每周去健身房几天"
+        >
+          {[1, 2, 3, 4, 5, 6, 7].map((n) => {
+            const on = (parseInt(profile.daysPerWeek, 10) || 3) === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={on}
+                onClick={() =>
+                  setState((s) => ({
+                    ...s,
+                    profile: { ...s.profile, daysPerWeek: String(n) },
+                  }))
+                }
+                className={`display-num flex h-12 items-center justify-center rounded-2xl text-[18px] ${
+                  on ? "bg-forest text-white" : "bg-bg text-ink"
+                }`}
+              >
+                {n}
+              </button>
+            );
+          })}
+        </div>
+        <p className="mt-2.5 px-1 text-[12px] text-sub">
+          现在是每周 {parseInt(profile.daysPerWeek, 10) || 3} 天。新手建议 2–3
+          天，中间留休息日给肌肉恢复。
+        </p>
+      </div>
+
+      {/* themes */}
+      <div className="lift rounded-[28px] bg-card p-4">
+        <SectionHead
+          icon="palette"
+          title="外观与主题"
+          sub="选你喜欢的颜色"
+          right={
+            <span className="shrink-0 rounded-full bg-bg px-2.5 py-1 text-[11px] font-bold text-sub">
+              {THEMES.length} 套配色
+            </span>
+          }
+        />
+        <div className="mt-4 grid grid-cols-2 gap-2.5">
+          {THEMES.map((t) => {
+            const on = theme === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                aria-pressed={on}
+                onClick={() => setTheme(t.id)}
+                className={`rounded-2xl border-2 p-3 text-left ${on ? "border-forest bg-card" : "border-transparent bg-bg"}`}
+              >
+                <span className="flex items-center justify-between">
+                  <span className="flex -space-x-1">
+                    <span
+                      className="h-4 w-4 rounded-full border-2 border-white"
+                      style={{ background: t.ink }}
+                    />
+                    <span
+                      className="h-4 w-4 rounded-full border-2 border-white"
+                      style={{ background: t.primary }}
+                    />
+                  </span>
+                  {on && (
+                    <Icon
+                      name="checkCircle"
+                      size={18}
+                      fill
+                      className="text-forest"
+                    />
+                  )}
+                </span>
+                <span className="mt-2 block text-[14px] font-bold">
+                  {t.label}
+                </span>
+                <span className="mt-0.5 block truncate text-[11px] text-sub">
+                  {t.desc}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

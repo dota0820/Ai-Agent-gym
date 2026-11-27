@@ -3,13 +3,12 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import ChatThreadsSheet from "@/components/ChatThreadsSheet";
-import { CoachThinking } from "@/components/CoachMascot";
+import CoachMascot, { CoachThinking } from "@/components/CoachMascot";
 import Icon, { type IconName } from "@/components/Icon";
 import MD from "@/components/MD";
 import PlanCard from "@/components/PlanCard";
 import { planMinutes } from "@/lib/plan-time";
-import { todaySuggestion, weekDots } from "@/lib/recovery";
-import { GROUPS, type Plan } from "@/lib/types";
+import type { Plan } from "@/lib/types";
 import {
   abortCoach,
   fileToJpegDataUrl,
@@ -277,17 +276,18 @@ function Coach() {
       )}
 
       {chat.length === 0 ? (
-        <div className="flex flex-col pb-[120px]">
-          <CoachHero onAsk={(q) => void sendToCoach(q)} />
-          <div className="mt-6 flex gap-3">
-            <CoachAvatar />
-            <div className="lift min-w-0 flex-1 rounded-[28px] rounded-tl-md bg-card p-4 text-[15px] leading-relaxed">
+        <div className="flex min-h-[calc(100dvh-230px)] flex-col pb-[96px]">
+          <div className="flex flex-1 flex-col items-center justify-center py-8 text-center">
+            <span className="flex h-24 w-24 items-center justify-center rounded-full bg-primary-soft">
+              <CoachMascot size={72} label="哑铃教练" />
+            </span>
+            <h2 className="mt-5 text-[28px] font-bold leading-tight">
               {hello}
               {profile.name ? `，${profile.name}` : ""}
-              ！今天想怎么练？告诉我你的时间和状态，剩下的交给我。
-            </div>
+            </h2>
+            <p className="mt-2 text-[15px] text-sub">今天想练什么？</p>
           </div>
-          <div className="mt-5 space-y-2">
+          <div className="space-y-2">
             {STARTERS.map((s) => (
               <button
                 key={s.label}
@@ -310,8 +310,7 @@ function Coach() {
           </div>
         </div>
       ) : (
-        <div className="space-y-6 pt-1 pb-40">
-          <CoachHero onAsk={(q) => void sendToCoach(q)} disabled={busy} />
+        <div className="space-y-6 pt-1 pb-32">
           {chat.map((m, i) => {
             const isLast = i === chat.length - 1;
             const streaming = busy && isLast && m.role === "assistant";
@@ -338,73 +337,71 @@ function Coach() {
               </div>
             ) : (
               <div key={m.id} className="space-y-3">
-                <div className="flex gap-3">
-                  <CoachAvatar />
-                  <div className="lift min-w-0 flex-1 space-y-3 rounded-[28px] rounded-tl-md bg-card p-4">
-                    {(shown || streaming) &&
-                      (shown ? (
-                        <div>
-                          <div className="msg-ai text-[15px]">
-                            <MD text={shown} />
-                          </div>
-                          {streaming && toolStatus && (
-                            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-deep">
-                              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                              {toolStatus}
-                            </div>
-                          )}
+                <div className="space-y-3">
+                  <div className="flex items-center gap-1.5 text-[12px] font-bold text-sub">
+                    <CoachMascot size={20} />
+                    AI 教练
+                  </div>
+                  {(shown || streaming) &&
+                    (shown ? (
+                      <div>
+                        <div className="msg-ai text-[15px]">
+                          <MD text={shown} />
                         </div>
-                      ) : (
-                        <CoachThinking statusText={toolStatus} />
-                      ))}
-                    {m.plan && (
-                      <ChatPlan
-                        plan={m.plan}
-                        current={m.plan.id === plan?.id}
-                      />
-                    )}
-                    {(m.logged || m.exerciseAdded || m.mealLogged) && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {m.logged && (
-                          <div className="inline-flex items-center rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                            <Icon
-                              name="check"
-                              size={13}
-                              stroke={3}
-                              className="mr-1 inline"
-                            />
-                            已记录：{m.logged}
-                          </div>
-                        )}
-                        {m.exerciseAdded && (
-                          <div className="inline-flex items-center rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                            <Icon
-                              name="check"
-                              size={13}
-                              stroke={3}
-                              className="mr-1 inline"
-                            />
-                            已加入动作库：{m.exerciseAdded}
-                          </div>
-                        )}
-                        {m.mealLogged && (
-                          <div className="inline-flex items-center rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
-                            <Icon
-                              name="check"
-                              size={13}
-                              stroke={3}
-                              className="mr-1 inline"
-                            />
-                            已记录饮食：{m.mealLogged}
+                        {streaming && toolStatus && (
+                          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-deep">
+                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                            {toolStatus}
                           </div>
                         )}
                       </div>
-                    )}
-                  </div>
+                    ) : (
+                      <CoachThinking statusText={toolStatus} />
+                    ))}
+                  {m.plan && (
+                    <ChatPlan plan={m.plan} current={m.plan.id === plan?.id} />
+                  )}
+                  {(m.logged || m.exerciseAdded || m.mealLogged) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {m.logged && (
+                        <div className="inline-flex items-center rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                          <Icon
+                            name="check"
+                            size={13}
+                            stroke={3}
+                            className="mr-1 inline"
+                          />
+                          已记录：{m.logged}
+                        </div>
+                      )}
+                      {m.exerciseAdded && (
+                        <div className="inline-flex items-center rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                          <Icon
+                            name="check"
+                            size={13}
+                            stroke={3}
+                            className="mr-1 inline"
+                          />
+                          已加入动作库：{m.exerciseAdded}
+                        </div>
+                      )}
+                      {m.mealLogged && (
+                        <div className="inline-flex items-center rounded-full bg-mint-soft px-3 py-1 text-xs font-semibold text-mint">
+                          <Icon
+                            name="check"
+                            size={13}
+                            stroke={3}
+                            className="mr-1 inline"
+                          />
+                          已记录饮食：{m.mealLogged}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {isLast && !busy && m.choices && m.choices.length > 0 && (
                   <div
-                    className="flex flex-col gap-2 pl-[52px]"
+                    className="flex flex-col gap-2"
                     role="group"
                     aria-label="快捷回复"
                   >
@@ -460,20 +457,6 @@ function Coach() {
                     {photoErr || dictation.error}
                   </span>
                 )}
-            </div>
-          )}
-          {chat.length > 0 && !busy && !text && !photo && (
-            <div className="no-scrollbar -mx-4 mb-2.5 flex gap-2 overflow-x-auto px-4">
-              {QUICK_ASKS.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  onClick={() => void sendToCoach(q)}
-                  className="lift shrink-0 rounded-full bg-card px-4 py-2.5 text-[13px] font-bold text-forest"
-                >
-                  {q}
-                </button>
-              ))}
             </div>
           )}
           <div className="chat-bar flex items-end gap-1 rounded-full p-[7px]">
@@ -546,7 +529,7 @@ function Coach() {
               onClick={() => (busy ? abortCoach() : submit())}
               disabled={!busy && !canSend}
               aria-label={busy ? "停止生成" : "发送"}
-              className="send-btn flex h-[44px] w-[44px] shrink-0 shadow-[0_4px_14px_rgba(159,232,112,0.45)] items-center justify-center rounded-full transition disabled:opacity-30"
+              className="send-btn flex h-[44px] w-[44px] shrink-0 shadow-[0_4px_14px_color-mix(in_srgb,var(--c-primary)_45%,transparent)] items-center justify-center rounded-full transition disabled:opacity-30"
             >
               {busy ? (
                 <span className="h-3 w-3 rounded-[3px] bg-[var(--c-on-accent)]" />
@@ -571,116 +554,6 @@ function Coach() {
   );
 }
 
-const QUICK_ASKS = [
-  "帮我安排今日热身",
-  "膝盖不适怎么练腿",
-  "生成 30 分钟训练",
-  "今天吃什么补蛋白",
-];
-
-function CoachAvatar() {
-  return (
-    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-forest text-primary">
-      <Icon name="robot" size={22} />
-    </span>
-  );
-}
-
-/** Dark card at the top of the chat: this week's progress and today's focus. */
-function CoachHero({
-  onAsk,
-  disabled,
-}: {
-  onAsk: (q: string) => void;
-  disabled?: boolean;
-}) {
-  const { workouts, customExercises, plan, profile } = useApp();
-  const [now] = useState(() => Date.now());
-  const done = weekDots(workouts, now).filter((d) => d.done).length;
-  const goal = Math.max(1, parseInt(profile.daysPerWeek, 10) || 3);
-  const pct = Math.min(100, Math.round((done / goal) * 100));
-  const tip = todaySuggestion(workouts, customExercises, now);
-  return (
-    <div className="relative overflow-hidden rounded-[28px] bg-forest p-5 text-white">
-      <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary/10 blur-2xl" />
-      <div className="relative flex items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-bold text-primary">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-          AI 私教 · 在线
-        </span>
-        <button
-          type="button"
-          disabled={disabled}
-          onClick={() => onAsk("帮我看看这周的训练,调整一下本周计划")}
-          className="rounded-full bg-primary px-3.5 py-1.5 text-[12px] font-bold text-forest disabled:opacity-50"
-        >
-          调整本周计划
-        </button>
-      </div>
-      <div className="relative mt-4 flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[12px] font-semibold text-white/60">
-            {plan ? "今日计划" : "今日建议"}
-          </p>
-          <h2 className="mt-1 truncate text-[22px] font-bold text-white">
-            {plan
-              ? plan.title
-              : tip.part
-                ? `练${GROUPS.find((g) => g.id === tip.part)?.label}`
-                : "想练哪里都可以"}
-          </h2>
-          <p className="mt-1 text-[13px] leading-snug text-white/70">
-            {tip.text}
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 rounded-2xl bg-white/[0.07] px-3 py-2.5">
-          <div className="relative h-11 w-11">
-            <svg
-              viewBox="0 0 36 36"
-              className="h-full w-full -rotate-90"
-              aria-hidden
-            >
-              <circle
-                cx="18"
-                cy="18"
-                r="15.9"
-                fill="none"
-                stroke="rgba(255,255,255,.12)"
-                strokeWidth="3.5"
-              />
-              <circle
-                cx="18"
-                cy="18"
-                r="15.9"
-                fill="none"
-                stroke="#9fe870"
-                strokeWidth="3.5"
-                strokeLinecap="round"
-                strokeDasharray={`${pct} 100`}
-                pathLength={100}
-              />
-            </svg>
-            <Icon
-              name="bolt"
-              size={18}
-              fill
-              className="absolute inset-0 m-auto text-primary"
-            />
-          </div>
-          <div>
-            <div className="display-num text-[24px] leading-none text-primary">
-              {done}/{goal}
-            </div>
-            <div className="mt-1 text-[11px] font-semibold text-white/70">
-              本周次数
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /** A plan the coach saved: stats and one button, like a receipt. */
 function ChatPlan({ plan, current }: { plan: Plan; current: boolean }) {
   const router = useRouter();
@@ -688,7 +561,7 @@ function ChatPlan({ plan, current }: { plan: Plan; current: boolean }) {
   const sets = plan.items.reduce((n, it) => n + it.sets, 0);
   return (
     <div className="space-y-3">
-      <div className="rounded-[22px] bg-bg p-4">
+      <div className="lift rounded-[22px] bg-card p-4">
         <div className="flex items-center justify-between gap-2">
           <span className="min-w-0 truncate text-[15px] font-bold text-forest">
             今日定制 · {plan.title}
