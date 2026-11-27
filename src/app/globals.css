@@ -5,28 +5,29 @@
  * The list shown in the picker lives in src/lib/theme.ts.
  * Colours are CSS variables so every screen follows the active theme.
  */
-/* Clean white + lime, inspired by modern fintech apps: white pages, neutral
- * grey panels, a bright lime action colour with dark forest-green text. */
+/* Cream + forest green + lime, from the app's Figma design: cream pages,
+ * soft sage panels without borders, forest-green text, lime for the main action
+ * and for "done". */
 :root,
 [data-theme="fresh"] {
   color-scheme: light;
-  --c-bg: #f6f7f3;
-  --c-card: #ffffff;
-  --c-surface: #ffffff;
-  --c-ink: #121512;
-  --c-sub: #646a62;
-  --c-line: #e4e7e0;
+  --c-bg: #f7f9f2;
+  --c-card: #e9eedd;
+  --c-surface: #f7f9f2;
+  --c-ink: #163300;
+  --c-sub: #65715c;
+  --c-line: #dfe5d8;
   --c-primary: #9fe870;
-  --c-primary-soft: #eef7e6;
+  --c-primary-soft: #dde9cf;
   --c-mint: #9fe870;
-  --c-mint-soft: #eef7e6;
+  --c-mint-soft: #dde9cf;
   --c-on-accent: #163300;
-  --c-body: #e4e7e0;
+  --c-body: #dfe5d8;
   --c-muscle: #9fe870;
   --c-muscle-2: #cdeeb6;
-  --c-deep: #24400f;
+  --c-deep: #163300;
   --radius-xl: 0.875rem;
-  --radius-2xl: 1.125rem;
+  --radius-2xl: 1.25rem;
   --radius-3xl: 1.5rem;
   /* one tidy type scale: nothing smaller than 13px */
   --text-xs: 0.8125rem;
@@ -136,8 +137,8 @@
   --color-deep: var(--c-deep);
   --color-mint: var(--c-mint);
   --color-mint-soft: var(--c-mint-soft);
-  --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC",
-    "Noto Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
+  --font-sans: "Inter Variable", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC",
+    "HarmonyOS Sans SC", "Microsoft YaHei", "Segoe UI", sans-serif;
 }
 
 html {
@@ -305,7 +306,7 @@ html[data-mode="gym"] .bg-amber-50 {
 }
 
 .msg-user {
-  background: var(--c-primary-soft);
+  background: var(--c-primary);
   color: var(--c-ink);
 }
 .msg-ai strong {
@@ -327,8 +328,7 @@ html[data-mode="gym"] .bg-amber-50 {
 }
 .chat-bar {
   background: var(--c-card);
-  border: 1px solid var(--c-line);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  border: 1px solid transparent;
 }
 .chat-bar:focus-within {
   border-color: color-mix(in srgb, var(--c-primary) 55%, var(--c-line));
@@ -346,33 +346,30 @@ html[data-mode="gym"] .bg-amber-50 {
 }
 
 /* ───────── Fresh theme details ─────────
- * Hierarchy comes from size and colour, not weight: Chinese system fonts look
- * heavy and cheap when synthesised past semibold, so cap weights here.
+ * Matches the Figma: bold Noto Sans SC headings, Inter for numbers, cards are
+ * flat sage fills, so borders on cards fade into the fill.
  */
-[data-theme="fresh"] body {
-  letter-spacing: 0.005em;
-}
-[data-theme="fresh"] .font-extrabold,
-[data-theme="fresh"] .font-black {
-  font-weight: 600;
-}
-[data-theme="fresh"] .font-bold {
-  font-weight: 600;
-}
-[data-theme="fresh"] .font-semibold {
-  font-weight: 500;
-}
 [data-theme="fresh"] h1,
 [data-theme="fresh"] h2 {
   letter-spacing: -0.01em;
 }
+html:not([data-mode="gym"])[data-theme="fresh"] .bg-card.border-line,
+html:not([data-mode="gym"])[data-theme="fresh"] .bg-card.border {
+  border-color: transparent;
+}
 /* lime is for fills; as text on white it is unreadable, so success text uses moss */
 html:not([data-mode="gym"])[data-theme="fresh"] .text-mint {
-  color: #2f5711;
+  color: #2f6b12;
 }
-[data-theme="fresh"] .send-btn,
 [data-theme="fresh"] .bg-primary {
   color: var(--c-on-accent);
+}
+html:not([data-mode="gym"])[data-theme="fresh"] .send-btn {
+  background: var(--c-ink);
+  color: #ffffff;
+}
+html:not([data-mode="gym"])[data-theme="fresh"] .send-btn span {
+  background: #ffffff;
 }
 /* dark fills keep white text (the generic on-accent rule would make it moss) */
 html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink.text-white,
@@ -380,8 +377,8 @@ html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink [class*="text-white"] {
   color: #ffffff;
 }
 .display-num {
-  font-family: "Geist Variable", var(--font-sans);
+  font-family: "Inter Variable", var(--font-sans);
   font-variant-numeric: tabular-nums;
-  font-weight: 500;
-  letter-spacing: -0.04em;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }

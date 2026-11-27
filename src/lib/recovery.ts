@@ -119,6 +119,12 @@ export function weekDots(workouts: Workout[], now: number) {
   return "一二三四五六日".split("").map((label, i) => {
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
-    return { label, done: trainedDays.has(key(d)), today: key(d) === key(today), future: d > today };
+    return {
+      label,
+      date: d.getDate(),
+      done: trainedDays.has(key(d)),
+      today: key(d) === key(today),
+      future: d > today,
+    };
   });
 }

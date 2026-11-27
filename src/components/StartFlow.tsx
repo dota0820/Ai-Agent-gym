@@ -2,7 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { repeatWorkout, startFree, startFromPlan } from "@/lib/actions";
+import { repeatWorkout, startFree } from "@/lib/actions";
+import { getProfileGyms } from "@/lib/equipment";
+import { planMinutes } from "@/lib/plan-time";
 import { subsFor } from "@/lib/exercises";
 import {
   hoursSinceTrained,
@@ -113,50 +115,6 @@ export default function StartFlow({ name }: { name: string }) {
   const stepNo = subs.length ? step + 1 : step;
   const q = questions[step];
 
-  // the one main action, like "Scan" in a banking app
-  const main: { label: string; icon: IconName; run: () => void } = active
-    ? { label: "继续训练", icon: "play", run: () => router.push("/workout") }
-    : plan
-      ? {
-          label: "开始计划",
-          icon: "play",
-          run: () => {
-            startFromPlan(plan);
-            router.push("/workout");
-          },
-        }
-      : tip.part
-        ? {
-            label: `练${GROUPS.find((g) => g.id === tip.part)?.label}`,
-            icon: "play",
-            run: () => pick(tip.part!),
-          }
-        : {
-            label: "开始训练",
-            icon: "play",
-            run: () => {
-              startFree();
-              router.push("/workout");
-            },
-          };
-  const actions: { label: string; icon: IconName; run: () => void }[] = [
-    { label: "问教练", icon: "chat", run: () => router.push("/coach") },
-    { label: "记一餐", icon: "food", run: () => router.push("/food") },
-    ...(lastWorkout && !active && lastWorkout.exercises.length
-      ? [
-          {
-            label: "再练上次",
-            icon: "dumbbell" as IconName,
-            run: () => {
-              repeatWorkout(lastWorkout);
-              router.push("/workout");
-            },
-          },
-        ]
-      : []),
-    { label: "避坑指南", icon: "bulb", run: () => router.push("/learn") },
-  ];
-
   const parts = GROUPS.filter((g) => g.id !== "cardio" && g.id !== "mobility");
   const status = (id: string) => {
     const h = recovery[id as BodyPart];
@@ -165,158 +123,225 @@ export default function StartFlow({ name }: { name: string }) {
     return { text: `可以练 · ${Math.floor(h / 24)}天`, ready: true };
   };
 
-  const tasks: { icon: IconName; title: string; sub: string; href: string }[] =
-    [
-      ...(active
-        ? [
-            {
-              icon: "play" as IconName,
-              title: "训练进行中",
-              sub: active.title,
-              href: "/workout",
-            },
-          ]
-        : []),
-      ...(plan && !active
-        ? [
-            {
-              icon: "clipboard" as IconName,
-              title: "教练帮你排好了计划",
-              sub: plan.title,
-              href: "/history",
-            },
-          ]
-        : []),
-      ...(!profile.goal
-        ? [
-            {
-              icon: "target" as IconName,
-              title: "完善目标和器械",
-              sub: "教练的安排会更适合你",
-              href: "/me",
-            },
-          ]
-        : []),
-    ];
-  const initial = name ? name.slice(0, 1) : "我";
+  const goal = Math.max(1, parseInt(profile.daysPerWeek, 10) || 3);
+  const left = goal - weekCount;
+  const gymName = getProfileGyms(profile).activeGym.name;
 
-  const today = dots.findIndex((d) => d.today);
+  // the one dark card: what to do today
+  const hero: {
+    label: string;
+    title: string;
+    sub: string;
+    meta: string;
+    minutes?: number;
+    cta: string;
+    run: () => void;
+  } = active
+    ? {
+        label: "训练进行中",
+        title: active.title,
+        sub: `已经记了 ${active.exercises.length} 个动作`,
+        meta: "做完记得点结束",
+        cta: "继续训练",
+        run: () => router.push("/workout"),
+      }
+    : plan
+      ? {
+          label: "今天的专属计划",
+          title: plan.title,
+          sub: plan.focus,
+          meta: `${plan.items.length} 个动作  ·  ${plan.items.reduce((n, it) => n + it.sets, 0)} 组`,
+          minutes: planMinutes(plan),
+          cta: "查看训练计划",
+          run: () => router.push("/plan"),
+        }
+      : tip.part
+        ? {
+            label: "今天推荐",
+            title: `练${GROUPS.find((g) => g.id === tip.part)?.label}`,
+            sub: tip.text,
+            meta: "回答三个小问题，教练帮你排好",
+            cta: "安排今天的训练",
+            run: () => pick(tip.part!),
+          }
+        : {
+            label: "今天",
+            title: "开始训练",
+            sub: "边练边记，教练会帮你对比上次",
+            meta: "新手友好",
+            cta: "开始记录",
+            run: () => {
+              startFree();
+              router.push("/workout");
+            },
+          };
+
+  const quick: {
+    label: string;
+    sub: string;
+    icon: IconName;
+    run: () => void;
+  }[] = [
+    {
+      label: "问问教练",
+      sub: "不知道练什么?",
+      icon: "chat",
+      run: () => router.push("/coach"),
+    },
+    {
+      label: "记一餐",
+      sub: "吃好,也是训练",
+      icon: "food",
+      run: () => router.push("/food"),
+    },
+    ...(lastWorkout && !active && lastWorkout.exercises.length
+      ? [
+          {
+            label: "再练上次",
+            sub: lastWorkout.title,
+            icon: "dumbbell" as IconName,
+            run: () => {
+              repeatWorkout(lastWorkout);
+              router.push("/workout");
+            },
+          },
+        ]
+      : []),
+    {
+      label: "避坑指南",
+      sub: "新手常见错误",
+      icon: "bulb",
+      run: () => router.push("/learn"),
+    },
+  ];
 
   return (
     <section className="space-y-7">
-      {/* top bar */}
-      <div className="flex items-center justify-between gap-3">
-        <button
-          onClick={() => setSheet(true)}
-          aria-label="切换人物和健身房"
-          className="flex min-w-0 items-center gap-3 text-left"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-[17px] font-medium text-white">
-            {initial}
-          </span>
-          <span className="min-w-0">
-            <span className="block truncate text-[17px] font-semibold">
-              您好{name ? `，${name}` : ""}
-            </span>
-            <span className="block text-[13px] text-sub">
-              切换人物 / 健身房
-            </span>
-          </span>
-        </button>
-        <Link
-          href="/history"
-          aria-label="训练记录"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-card"
-        >
-          <Icon name="calendar" size={19} />
-        </Link>
-      </div>
-
-      {/* one number */}
+      {/* overview */}
       <div>
-        <p className="text-[15px] text-sub">本周训练</p>
-        <div className="mt-1 flex items-baseline gap-2">
-          <span className="display-num text-[68px] leading-[0.9]">
-            {weekCount}
-          </span>
-          <span className="text-[18px] text-sub">次</span>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-[24px] font-bold">练练</span>
+          <button
+            onClick={() => setSheet(true)}
+            aria-label="切换人物和健身房"
+            className="flex h-[34px] max-w-[60%] items-center gap-2 rounded-full bg-card pl-3.5 pr-3 text-[12px] font-medium"
+          >
+            <span className="truncate">
+              {name ? `${name} · ` : ""}
+              {gymName}
+            </span>
+            <Icon name="chevronDown" size={14} />
+          </button>
         </div>
-        <div
-          className="mt-4 grid grid-cols-7 gap-1.5"
-          role="img"
+        <h1 className="mt-4 text-[30px] font-bold leading-tight">
+          每一次，都算进步。
+        </h1>
+
+        <p className="mt-5 text-[13px] font-medium text-sub">本周训练</p>
+        <div className="flex items-end justify-between gap-3">
+          <div className="flex items-baseline gap-2">
+            <span className="display-num text-[76px] leading-none">
+              {weekCount}
+            </span>
+            <span className="text-[21px] font-medium text-sub">
+              / {goal} 次
+            </span>
+          </div>
+          <span className="mb-3 shrink-0 rounded-full bg-primary px-4 py-2 text-[12px] font-medium">
+            {left > 0 ? `离目标只差 ${left} 次` : "本周目标达成"}
+          </span>
+        </div>
+
+        <ul
+          className="mt-5 grid grid-cols-7 gap-[9px]"
           aria-label={`本周已经练了 ${weekCount} 天`}
         >
-          {dots.map((d, i) => (
-            <div key={d.label} className="text-center">
-              <div
-                className={`h-1.5 rounded-full ${d.done ? "bg-primary" : i === today ? "bg-ink/25" : "bg-line"}`}
-              />
-              <div
-                className={`mt-1.5 text-[13px] ${i === today ? "font-semibold text-ink" : "text-sub"}`}
+          {dots.map((d) => (
+            <li key={d.label} className="flex flex-col items-center gap-3">
+              <span className="text-[11px] text-sub">{d.label}</span>
+              <span
+                className={`flex aspect-square w-full max-w-[42px] items-center justify-center rounded-full text-[14px] tabular-nums ${
+                  d.done
+                    ? "bg-ink text-white"
+                    : d.today
+                      ? "bg-primary font-bold"
+                      : "bg-card"
+                }`}
+                aria-label={`${d.label} ${d.done ? "练过" : ""}`}
               >
-                {d.label}
-              </div>
+                {d.done ? <Icon name="check" size={20} /> : d.date}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* today */}
+      <div className="rounded-3xl bg-ink p-5 text-white">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[13px] font-medium text-primary">{hero.label}</p>
+            <h2 className="mt-2 text-[30px] font-bold leading-tight text-white">
+              {hero.title}
+            </h2>
+            <p className="mt-2 text-[13px] leading-snug text-[#cedcc5]">
+              {hero.sub}
+            </p>
+            <p className="mt-2 text-[12px] text-[#cedcc5]">{hero.meta}</p>
+          </div>
+          {hero.minutes != null && (
+            <div className="flex h-[70px] w-[78px] shrink-0 flex-col items-center justify-center rounded-[18px] bg-[#294715] text-primary">
+              <span className="display-num text-[30px] leading-none">
+                {hero.minutes}
+              </span>
+              <span className="mt-1.5 text-[11px]">分钟</span>
             </div>
+          )}
+        </div>
+        <button
+          onClick={hero.run}
+          className="mt-6 flex h-[47px] w-full items-center justify-between rounded-full bg-primary pl-6 pr-5 text-[14px] font-bold"
+        >
+          {hero.cta}
+          <Icon name="arrowRight" size={22} />
+        </button>
+      </div>
+
+      {/* quick actions */}
+      <div>
+        <h2 className="text-[16px] font-bold">你的健身搭子，随时在。</h2>
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          {quick.map((a) => (
+            <button
+              key={a.label}
+              onClick={a.run}
+              className="flex min-h-[76px] items-start gap-3 rounded-[20px] bg-card px-3.5 py-3 text-left active:scale-[0.98]"
+            >
+              <span className="mt-1 shrink-0">
+                <Icon name={a.icon} size={22} />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-[14px] font-bold">{a.label}</span>
+                <span className="mt-1.5 block truncate text-[11px] text-sub">
+                  {a.sub}
+                </span>
+              </span>
+            </button>
           ))}
         </div>
       </div>
 
-      {/* actions: one primary, the rest quiet */}
-      <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
-        <button
-          onClick={main.run}
-          className="flex h-12 shrink-0 items-center gap-2 rounded-full bg-primary px-5 text-[16px] font-semibold"
-        >
-          <Icon name={main.icon} size={15} />
-          {main.label}
-        </button>
-        {actions.map((a) => (
-          <button
-            key={a.label}
-            onClick={a.run}
-            className="flex h-12 shrink-0 items-center gap-2 rounded-full border border-line bg-card px-5 text-[16px] font-medium"
-          >
-            <Icon name={a.icon} size={17} />
-            {a.label}
-          </button>
-        ))}
-      </div>
-
-      {/* today's suggestion */}
-      {tip.part && (
-        <button
-          type="button"
-          onClick={() => pick(tip.part!)}
-          className="flex w-full items-center gap-4 rounded-3xl border border-line bg-card p-4 text-left"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-deep">
-            <Icon name="target" size={20} />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[17px] font-semibold">
-              今天练{GROUPS.find((g) => g.id === tip.part)?.label}
-            </span>
-            <span className="mt-0.5 block text-[14px] leading-snug text-sub">
-              {tip.text}
-            </span>
-          </span>
-          <span className="shrink-0 text-sub">
-            <Icon name="chevronRight" size={20} />
-          </span>
-        </button>
-      )}
-
       {/* body + parts */}
-      <div className="overflow-hidden rounded-3xl border border-line bg-card">
+      <div className="overflow-hidden rounded-3xl bg-card">
         <div className="flex items-start justify-between gap-3 px-5 pt-5">
           <div>
-            <h2 className="text-[20px] font-semibold">选择部位</h2>
-            <p className="mt-0.5 text-[14px] text-sub">
+            <h2 className="text-[17px] font-bold">想练哪里?</h2>
+            <p className="mt-1 text-[12px] text-sub">
               点身体或下面的列表，可拖动旋转
             </p>
           </div>
           {hasRecovering && (
-            <div className="shrink-0 space-y-1 pt-1 text-[13px] text-sub">
+            <div className="shrink-0 space-y-1 pt-1 text-[11px] text-sub">
               <span className="flex items-center gap-1.5">
                 <span className="h-2 w-2 rounded-full bg-[#c24c40]" />
                 可以练
@@ -365,19 +390,17 @@ export default function StartFlow({ name }: { name: string }) {
               <button
                 onClick={x.run}
                 aria-pressed={part === x.id}
-                className="flex w-full items-center gap-3 px-5 py-4 text-left active:bg-bg"
+                className="flex w-full items-center gap-3 px-5 py-3.5 text-left active:bg-bg"
               >
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[17px] font-medium">
-                    {x.label}
-                  </span>
-                  <span className="mt-0.5 block text-[13px] text-sub">
+                  <span className="block text-[15px] font-bold">{x.label}</span>
+                  <span className="mt-0.5 block text-[11px] text-sub">
                     {x.st.text}
                   </span>
                 </span>
                 <span
                   aria-hidden
-                  className={`h-2 w-2 shrink-0 rounded-full ${x.st.ready ? "bg-primary" : "bg-[#c5c9c1]"}`}
+                  className={`h-2 w-2 shrink-0 rounded-full ${x.st.ready ? "bg-primary" : "bg-[#b9c2b0]"}`}
                 />
               </button>
             </li>
@@ -390,9 +413,9 @@ export default function StartFlow({ name }: { name: string }) {
                 `/coach?q=${encodeURIComponent("我不知道今天该练什么，你根据我的记录帮我决定吧")}`,
               )
             }
-            className="flex h-11 items-center gap-2 rounded-full border border-line px-4 text-[15px] font-medium"
+            className="flex h-10 items-center gap-2 rounded-full bg-bg px-4 text-[13px] font-bold"
           >
-            <Icon name="sparkles" size={16} />
+            <Icon name="sparkles" size={15} />
             让教练决定
           </button>
           <button
@@ -401,42 +424,27 @@ export default function StartFlow({ name }: { name: string }) {
                 `/coach?q=${encodeURIComponent("今天想做拉伸和活动度放松，帮我安排一下")}`,
               )
             }
-            className="flex h-11 items-center rounded-full border border-line px-4 text-[15px] font-medium"
+            className="flex h-10 items-center rounded-full bg-bg px-4 text-[13px] font-bold"
           >
             拉伸放松
           </button>
         </div>
       </div>
 
-      {tasks.length > 0 && (
-        <div>
-          <h2 className="mb-3 text-[20px] font-semibold">待办</h2>
-          <ul className="overflow-hidden rounded-3xl border border-line bg-card">
-            {tasks.map((t, i) => (
-              <li key={t.title} className={i ? "border-t border-line" : ""}>
-                <Link
-                  href={t.href}
-                  className="flex items-center gap-4 px-4 py-4 active:bg-bg"
-                >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary-soft text-deep">
-                    <Icon name={t.icon} size={20} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[17px] font-semibold leading-snug">
-                      {t.title}
-                    </span>
-                    <span className="mt-0.5 block truncate text-[14px] text-sub">
-                      {t.sub}
-                    </span>
-                  </span>
-                  <span className="shrink-0 text-sub">
-                    <Icon name="chevronRight" size={20} />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
+      {!profile.goal && (
+        <Link
+          href="/me"
+          className="flex items-center gap-3 rounded-[20px] bg-card px-4 py-3.5"
+        >
+          <Icon name="target" size={22} />
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-bold">完善目标和器械</span>
+            <span className="mt-1 block text-[11px] text-sub">
+              教练的安排会更适合你
+            </span>
+          </span>
+          <Icon name="chevronRight" size={19} />
+        </Link>
       )}
 
       {sheet && <ProfileSheet onClose={() => setSheet(false)} />}

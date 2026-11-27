@@ -7,6 +7,8 @@ import CoachMascot, { CoachThinking } from "@/components/CoachMascot";
 import Icon, { type IconName } from "@/components/Icon";
 import MD from "@/components/MD";
 import PlanCard from "@/components/PlanCard";
+import { planMinutes } from "@/lib/plan-time";
+import type { Plan } from "@/lib/types";
 import {
   abortCoach,
   fileToJpegDataUrl,
@@ -79,7 +81,7 @@ const isTouch = () =>
   window.matchMedia("(pointer: coarse)").matches;
 
 function Coach() {
-  const { chat, threads, activeThreadId, profile } = useApp();
+  const { chat, threads, activeThreadId, profile, plan } = useApp();
   const busy = useCoachBusy();
   const toolStatus = useCoachToolStatus();
   const storageWarning = useStorageWarning();
@@ -198,77 +200,72 @@ function Coach() {
 
   return (
     <div className="flex flex-col">
-      <header className="sticky top-0 z-20 -mx-4 -mt-5 mb-2 flex items-center justify-between gap-2 border-b border-line/60 bg-bg/92 px-4 pt-3 pb-2.5 backdrop-blur-md">
-        <div className="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            aria-label="对话记录"
-            onClick={() => setShowThreads(true)}
-            className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line bg-card text-ink active:bg-primary-soft"
-          >
-            <Icon name="menu" size={18} />
-            {threads.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-white">
-                {threads.length}
-              </span>
-            )}
-          </button>
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-soft">
-            <CoachMascot size={30} thinking={busy} label="哑铃教练" />
-          </span>
+      <header className="sticky top-0 z-20 -mx-4 -mt-5 mb-4 bg-bg/95 px-4 pt-3 backdrop-blur-md">
+        <div className="flex items-start justify-between gap-2 border-b border-line pb-4">
           <div className="min-w-0">
-            <div className="truncate text-[16px] font-bold leading-tight">
-              {currentThread?.title || "AI 教练"}
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-sub">
-              {busy ? (
-                <>
-                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-                  <span className="truncate">{toolStatus || "思考中…"}</span>
-                </>
-              ) : (
-                "随时提问"
-              )}
+            <h1 className="text-[29px] font-bold leading-tight">
+              你的 AI 教练
+            </h1>
+            <div className="mt-2 flex items-center gap-2 text-[12px] text-sub">
+              <span
+                className={`h-[7px] w-[7px] shrink-0 rounded-full bg-ink ${busy ? "animate-pulse" : ""}`}
+              />
+              <span className="truncate">
+                {busy
+                  ? toolStatus || "思考中…"
+                  : currentThread?.title || "懂你的目标，也懂你的状态"}
+              </span>
             </div>
           </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {canSpeak() && (
+          <div className="flex shrink-0 items-center gap-2">
+            {canSpeak() && (
+              <button
+                type="button"
+                aria-pressed={profile.speak}
+                aria-label={profile.speak ? "关闭朗读" : "朗读教练的回复"}
+                onClick={() => {
+                  if (profile.speak) stopSpeaking();
+                  else speak("好的,我会把回复读给你听");
+                  setState((s) => ({
+                    ...s,
+                    profile: { ...s.profile, speak: !s.profile.speak },
+                  }));
+                }}
+                className={`flex h-[43px] w-[43px] items-center justify-center rounded-full ${
+                  profile.speak ? "bg-primary text-ink" : "bg-card text-sub"
+                }`}
+              >
+                <Icon name={profile.speak ? "volume" : "mute"} size={18} />
+              </button>
+            )}
+            {chat.length > 0 && (
+              <button
+                type="button"
+                aria-label="新对话"
+                disabled={busy}
+                onClick={() => {
+                  stopSpeaking();
+                  startNewChatThread();
+                }}
+                className="flex h-[43px] w-[43px] items-center justify-center rounded-full bg-card text-ink active:bg-primary-soft disabled:opacity-40"
+              >
+                <Icon name="pen" size={18} />
+              </button>
+            )}
             <button
               type="button"
-              aria-pressed={profile.speak}
-              aria-label={profile.speak ? "关闭朗读" : "朗读教练的回复"}
-              onClick={() => {
-                if (profile.speak) stopSpeaking();
-                else speak("好的,我会把回复读给你听");
-                setState((s) => ({
-                  ...s,
-                  profile: { ...s.profile, speak: !s.profile.speak },
-                }));
-              }}
-              className={`flex h-10 w-10 items-center justify-center rounded-full border ${
-                profile.speak
-                  ? "border-primary bg-primary-soft text-deep"
-                  : "border-line bg-card text-sub"
-              }`}
+              aria-label="对话记录"
+              onClick={() => setShowThreads(true)}
+              className="relative flex h-[43px] w-[43px] shrink-0 items-center justify-center rounded-full bg-card text-ink active:bg-primary-soft"
             >
-              <Icon name={profile.speak ? "volume" : "mute"} size={18} />
+              <Icon name="history" size={22} />
+              {threads.length > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold">
+                  {threads.length}
+                </span>
+              )}
             </button>
-          )}
-          {chat.length > 0 && (
-            <button
-              type="button"
-              aria-label="新对话"
-              disabled={busy}
-              onClick={() => {
-                stopSpeaking();
-                startNewChatThread();
-              }}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-line bg-card text-ink active:bg-primary-soft disabled:opacity-40"
-            >
-              <Icon name="pen" size={18} />
-            </button>
-          )}
+          </div>
         </div>
       </header>
 
@@ -286,11 +283,9 @@ function Coach() {
             </span>
             <h1 className="mt-5 text-[28px] font-bold leading-tight tracking-tight">
               {hello}
-              {profile.name ? `,${profile.name}` : ""}
+              {profile.name ? `，${profile.name}` : ""}
             </h1>
-            <p className="mt-2 text-[15px] text-sub">
-              今天想练什么？
-            </p>
+            <p className="mt-2 text-[15px] text-sub">今天想练什么？</p>
           </div>
           <div className="space-y-1">
             {STARTERS.map((s) => (
@@ -334,7 +329,7 @@ function Coach() {
                   </span>
                 ) : null}
                 {m.text.trim() && (
-                  <div className="msg-user max-w-[82%] whitespace-pre-wrap rounded-3xl px-4 py-2.5 text-[16px] leading-relaxed">
+                  <div className="msg-user max-w-[78%] whitespace-pre-wrap rounded-[20px] px-4 py-3 text-[15px] leading-relaxed">
                     {m.text}
                   </div>
                 )}
@@ -344,11 +339,8 @@ function Coach() {
                 {(shown || streaming) &&
                   (shown ? (
                     <div>
-                      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-semibold text-sub">
-                        <CoachMascot size={20} />
-                        AI 教练
-                      </div>
-                      <div className="msg-ai text-[16px]">
+                      <div className="mb-2 text-[12px] font-bold">练练教练</div>
+                      <div className="msg-ai text-[15px]">
                         <MD text={shown} />
                       </div>
                       {streaming && toolStatus && (
@@ -361,7 +353,9 @@ function Coach() {
                   ) : (
                     <CoachThinking statusText={toolStatus} />
                   ))}
-                {m.plan && <PlanCard plan={m.plan} />}
+                {m.plan && (
+                  <ChatPlan plan={m.plan} current={m.plan.id === plan?.id} />
+                )}
                 {(m.logged || m.exerciseAdded || m.mealLogged) && (
                   <div className="flex flex-wrap gap-1.5">
                     {m.logged && (
@@ -433,9 +427,7 @@ function Coach() {
                     alt="待发送的照片"
                     className="h-14 w-14 rounded-xl object-cover"
                   />
-                  <span className="flex-1 text-sub">
-                    已选照片，可补文字
-                  </span>
+                  <span className="flex-1 text-sub">已选照片，可补文字</span>
                   <button
                     type="button"
                     className="flex h-10 w-10 items-center justify-center text-sub"
@@ -461,7 +453,7 @@ function Coach() {
                 )}
             </div>
           )}
-          <div className="chat-bar flex items-end gap-1 rounded-[28px] p-1.5">
+          <div className="chat-bar flex items-end gap-1 rounded-[28px] p-[7px]">
             <input
               ref={fileRef}
               type="file"
@@ -501,7 +493,7 @@ function Coach() {
               }}
               rows={1}
               enterKeyHint="enter"
-              placeholder="问教练…"
+              placeholder="问训练、饮食，或发张照片…"
               aria-label="给教练发消息"
               className="max-h-[168px] min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-[16px] leading-6 outline-none placeholder:text-sub"
             />
@@ -516,7 +508,9 @@ function Coach() {
                   if (dictation.listening) {
                     dictation.stop();
                   } else {
-                    dictPrefixRef.current = text.trim() ? `${text.trim()} ` : "";
+                    dictPrefixRef.current = text.trim()
+                      ? `${text.trim()} `
+                      : "";
                     dictation.start();
                   }
                 }}
@@ -529,7 +523,7 @@ function Coach() {
               onClick={() => (busy ? abortCoach() : submit())}
               disabled={!busy && !canSend}
               aria-label={busy ? "停止生成" : "发送"}
-              className="send-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition disabled:opacity-30"
+              className="send-btn flex h-[42px] w-[42px] shrink-0 items-center justify-center rounded-full transition disabled:opacity-30"
             >
               {busy ? (
                 <span className="h-3 w-3 rounded-[3px] bg-[var(--c-on-accent)]" />
@@ -550,6 +544,42 @@ function Coach() {
           onClose={() => setShowThreads(false)}
         />
       )}
+    </div>
+  );
+}
+
+/** A plan the coach saved, shown as one dark card that opens the plan page. */
+function ChatPlan({ plan, current }: { plan: Plan; current: boolean }) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const sets = plan.items.reduce((n, it) => n + it.sets, 0);
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-3 rounded-[22px] bg-ink p-[18px] text-white">
+        <div className="min-w-0 flex-1">
+          <span className="inline-block rounded-full bg-primary px-2.5 py-1 text-[10px] font-bold text-ink">
+            {current ? "已存为计划" : "之前的计划"}
+          </span>
+          <div className="mt-2.5 truncate text-[23px] font-bold text-white">
+            {plan.title}
+          </div>
+          <div className="mt-1.5 text-[12px] text-[#cedcc5]">
+            {planMinutes(plan)} 分钟 · {plan.items.length} 个动作 · {sets} 组
+          </div>
+        </div>
+        <button
+          type="button"
+          aria-label={current ? "查看训练计划" : open ? "收起计划" : "展开计划"}
+          onClick={() => (current ? router.push("/plan") : setOpen(!open))}
+          className="flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-full bg-primary text-ink"
+        >
+          <Icon
+            name={current ? "arrowRight" : open ? "x" : "arrowRight"}
+            size={24}
+          />
+        </button>
+      </div>
+      {open && !current && <PlanCard plan={plan} />}
     </div>
   );
 }
