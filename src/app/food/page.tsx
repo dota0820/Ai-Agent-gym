@@ -369,7 +369,7 @@ function FoodContent() {
           />
           {workoutCals > 0 && (
             <div
-              className="h-full rounded-full bg-[#ff5a36]"
+              className="h-full rounded-full bg-white/40"
               style={{
                 width: `${Math.min(30, Math.round((workoutCals / Math.max(1, targets.calories)) * 100))}%`,
               }}
@@ -383,7 +383,7 @@ function FoodContent() {
           </span>
           {workoutCals > 0 && (
             <span className="flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-[#ff5a36]" />
+              <span className="h-2 w-2 rounded-full bg-white/40" />
               运动消耗 -{workoutCals} kcal
             </span>
           )}
@@ -422,8 +422,8 @@ function FoodContent() {
           {(
             [
               ["蛋白质", totals.protein, targets.protein, "#2f6c00"],
-              ["碳水", totals.carbs, targets.carbs, "#fbbf24"],
-              ["脂肪", totals.fat, targets.fat, "#ff5a36"],
+              ["碳水", totals.carbs, targets.carbs, "#6fae45"],
+              ["脂肪", totals.fat, targets.fat, "#9fe870"],
             ] as const
           ).map(([l, v, t, c]) => {
             const p = t ? Math.min(100, Math.round((v / t) * 100)) : 0;
@@ -451,7 +451,7 @@ function FoodContent() {
                   />
                 </div>
                 <div
-                  className={`mt-1.5 text-[11px] ${gap > 0 && l === "蛋白质" ? "font-bold text-[#e0482a]" : "text-sub"}`}
+                  className={`mt-1.5 text-[11px] ${gap > 0 && l === "蛋白质" ? "font-bold text-deep" : "text-sub"}`}
                 >
                   {gap > 0
                     ? `${l === "蛋白质" ? "缺口" : "余"} ${gap}g`

@@ -25,8 +25,8 @@ const PART_COLORS = [
   "#163300",
   "#2f6c00",
   "#9fe870",
-  "#fbbf24",
-  "#ff5a36",
+  "#c5eba3",
+  "#6fae45",
   "#5c6457",
 ];
 
@@ -166,7 +166,7 @@ export default function HistorySummary() {
             </div>
             {change !== null && (
               <div
-                className={`mt-1 text-[11px] ${change >= 0 ? "text-primary" : "text-[#ff9b85]"}`}
+                className={`mt-1 text-[11px] ${change >= 0 ? "text-primary" : "text-white/60"}`}
               >
                 {change >= 0 ? "↗" : "↘"} 比上一段 {change >= 0 ? "+" : ""}
                 {change}%

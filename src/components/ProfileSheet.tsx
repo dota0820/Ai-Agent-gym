@@ -1,4 +1,5 @@
 "use client";
+import Avatar from "./Avatar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getProfileGyms, parseEquipmentList } from "@/lib/equipment";
@@ -6,13 +7,11 @@ import { createProfile, switchProfile, switchProfileGym, useApp } from "@/lib/st
 import Icon from "./Icon";
 import { btnPrimary, btnSoft, input } from "./ui";
 
-const AVATARS = ["🙂", "👩", "👨", "💪", "🏃‍♀️", "🏋️"];
 
 export default function ProfileSheet({ onClose }: { onClose: () => void }) {
   const { profile, profiles, activeProfileId } = useApp();
   const router = useRouter();
   const [creating, setCreating] = useState(false);
-  const [avatar, setAvatar] = useState("🙂");
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -35,7 +34,6 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
     createProfile(
       {
         name: name.trim() || `人物 ${profiles.length + 1}`,
-        avatar,
       },
       true,
     );
@@ -92,9 +90,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
                     : "border-line bg-surface active:bg-bg"
                 }`}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg text-xl">
-                  {p.avatar || "🙂"}
-                </span>
+                <Avatar name={p.name} size={40} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 font-bold">
                     <span className="truncate">{p.name || "默认人物"}</span>
@@ -146,20 +142,6 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
             onSubmit={handleCreate}
             className="space-y-3 rounded-2xl border border-line bg-surface p-3.5"
           >
-            <div className="flex flex-wrap gap-1.5">
-              {AVATARS.map((av) => (
-                <button
-                  key={av}
-                  type="button"
-                  onClick={() => setAvatar(av)}
-                  className={`flex h-9 w-9 items-center justify-center rounded-full text-lg ${
-                    avatar === av ? "bg-primary/15 ring-2 ring-primary" : "border border-line bg-bg"
-                  }`}
-                >
-                  {av}
-                </button>
-              ))}
-            </div>
             <input
               className={input}
               placeholder="怎么称呼？（如：小美 / 老公）"

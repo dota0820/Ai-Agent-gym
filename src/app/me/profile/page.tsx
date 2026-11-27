@@ -6,7 +6,6 @@ import { deleteProfile, setState, useApp, useHydrated } from "@/lib/store";
 import type { Gender, Profile } from "@/lib/types";
 
 const GOALS = ["减脂", "增肌塑形", "练翘臀", "改善体态", "保持健康"];
-const AVATARS = ["🙂", "👩", "👨", "💪", "🏃‍♀️", "🏋️"];
 const GENDERS: { id: Gender; label: string }[] = [
   { id: "female", label: "女" },
   { id: "male", label: "男" },
@@ -54,26 +53,6 @@ export default function MeProfilePage() {
   return (
     <SubPage title="身体与目标">
       <Card className="space-y-3">
-        <div>
-          <span className="text-xs font-semibold text-sub">头像</span>
-          <div className="mt-1 flex flex-wrap gap-1.5">
-            {AVATARS.map((av) => (
-              <button
-                key={av}
-                type="button"
-                onClick={() => set({ avatar: av })}
-                className={`flex h-9 w-9 items-center justify-center rounded-full text-lg ${
-                  (profile.avatar || "🙂") === av
-                    ? "bg-primary/15 ring-2 ring-primary"
-                    : "border border-line bg-surface"
-                }`}
-              >
-                {av}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {field("name", "怎么称呼", "例如: 小美 / 阿杰")}
 
         <div>

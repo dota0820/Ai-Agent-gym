@@ -1,4 +1,5 @@
 "use client";
+import Avatar from "./Avatar";
 import { useState } from "react";
 import { getProfileGyms } from "@/lib/equipment";
 import { useApp, useHydrated } from "@/lib/store";
@@ -20,7 +21,7 @@ export default function ProfileChip() {
         onClick={() => setOpen(true)}
         className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-ink active:bg-bg"
       >
-        <span>{profile.avatar || "🙂"}</span>
+        <Avatar name={profile.name} size={20} />
         <span className="truncate">{profile.name || "默认人物"}</span>
         <span className="text-sub">·</span>
         <span className="truncate text-sub">{activeGym.name}</span>

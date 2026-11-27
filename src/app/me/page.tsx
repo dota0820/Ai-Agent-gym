@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import Icon, { type IconName } from "@/components/Icon";
+import { avatarLetter } from "@/components/Avatar";
 import ProfileSheet from "@/components/ProfileSheet";
 import { computeStreakWeeks } from "@/lib/analytics";
 import { getProfileGyms, parseEquipmentList } from "@/lib/equipment";
@@ -9,7 +10,6 @@ import { AI_MODELS } from "@/lib/models";
 import { computeNutritionTargets } from "@/lib/nutrition";
 import { useApp, useHydrated } from "@/lib/store";
 import { compactNum, totalVolume, trainingDays } from "@/lib/summary";
-import { setTheme, THEMES, useTheme } from "@/lib/theme";
 
 function SectionHead({
   icon,
@@ -77,7 +77,6 @@ function LinkRow({
 
 export default function Me() {
   const { profile, aiModel, workouts } = useApp();
-  const theme = useTheme();
   const ready = useHydrated();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [now] = useState(() => Date.now());
@@ -89,8 +88,6 @@ export default function Me() {
   const modelLabel =
     AI_MODELS.find((m) => m.id === aiModel)?.label ?? (aiModel || "服务器默认");
   const streak = computeStreakWeeks(workouts, now);
-  const initial =
-    profile.avatar || (profile.name ? profile.name.slice(0, 1) : "我");
 
   return (
     <div className="space-y-4">
@@ -101,7 +98,7 @@ export default function Me() {
         <div className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-primary/10 blur-2xl" />
         <div className="relative flex items-center gap-4">
           <span className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-primary bg-white/10 text-[26px] font-bold text-white">
-            {initial}
+            {avatarLetter(profile.name)}
             <span className="absolute -bottom-0.5 -right-0.5 flex h-6 w-6 items-center justify-center rounded-full border-2 border-forest bg-primary text-forest">
               <Icon name="check" size={14} stroke={3} />
             </span>
@@ -125,7 +122,7 @@ export default function Me() {
           </button>
         </div>
         <div className="relative mt-4 inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[12px] font-semibold text-primary">
-          <Icon name="flame" size={16} fill className="text-[#fbbf24]" />
+          <Icon name="flame" size={16} fill className="text-primary" />
           {streak.currentWeeks
             ? `已连续打卡 ${streak.currentWeeks} 周`
             : "这周开始打卡吧"}
@@ -147,68 +144,6 @@ export default function Me() {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* themes */}
-      <div className="lift rounded-[28px] bg-card p-4">
-        <SectionHead
-          icon="palette"
-          title="外观与主题"
-          sub="选你喜欢的颜色"
-          right={
-            <span className="shrink-0 rounded-full bg-bg px-2.5 py-1 text-[11px] font-bold text-sub">
-              {THEMES.length} 套配色
-            </span>
-          }
-        />
-        <div className="mt-4 grid grid-cols-2 gap-2.5">
-          {THEMES.map((t) => {
-            const on = theme === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                aria-pressed={on}
-                onClick={() => setTheme(t.id)}
-                className={`rounded-2xl border-2 p-3 text-left ${on ? "border-forest bg-card" : "border-transparent bg-bg"}`}
-              >
-                <span className="flex items-center justify-between">
-                  <span className="flex -space-x-1">
-                    <span
-                      className="h-4 w-4 rounded-full border-2 border-white"
-                      style={{ background: t.ink }}
-                    />
-                    <span
-                      className="h-4 w-4 rounded-full border-2 border-white"
-                      style={{ background: t.primary }}
-                    />
-                  </span>
-                  {on && (
-                    <Icon
-                      name="checkCircle"
-                      size={18}
-                      fill
-                      className="text-forest"
-                    />
-                  )}
-                </span>
-                <span className="mt-2 block text-[14px] font-bold">
-                  {t.label}
-                </span>
-                <span className="mt-0.5 block truncate text-[11px] text-sub">
-                  {t.desc}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-        <Link
-          href="/me/theme"
-          className="mt-3 flex items-center justify-between rounded-2xl bg-bg px-4 py-3 text-[13px] font-bold text-forest"
-        >
-          看看每套主题的颜色
-          <Icon name="chevronRight" size={18} />
-        </Link>
       </div>
 
       {/* body */}
