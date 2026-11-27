@@ -435,6 +435,8 @@ export function setStateForProfile(
 export function startNewChatThread() {
   load();
   const activeId = rootState.activeProfileId;
+  const current = rootState.profiles.find((ws) => ws.profile.id === activeId);
+  if (!current || (current.chat.length === 0 && current.activeThreadId === null)) return;
   const profiles = rootState.profiles.map((ws) => {
     if (ws.profile.id !== activeId) return ws;
     const synced = syncWorkspaceThreads(ws);

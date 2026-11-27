@@ -10,6 +10,7 @@ import PlanCard from "@/components/PlanCard";
 import {
   abortCoach,
   fileToJpegDataUrl,
+  isCoachBusy,
   sendToCoach,
   useCoachBusy,
   useCoachToolStatus,
@@ -94,6 +95,7 @@ function Coach() {
   const fileRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const sentQ = useRef<string | null>(null);
+  const didFreshMount = useRef(false);
   const dictPrefixRef = useRef("");
   const dictation = useDictation((t) => {
     const prefix = dictPrefixRef.current;
@@ -101,6 +103,14 @@ function Coach() {
   });
 
   const q = params.get("q");
+  useEffect(() => {
+    if (didFreshMount.current) return;
+    didFreshMount.current = true;
+    if (!q && !isCoachBusy()) {
+      startNewChatThread();
+    }
+  }, [q]);
+
   useEffect(() => {
     if (!q || sentQ.current === q) return;
     sentQ.current = q;

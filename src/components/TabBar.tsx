@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { isCoachBusy } from "@/lib/actions";
+import { startNewChatThread } from "@/lib/store";
 import Icon, { type IconName } from "./Icon";
 
 const TABS: { href: string; label: string; icon: IconName; also?: string[] }[] = [
@@ -31,6 +33,11 @@ export default function TabBar() {
               <Link
                 href={t.href}
                 aria-current={on ? "page" : undefined}
+                onClick={() => {
+                  if (t.href === "/coach" && path === "/coach" && !isCoachBusy()) {
+                    startNewChatThread();
+                  }
+                }}
                 className={`flex flex-col items-center gap-0.5 pt-1.5 pb-2 text-xs ${
                   on ? "font-bold text-deep" : "text-sub"
                 }`}

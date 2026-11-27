@@ -152,6 +152,9 @@ function setActiveTool(label: string) {
   activeTool = label;
   toolListeners.forEach((l) => l());
 }
+export function isCoachBusy() {
+  return busy;
+}
 export function useCoachBusy() {
   return useSyncExternalStore(
     (l) => {
