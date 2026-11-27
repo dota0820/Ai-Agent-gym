@@ -73,14 +73,25 @@ export default function Body3D({
         onUnavailableRef.current?.();
         return;
       }
+      const disposeObj = (root: import("three").Object3D) => {
+        root.traverse((o) => {
+          const m = o as PartMesh;
+          if (!m.isMesh) return;
+          m.geometry?.dispose();
+          const mats = Array.isArray(m.material) ? m.material : [m.material];
+          mats.forEach((mat) => mat?.dispose());
+        });
+      };
+
       const gltf = await new GLTFLoader().loadAsync("/models/anatomy.glb");
       if (disposed) {
+        disposeObj(gltf.scene);
         renderer.dispose();
         return;
       }
 
       const tc = themeColors();
-      const dark = isDark(theme);
+      const dark = isDark(theme) || document.documentElement.dataset.mode === "gym";
       const col = (c: string) => new THREE.Color(c);
       // anatomical muscle red, like a textbook plate; the chosen group takes the theme accent
       const MUSCLE = col(dark ? "#b8463c" : "#c24c40");
@@ -126,6 +137,8 @@ export default function Body3D({
       gltf.scene.traverse((o) => {
         const m = o as PartMesh;
         if (!m.isMesh) return;
+        const oldMats = Array.isArray(m.material) ? m.material : [m.material];
+        oldMats.forEach((mat) => mat?.dispose());
         // the bounds stored in the model file are not reliable; hit-testing needs correct ones
         m.geometry.computeBoundingBox();
         m.geometry.computeBoundingSphere();
@@ -269,19 +282,23 @@ export default function Body3D({
         const hit = ray.intersectObjects(partMeshes, false)[0];
         return hit ? { part: hit.object.userData.part as BodyPart, point: hit.point.clone() } : null;
       };
+      let lastY = 0;
       const down = (e: PointerEvent) => {
         dragging = true;
         touched = true;
         moved = 0;
         lastX = e.clientX;
+        lastY = e.clientY;
         velocity = 0;
         c.style.cursor = "grabbing";
       };
       const move = (e: PointerEvent) => {
         if (dragging) {
           const dx = e.clientX - lastX;
+          const dy = e.clientY - lastY;
           lastX = e.clientX;
-          moved += Math.abs(dx);
+          lastY = e.clientY;
+          moved += Math.abs(dx) + Math.abs(dy);
           velocity = dx * 0.011;
           rotY += velocity;
           rotTarget = null;

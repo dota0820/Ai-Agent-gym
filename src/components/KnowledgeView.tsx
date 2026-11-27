@@ -107,7 +107,7 @@ function Card({
                           src={thumb}
                           alt=""
                           loading="lazy"
-                          className="aspect-[3/2] w-full bg-[#141418] object-cover"
+                          className="aspect-[3/2] w-full bg-bg object-cover"
                         />
                       ) : (
                         <span className="flex aspect-[3/2] w-full items-center justify-center bg-bg text-xl">
@@ -128,7 +128,7 @@ function Card({
             {a.detective && (
               <Link
                 href={coachLink(detectivePrompt(a.detective))}
-                className="flex items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-primary"
+                className="flex items-center justify-center gap-1.5 rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-deep"
               >
                 🔍 发力侦探
               </Link>

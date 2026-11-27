@@ -42,17 +42,23 @@ function DumbbellRangeHelper({
   value: string;
   onSet: (formatted: string) => void;
 }) {
-  const rangeMatch = /(\d+(?:\.\d+)?)\s*[-–~到至]\s*(\d+(?:\.\d+)?)/.exec(
-    value,
-  );
-  const minMatch = /最轻\s*(\d+(?:\.\d+)?)/.exec(value);
-  const maxMatch = /最重\s*(\d+(?:\.\d+)?)/.exec(value);
-  const minW = rangeMatch ? rangeMatch[1] : minMatch ? minMatch[1] : "";
-  const maxW = rangeMatch ? rangeMatch[2] : maxMatch ? maxMatch[1] : "";
+  const parseRange = (v: string) => {
+    const rangeMatch = /(\d+(?:\.\d+)?)\s*[-–~到至]\s*(\d+(?:\.\d+)?)/.exec(v);
+    const minMatch = /最轻\s*(\d+(?:\.\d+)?)/.exec(v);
+    const maxMatch = /最重\s*(\d+(?:\.\d+)?)/.exec(v);
+    return {
+      min: rangeMatch ? rangeMatch[1] : minMatch ? minMatch[1] : "",
+      max: rangeMatch ? rangeMatch[2] : maxMatch ? maxMatch[1] : "",
+    };
+  };
 
-  const applyRange = (nextMin: string, nextMax: string) => {
-    const a = nextMin.trim();
-    const b = nextMax.trim();
+  const initial = parseRange(value);
+  const [minText, setMinText] = useState(initial.min);
+  const [maxText, setMaxText] = useState(initial.max);
+
+  const emit = (nextMin: string, nextMax: string) => {
+    const a = nextMin.trim().replace(/\.$/, "");
+    const b = nextMax.trim().replace(/\.$/, "");
     if (a && b) onSet(`每只 ${a}–${b} kg`);
     else if (b) onSet(`每只最重 ${b} kg`);
     else if (a) onSet(`每只最轻 ${a} kg`);
@@ -63,19 +69,29 @@ function DumbbellRangeHelper({
     <div className="flex items-center gap-1.5 text-xs">
       <span className="shrink-0 text-sub">精确范围：每只</span>
       <input
-        className="w-16 rounded-lg border border-line bg-surface px-2 py-1 text-center text-xs outline-none focus:border-primary"
+        className="w-16 rounded-lg border border-line bg-surface px-2 py-1 text-center text-[15px] outline-none focus:border-primary"
         inputMode="decimal"
         placeholder="最轻"
-        value={minW}
-        onChange={(e) => applyRange(e.target.value, maxW)}
+        value={minText}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[^\d.]/g, "");
+          if (!/^\d*\.?\d*$/.test(v)) return;
+          setMinText(v);
+          emit(v, maxText);
+        }}
       />
       <span className="text-sub">~</span>
       <input
-        className="w-16 rounded-lg border border-line bg-surface px-2 py-1 text-center text-xs outline-none focus:border-primary"
+        className="w-16 rounded-lg border border-line bg-surface px-2 py-1 text-center text-[15px] outline-none focus:border-primary"
         inputMode="decimal"
         placeholder="最重"
-        value={maxW}
-        onChange={(e) => applyRange(minW, e.target.value)}
+        value={maxText}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[^\d.]/g, "");
+          if (!/^\d*\.?\d*$/.test(v)) return;
+          setMaxText(v);
+          emit(minText, v);
+        }}
       />
       <span className="text-sub">kg</span>
     </div>
@@ -254,15 +270,25 @@ export default function GymWizardModal({
     });
   }
 
+  function tryClose() {
+    const dirty =
+      draft.name !== initialGym.name ||
+      draft.equipment !== initialGym.equipment ||
+      (draft.notes ?? "") !== (initialGym.notes ?? "");
+    if (dirty && !window.confirm("还有未保存的健身房配置，确定放弃吗？")) return;
+    onClose();
+  }
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end bg-black/45"
-      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-end bg-black/45 backdrop-blur-[1px]"
+      onClick={tryClose}
     >
       <div
-        className="safe-b mx-auto flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-3xl bg-bg"
+        className="safe-b rise-in mx-auto flex max-h-[90dvh] w-full max-w-md flex-col rounded-t-3xl bg-bg"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label="Gym 环境配置"
       >
         <input
@@ -277,12 +303,15 @@ export default function GymWizardModal({
           }}
         />
 
-        <div className="shrink-0 rounded-t-3xl border-b border-line bg-surface px-5 pt-4 pb-3">
+        <div className="shrink-0 rounded-t-3xl border-b border-line bg-surface px-4 pt-2.5 pb-3">
+          <div className="flex justify-center pb-2">
+            <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
+          </div>
           <div className="flex items-center justify-between gap-2">
             <button
               type="button"
-              className="text-xs font-semibold text-sub"
-              onClick={onClose}
+              className="min-h-10 rounded-xl px-2.5 text-sm font-semibold text-sub active:bg-bg"
+              onClick={tryClose}
             >
               取消
             </button>
@@ -297,20 +326,28 @@ export default function GymWizardModal({
             </div>
             <button
               type="button"
-              className="rounded-xl bg-primary px-3 py-1 text-xs font-bold text-white"
+              className="min-h-10 rounded-xl bg-primary px-3.5 text-xs font-bold text-white"
               onClick={saveAndClose}
             >
               保存 ✓
             </button>
           </div>
 
-          <div className="mt-2.5 h-1 overflow-hidden rounded-full bg-bg">
-            <div
-              className="h-full rounded-full bg-primary transition-all"
-              style={{
-                width: `${Math.round(((step + 1) / STEPS.length) * 100)}%`,
-              }}
-            />
+          <div className="no-scrollbar mt-2.5 flex gap-1.5 overflow-x-auto pb-0.5">
+            {STEPS.map((s, idx) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setStep(idx)}
+                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                  idx === step
+                    ? "bg-primary text-white"
+                    : "bg-bg text-sub active:bg-primary-soft active:text-deep"
+                }`}
+              >
+                {idx + 1}. {s.title}
+              </button>
+            ))}
           </div>
         </div>
 

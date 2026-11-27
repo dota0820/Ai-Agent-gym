@@ -6,7 +6,7 @@ import { apiErrorMessage, guard, requestedModel, resolveOpenRouterKey } from "@/
 export const maxDuration = 120;
 
 const Body = z.object({
-  image: z.string().regex(/^data:image\/(jpeg|png|webp);base64,/),
+  image: z.string().regex(/^data:image\/(jpeg|png|webp);base64,/).max(6_000_000),
 });
 
 export async function POST(req: Request) {

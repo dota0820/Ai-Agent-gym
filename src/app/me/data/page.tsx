@@ -4,6 +4,7 @@ import { btnGhost, Card, input, SubPage } from "@/components/ui";
 import {
   exportRootBackup,
   importRootBackup,
+  localDateStr,
   setState,
   useApp,
   useHydrated,
@@ -20,11 +21,12 @@ export default function MeDataPage() {
     const blob = new Blob([JSON.stringify(exportRootBackup(), null, 2)], {
       type: "application/json",
     });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `健身记录-${new Date().toISOString().slice(0, 10)}.json`;
+    a.href = url;
+    a.download = `健身记录-${localDateStr()}.json`;
     a.click();
-    URL.revokeObjectURL(a.href);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function importData(file: File) {

@@ -1,8 +1,9 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getProfileGyms, parseEquipmentList } from "@/lib/equipment";
 import { createProfile, switchProfile, switchProfileGym, useApp } from "@/lib/store";
+import Icon from "./Icon";
 import { btnPrimary, btnSoft, input } from "./ui";
 
 const AVATARS = ["🙂", "👩", "👨", "💪", "🏃‍♀️", "🏋️"];
@@ -13,6 +14,19 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
   const [creating, setCreating] = useState(false);
   const [avatar, setAvatar] = useState("🙂");
   const [name, setName] = useState("");
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
 
   const { gyms, activeGym } = getProfileGyms(profile);
 
@@ -30,17 +44,26 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/45" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end bg-black/45 backdrop-blur-[1px]" onClick={onClose}>
       <div
-        className="safe-b mx-auto max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-bg p-5 space-y-4"
+        className="safe-b rise-in mx-auto max-h-[85dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl bg-bg px-5 pb-5 pt-2.5 space-y-4"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label="切换人物与场地"
       >
+        <div className="flex justify-center pb-0.5">
+          <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
+        </div>
         <div className="flex items-center justify-between">
           <h2 className="text-base font-bold">切换人物档案</h2>
-          <button type="button" onClick={onClose} className="text-sm text-sub">
-            关闭
+          <button
+            type="button"
+            aria-label="关闭"
+            onClick={onClose}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-sub active:bg-line/50"
+          >
+            <Icon name="x" size={18} />
           </button>
         </div>
 
@@ -66,7 +89,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
                 className={`flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition ${
                   current
                     ? "border-primary bg-primary/5 ring-1 ring-primary"
-                    : "border-line bg-surface active:bg-soft"
+                    : "border-line bg-surface active:bg-bg"
                 }`}
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-bg text-xl">

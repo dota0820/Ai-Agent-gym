@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useState } from "react";
 import { findExerciseById, isCustomExercise } from "@/lib/exercise-lookup";
-import { useApp } from "@/lib/store";
+import { safeHttpUrl, safeImageUrl, useApp } from "@/lib/store";
 import ExerciseAnim from "./ExerciseAnim";
 
 /**
@@ -19,7 +19,7 @@ export default function ExerciseCover({
   compact?: boolean;
 }) {
   const { customExercises } = useApp();
-  const [imgFailed, setImgFailed] = useState(false);
+  const [failedId, setFailedId] = useState<string | null>(null);
 
   if (!exerciseId) return null;
   const ex = findExerciseById(exerciseId, customExercises);
@@ -29,17 +29,20 @@ export default function ExerciseCover({
     return <ExerciseAnim id={ex.id} name={ex.name} note={ex.imageNote} compact={compact} />;
   }
 
-  if (!ex.imageUrl && !ex.sourceUrl) return null;
+  const safeImg = safeImageUrl(ex.imageUrl);
+  const safeSrc = safeHttpUrl(ex.sourceUrl);
+  if (!safeImg && !safeSrc) return null;
+  const imgFailed = failedId === exerciseId;
 
   return (
-    <figure className="overflow-hidden rounded-2xl border border-line bg-[#141418]">
-      {ex.imageUrl && !imgFailed ? (
+    <figure className="overflow-hidden rounded-2xl border border-line bg-bg">
+      {safeImg && !imgFailed ? (
         <div className="relative aspect-[3/2] w-full">
           <img
-            src={ex.imageUrl}
+            src={safeImg}
             alt={name}
             referrerPolicy="no-referrer"
-            onError={() => setImgFailed(true)}
+            onError={() => setFailedId(exerciseId)}
             className="h-full w-full object-cover"
           />
           {ex.sourcePlatform && (
@@ -47,12 +50,12 @@ export default function ExerciseCover({
               {ex.sourcePlatform}
             </span>
           )}
-          {ex.sourceUrl && (
+          {safeSrc && (
             <a
-              href={ex.sourceUrl}
+              href={safeSrc}
               target="_blank"
-              rel="noreferrer"
-              className="absolute bottom-2 right-2 rounded-full bg-black/70 px-3 py-1 text-xs font-semibold text-white backdrop-blur"
+              rel="noopener noreferrer"
+              className="absolute bottom-2 right-2 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur"
             >
               ▶ 打开原视频
             </a>
@@ -63,12 +66,12 @@ export default function ExerciseCover({
           <span className="font-semibold text-deep">
             {ex.sourcePlatform ? `${ex.sourcePlatform} 导入动作` : "自定义动作"}
           </span>
-          {ex.sourceUrl && (
+          {safeSrc && (
             <a
-              href={ex.sourceUrl}
+              href={safeSrc}
               target="_blank"
-              rel="noreferrer"
-              className="rounded-full bg-primary px-3 py-1 text-xs font-semibold text-white"
+              rel="noopener noreferrer"
+              className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-white"
             >
               ▶ 打开原视频
             </a>

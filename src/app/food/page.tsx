@@ -1,6 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 import Icon from "@/components/Icon";
+import NumInput from "@/components/NumInput";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -22,6 +23,7 @@ import {
   removeMealLog,
   setState,
   uid,
+  updateMealLog,
   useApp,
   useHydrated,
 } from "@/lib/store";
@@ -30,6 +32,8 @@ import { useDictation } from "@/lib/voice";
 import { btnGhost, btnPrimary, btnSoft, Card, H1, input } from "@/components/ui";
 
 interface MealDraft {
+  editingId?: string;
+  loggedAt?: string;
   mealType: MealType;
   summary: string;
   calories: number;
@@ -98,7 +102,11 @@ function FoodContent() {
   const [editTargets, setEditTargets] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
-  const dictation = useDictation((t) => setText(t));
+  const dictPrefixRef = useRef("");
+  const dictation = useDictation((t) => {
+    const prefix = dictPrefixRef.current;
+    setText(prefix ? `${prefix}${t}` : t);
+  });
 
   if (!ready) return null;
 
@@ -149,9 +157,9 @@ function FoodContent() {
           context: ctxLines,
         }),
       });
-      const j = await res.json();
-      if (!res.ok) {
-        setError(j.error ?? "分析失败，请再试一次。");
+      const j = await res.json().catch(() => null);
+      if (!res.ok || !j) {
+        setError(j?.error ?? "分析失败，请再试一次。");
         return;
       }
       if (!j.is_food) {
@@ -191,12 +199,33 @@ function FoodContent() {
     });
   }
 
+  function startEditMeal(m: MealLog) {
+    setError("");
+    setManualMode(false);
+    setDraft({
+      editingId: m.id,
+      loggedAt: m.loggedAt,
+      mealType: m.mealType,
+      summary: m.summary,
+      calories: m.calories,
+      protein: m.protein,
+      carbs: m.carbs,
+      fat: m.fat,
+      items: m.items.map((x) => ({ ...x })),
+      advice: m.advice,
+      image: m.image,
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function saveDraft() {
     if (!draft) return;
     const isToday = dateKey === today;
-    const loggedAt = isToday ? new Date().toISOString() : new Date(`${dateKey}T12:00:00`).toISOString();
+    const loggedAt =
+      draft.loggedAt ??
+      (isToday ? new Date().toISOString() : new Date(`${dateKey}T12:00:00`).toISOString());
     const meal: MealLog = {
-      id: uid(),
+      id: draft.editingId ?? uid(),
       loggedAt,
       mealType: draft.mealType,
       summary: draft.summary.trim() || "一餐饮食",
@@ -220,7 +249,8 @@ function FoodContent() {
       image: draft.image,
       note: text.trim() || undefined,
     };
-    addMealLog(meal);
+    if (draft.editingId) updateMealLog(meal);
+    else addMealLog(meal);
     setDraft(null);
     setManualMode(false);
     setText("");
@@ -468,7 +498,14 @@ function FoodContent() {
                   type="button"
                   className={`${btnGhost} px-4 text-sm ${dictation.listening ? "border-primary text-deep" : ""}`}
                   disabled={busy}
-                  onClick={() => (dictation.listening ? dictation.stop() : dictation.start())}
+                  onClick={() => {
+                    if (dictation.listening) {
+                      dictation.stop();
+                    } else {
+                      dictPrefixRef.current = text.trim() ? `${text.trim()} ` : "";
+                      dictation.start();
+                    }
+                  }}
                 >
                   <Icon name={dictation.listening ? "stop" : "mic"} size={18} className="mr-1" />
                   {dictation.listening ? "停止" : "语音"}
@@ -535,15 +572,11 @@ function FoodContent() {
               ).map(([k, lbl]) => (
                 <label key={k} className="block">
                   <span className="text-[11px] text-sub">{lbl}</span>
-                  <input
+                  <NumInput
+                    decimal={k !== "calories"}
                     className={`${input} mt-1 px-2 py-1.5 text-center text-sm font-semibold`}
-                    inputMode="decimal"
                     value={draft[k]}
-                    onChange={(e) => {
-                      const v = Number(e.target.value);
-                      if (e.target.value !== "" && isNaN(v)) return;
-                      setDraft({ ...draft, [k]: e.target.value === "" ? 0 : v });
-                    }}
+                    onChange={(v) => setDraft({ ...draft, [k]: v ?? 0 })}
                   />
                 </label>
               ))}
@@ -572,15 +605,11 @@ function FoodContent() {
                         ).map(([k, u]) => (
                           <label key={k} className="block">
                             <span className="text-[10px] text-sub">{u}</span>
-                            <input
+                            <NumInput
+                              decimal={k !== "calories"}
                               className="w-full rounded-lg border border-line bg-bg px-1.5 py-1 text-center text-xs"
-                              inputMode="decimal"
                               value={it[k]}
-                              onChange={(e) => {
-                                const v = Number(e.target.value);
-                                if (e.target.value !== "" && isNaN(v)) return;
-                                updateItemMacro(idx, k, e.target.value === "" ? 0 : v);
-                              }}
+                              onChange={(v) => updateItemMacro(idx, k, v ?? 0)}
                             />
                           </label>
                         ))}
@@ -592,7 +621,7 @@ function FoodContent() {
             )}
 
             <button type="button" className={`${btnPrimary} w-full`} onClick={saveDraft}>
-              保存到{fmtDateKey(dateKey)}饮食记录
+              {draft.editingId ? "保存修改" : `保存到${fmtDateKey(dateKey)}饮食记录`}
             </button>
           </div>
         )}
@@ -630,17 +659,26 @@ function FoodContent() {
                       <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-deep">
                         {mt.emoji} {mt.label} · {time}
                       </span>
-                      <button
-                        type="button"
-                        className="text-xs text-sub underline"
-                        onClick={() => {
-                          if (confirm(`删除「${m.summary}」这条饮食记录？`)) {
-                            removeMealLog(m.id);
-                          }
-                        }}
-                      >
-                        删除
-                      </button>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          className="min-h-8 text-xs font-semibold text-deep"
+                          onClick={() => startEditMeal(m)}
+                        >
+                          编辑
+                        </button>
+                        <button
+                          type="button"
+                          className="min-h-8 text-xs text-sub underline"
+                          onClick={() => {
+                            if (confirm(`删除「${m.summary}」这条饮食记录？`)) {
+                              removeMealLog(m.id);
+                            }
+                          }}
+                        >
+                          删除
+                        </button>
+                      </div>
                     </div>
                     <div className="mt-1 font-bold">{m.summary}</div>
                     <div className="mt-1 flex flex-wrap gap-x-2.5 gap-y-0.5 text-xs text-sub tabular-nums">

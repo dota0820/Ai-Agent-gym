@@ -102,10 +102,13 @@ export default function MeAiPage() {
         <button
           type="button"
           disabled={disabled}
+          aria-pressed={aiModel === ""}
           onClick={() => setAiModel("")}
           className="flex w-full items-start gap-3 px-4 py-3.5 text-left active:bg-bg disabled:cursor-not-allowed"
         >
-          <span className="mt-0.5 text-base">{aiModel === "" ? "◉" : "○"}</span>
+          <span className={`mt-0.5 text-base ${aiModel === "" ? "text-deep" : "text-sub"}`}>
+            {aiModel === "" ? "◉" : "○"}
+          </span>
           <div className="min-w-0 flex-1">
             <div className="font-semibold">
               默认推荐

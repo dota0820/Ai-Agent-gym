@@ -96,7 +96,7 @@ export default function MeProfilePage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2.5">
           {field("age", "年龄", "26", "numeric")}
           {field("heightCm", "身高 cm", "165", "numeric")}
           {field("weightKg", "体重 kg", "55", "numeric")}

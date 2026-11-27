@@ -36,9 +36,21 @@ export function partsOfWorkout(w: Workout, custom: CustomExercise[]): Set<BodyPa
   for (const e of w.exercises) {
     if (!e.sets.some((s) => s.done)) continue;
     const lib = findExerciseById(e.exerciseId, custom);
-    if (!lib) continue;
-    if (lib.primary.length) lib.primary.forEach((m) => out.add(MUSCLE_PART[m]));
-    else if ((BODY_PARTS as string[]).includes(lib.group)) out.add(lib.group as BodyPart);
+    if (lib) {
+      if (lib.primary.length) lib.primary.forEach((m) => { if (MUSCLE_PART[m]) out.add(MUSCLE_PART[m]); });
+      else if ((BODY_PARTS as string[]).includes(lib.group)) out.add(lib.group as BodyPart);
+      continue;
+    }
+    if (e.custom) {
+      if (e.custom.primary?.length) {
+        e.custom.primary.forEach((m) => {
+          const part = MUSCLE_PART[m as Muscle];
+          if (part) out.add(part);
+        });
+      } else if (e.custom.group && (BODY_PARTS as string[]).includes(e.custom.group)) {
+        out.add(e.custom.group as BodyPart);
+      }
+    }
   }
   return out;
 }
@@ -51,7 +63,9 @@ export function hoursSinceTrained(
 ): Partial<Record<BodyPart, number>> {
   const out: Partial<Record<BodyPart, number>> = {};
   for (const w of workouts) {
-    const h = (now - new Date(w.endedAt ?? w.startedAt).getTime()) / 36e5;
+    const ts = new Date(w.endedAt ?? w.startedAt).getTime();
+    if (Number.isNaN(ts)) continue;
+    const h = (now - ts) / 36e5;
     for (const p of partsOfWorkout(w, custom)) {
       if (out[p] === undefined || h < out[p]!) out[p] = Math.max(0, h);
     }

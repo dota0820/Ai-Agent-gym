@@ -1,11 +1,13 @@
 "use client";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function recognitionCtor(): any {
   if (typeof window === "undefined") return null;
   return (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition ?? null;
 }
+
+const noopSubscribe = () => () => {};
 
 /**
  * Speech-to-text using the browser's built-in recognition (Chrome / Edge / Safari).
@@ -19,7 +21,11 @@ export function useDictation(onText: (text: string, final: boolean) => void) {
   useEffect(() => {
     cb.current = onText;
   });
-  const supported = !!recognitionCtor();
+  const supported = useSyncExternalStore(
+    noopSubscribe,
+    () => !!recognitionCtor(),
+    () => false,
+  );
 
   const stop = useCallback(() => rec.current?.stop(), []);
 

@@ -32,8 +32,11 @@ async function post(
   body: Record<string, unknown>,
   model = OPENROUTER_MODEL,
   apiKey?: string,
+  signal?: AbortSignal,
 ): Promise<Response> {
   const key = apiKey || process.env.OPENROUTER_API_KEY;
+  const timeoutSignal = AbortSignal.timeout(90_000);
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
   const res = await fetch(ENDPOINT, {
     method: "POST",
     headers: {
@@ -42,6 +45,7 @@ async function post(
       "X-Title": "Gym Coach",
     },
     body: JSON.stringify({ model, ...body }),
+    signal: combinedSignal,
   });
   if (!res.ok) {
     const j = await res.json().catch(() => null);
@@ -85,19 +89,26 @@ async function streamTurn(
   send: (ev: unknown) => void,
   model = OPENROUTER_MODEL,
   apiKey?: string,
+  signal?: AbortSignal,
 ): Promise<{ text: string; calls: ToolCall[] }> {
-  const res = await post({ messages, tools, stream: true, max_tokens: 8000 }, model, apiKey);
+  const res = await post({ messages, tools, stream: true, max_tokens: 8000 }, model, apiKey, signal);
   const reader = res.body!.getReader();
   const dec = new TextDecoder();
   let buf = "";
   let text = "";
   const calls: ToolCall[] = [];
+  const emittedTools = new Set<number>();
 
   const handle = (line: string) => {
     if (!line.startsWith("data:")) return; // SSE comments / keep-alives
     const data = line.slice(5).trim();
     if (!data || data === "[DONE]") return;
-    const chunk = JSON.parse(data);
+    let chunk;
+    try {
+      chunk = JSON.parse(data);
+    } catch {
+      return; // ignore malformed or truncated SSE frame
+    }
     if (chunk.error)
       throw new OpenRouterError(chunk.error.code ?? 502, chunk.error.message ?? "");
     const delta = chunk.choices?.[0]?.delta;
@@ -122,7 +133,10 @@ async function streamTurn(
       if (tc.id) calls[i].id = tc.id;
       if (tc.function?.name) {
         calls[i].function.name += tc.function.name;
-        send({ type: "tool", name: calls[i].function.name });
+        if (!emittedTools.has(i) && COACH_TOOLS.some((t) => t.name === calls[i].function.name)) {
+          emittedTools.add(i);
+          send({ type: "tool", name: calls[i].function.name });
+        }
       }
       if (tc.function?.arguments) calls[i].function.arguments += tc.function.arguments;
     }
@@ -138,6 +152,7 @@ async function streamTurn(
       buf = buf.slice(i + 1);
     }
   }
+  buf += dec.decode();
   handle(buf.trim());
   const cleanCalls = calls.filter(Boolean).map((c, idx) => ({
     ...c,
@@ -153,6 +168,7 @@ export async function runOpenRouterChat(opts: {
   image?: string;
   model?: string;
   apiKey?: string;
+  signal?: AbortSignal;
   send: (ev: unknown) => void;
 }) {
   const { send } = opts;
@@ -173,7 +189,8 @@ export async function runOpenRouterChat(opts: {
   ];
 
   for (let iter = 0; iter < 6; iter++) {
-    const { text, calls } = await streamTurn(messages, send, model, opts.apiKey);
+    if (opts.signal?.aborted) return;
+    const { text, calls } = await streamTurn(messages, send, model, opts.apiKey, opts.signal);
     if (!calls.length) return;
     messages.push({ role: "assistant", content: text || null, tool_calls: calls });
     for (const call of calls) {
@@ -203,13 +220,39 @@ export async function runOpenRouterChat(opts: {
 }
 
 function extractJsonObject(raw: string): unknown {
-  const m = /\{[\s\S]*\}/.exec(raw);
-  if (!m) return null;
+  const trimmed = raw.trim();
   try {
-    return JSON.parse(m[0]);
+    return JSON.parse(trimmed);
   } catch {
-    return null;
+    // scan for balanced JSON object
   }
+  const start = trimmed.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < trimmed.length; i++) {
+    const ch = trimmed[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === "\\") esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        try {
+          return JSON.parse(trimmed.slice(start, i + 1));
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
 }
 
 export async function structuredOpenRouter<T>(opts: {

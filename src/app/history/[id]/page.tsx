@@ -126,11 +126,14 @@ function Detail() {
       ...e,
       sets: e.sets.map((st, j) => (j === k ? { ...st, ...patch } : st)),
     }));
-  const reviewQ = `我完成了 ${w.startedAt.slice(0, 10)} 的「${w.title}」,请点评这次训练,和上一次比怎么样,并告诉我下次的目标。`;
+  const reviewQ = `我完成了 ${localDate(w.startedAt)} 的「${w.title}」，请点评这次训练，和上一次比怎么样，并告诉我下次的目标。`;
 
   return (
     <div className="space-y-3">
-      <Link href="/history" className="text-sm text-sub">
+      <Link
+        href="/history"
+        className="-ml-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-sub"
+      >
         ‹ 训练记录
       </Link>
       <header>

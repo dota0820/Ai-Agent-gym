@@ -217,6 +217,8 @@ export interface Workout {
   feeling?: number;
   notes?: string;
   watch?: WatchData;
+  /** Epoch ms when the current rest countdown ends (cleared on finish). */
+  restEnd?: number | null;
 }
 
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";

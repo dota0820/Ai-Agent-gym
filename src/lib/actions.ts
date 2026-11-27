@@ -9,9 +9,11 @@ import {
   addCustomExercise,
   addMealLog,
   aiHeaders,
+  flushPersist,
   getState,
   historyForCoach,
   lastPerformance,
+  localDateStr,
   setsSummary,
   setState,
   setStateForProfile,
@@ -21,8 +23,9 @@ import type { ChatMsg, Guide, MealLog, Plan, Workout, WorkoutExercise } from "./
 
 // ───────── workouts ─────────
 
-function firstNumber(s?: string): number | null {
-  const m = s ? /(\d+(?:\.\d+)?)/.exec(s) : null;
+function parseWeightKg(s?: string): number | null {
+  if (!s) return null;
+  const m = /(\d+(?:\.\d+)?)\s*(?:kg|公斤)/i.exec(s);
   return m ? Number(m[1]) : null;
 }
 
@@ -45,7 +48,7 @@ export function newExercise(
   const last = lastPerformance(getState().workouts, base);
   const lastDone = last?.exercise.sets.filter((s) => s.done) ?? [];
   const n = opts.sets ?? (lastDone.length || 3);
-  const planned = /kg|公斤/i.test(opts.weight ?? "") ? firstNumber(opts.weight) : null;
+  const planned = parseWeightKg(opts.weight);
   return {
     ...base,
     target: opts.reps
@@ -126,11 +129,28 @@ export function repeatWorkout(w: Workout) {
 
 // ───────── coach chat ─────────
 
+const TOOL_LABELS: Record<string, string> = {
+  save_workout_plan: "正在为你排训练计划…",
+  log_workout: "正在记录这次训练…",
+  log_meal: "正在记录饮食与营养…",
+  save_custom_exercise: "正在保存到动作库…",
+  remember_note: "正在记住你的偏好…",
+};
+
 let busy = false;
+let activeTool = "";
+let activeAbort: AbortController | null = null;
 const busyListeners = new Set<() => void>();
+const toolListeners = new Set<() => void>();
+
 function setBusy(b: boolean) {
   busy = b;
   busyListeners.forEach((l) => l());
+}
+function setActiveTool(label: string) {
+  if (activeTool === label) return;
+  activeTool = label;
+  toolListeners.forEach((l) => l());
 }
 export function useCoachBusy() {
   return useSyncExternalStore(
@@ -142,6 +162,24 @@ export function useCoachBusy() {
     () => false,
   );
 }
+export function useCoachToolStatus() {
+  return useSyncExternalStore(
+    (l) => {
+      toolListeners.add(l);
+      return () => toolListeners.delete(l);
+    },
+    () => activeTool,
+    () => "",
+  );
+}
+export function abortCoach() {
+  if (activeAbort) {
+    activeAbort.abort();
+    activeAbort = null;
+  }
+}
+
+const MAX_CONTEXT_CHARS = 18_500;
 
 function buildContext(): string {
   const s = getState();
@@ -163,11 +201,11 @@ function buildContext(): string {
     `伤病/注意事项: ${p.injuries || "(无)"}`,
     "",
     "## 你之前记住的事",
-    p.memory.length ? p.memory.map((m) => `- ${m}`).join("\n") : "(暂无)",
+    p.memory.length ? p.memory.slice(-30).map((m) => `- ${m}`).join("\n") : "(暂无)",
     "",
     "## App 里当前的计划",
     s.plan
-      ? `${s.plan.title}(${s.plan.createdAt.slice(0, 10)} 制定): ${s.plan.items
+      ? `${s.plan.title}(${localDateStr(s.plan.createdAt) || s.plan.createdAt.slice(0, 10)} 制定): ${s.plan.items
           .map((i) => `${i.name} ${i.sets}×${i.reps}${i.weight ? ` ${i.weight}` : ""}`)
           .join(";")}`
       : "(暂无)",
@@ -193,7 +231,8 @@ function buildContext(): string {
     "## 今日饮食与营养师参考目标",
     nutritionContextForCoach(s.meals, p),
   ];
-  return lines.join("\n");
+  const full = lines.join("\n");
+  return full.length > MAX_CONTEXT_CHARS ? full.slice(0, MAX_CONTEXT_CHARS) + "\n...(部分历史已省略)" : full;
 }
 
 function historyForApi(chat: ChatMsg[]) {
@@ -208,7 +247,7 @@ function historyForApi(chat: ChatMsg[]) {
       if (m.logged) text += `\n[已记录训练: ${m.logged}]`;
       if (m.mealLogged) text += `\n[已记录饮食: ${m.mealLogged}]`;
       if (m.image !== undefined) text += "\n[用户在这条消息里发了一张照片]";
-      return { role: m.role, text: text.trim() };
+      return { role: m.role, text: text.trim().slice(0, 7500) };
     })
     .filter((m) => m.text);
   while (msgs.length && msgs[0].role !== "user") msgs.shift();
@@ -276,7 +315,6 @@ function toWorkout(w: any): Workout {
     title: w.title,
     focus: w.focus,
     startedAt: iso,
-    endedAt: iso,
     notes: w.notes,
     exercises: (w.exercises ?? []).map((e: any) => {
       const lib = findExerciseById(e.exercise_id, customExercises);
@@ -329,14 +367,21 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
   text = text.trim() || (photo ? "帮我看看这张照片" : "");
   if (!text || busy) return;
   const targetProfileId = getState().activeProfileId;
+  const controller = new AbortController();
+  activeAbort = controller;
   setBusy(true);
+  setActiveTool("");
   const ts = new Date().toISOString();
   const aid = uid();
-  const patchTargetMsg = (fn: (m: ChatMsg) => ChatMsg) =>
-    setStateForProfile(targetProfileId, (ws) => ({
-      ...ws,
-      chat: ws.chat.map((m) => (m.id === aid ? fn(m) : m)),
-    }));
+  const patchTargetMsg = (fn: (m: ChatMsg) => ChatMsg, deferPersist = false) =>
+    setStateForProfile(
+      targetProfileId,
+      (ws) => ({
+        ...ws,
+        chat: ws.chat.map((m) => (m.id === aid ? fn(m) : m)),
+      }),
+      { deferPersist },
+    );
   const initialContext = buildContext();
 
   setStateForProfile(targetProfileId, (ws) => ({
@@ -365,6 +410,7 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
   // Which step failed decides what we tell the user.
   let stage: "send" | "stream" = "send";
   let received = false;
+  let abortedByUser = false;
   try {
     const s = getState();
     const targetWs = s.profiles.find((p) => p.profile.id === targetProfileId);
@@ -372,6 +418,7 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
     const res = await fetch("/api/chat", {
       method: "POST",
       headers: aiHeaders(),
+      signal: controller.signal,
       body: JSON.stringify({
         messages: historyForApi(chatSnapshot.filter((m) => m.id !== aid)),
         context: initialContext,
@@ -405,16 +452,22 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
       received = true;
       try {
         if (ev.type === "text") {
-          patchTargetMsg((m) => ({ ...m, text: m.text + ev.text }));
+          setActiveTool("");
+          patchTargetMsg((m) => ({ ...m, text: m.text + ev.text }), true);
+        } else if (ev.type === "tool") {
+          setActiveTool(TOOL_LABELS[ev.name] ?? "正在处理操作…");
         } else if (ev.type === "plan") {
+          setActiveTool("");
           const plan = toPlan(ev.plan);
           setStateForProfile(targetProfileId, (ws) => ({ ...ws, plan }));
           patchTargetMsg((m) => ({ ...m, plan }));
         } else if (ev.type === "workout") {
+          setActiveTool("");
           const w = toWorkout(ev.workout);
           setStateForProfile(targetProfileId, (ws) => ({ ...ws, workouts: [...ws.workouts, w] }));
           patchTargetMsg((m) => ({ ...m, logged: w.title }));
         } else if (ev.type === "meal") {
+          setActiveTool("");
           const meal = toMeal(ev.meal);
           addMealLog(meal, targetProfileId);
           patchTargetMsg((m) => ({
@@ -422,6 +475,7 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
             mealLogged: `${meal.summary} (${meal.calories} kcal · 蛋白 ${meal.protein}g)`,
           }));
         } else if (ev.type === "exercise") {
+          setActiveTool("");
           const ex = customExerciseFromGuide(
             ev.exercise.name,
             ev.exercise.name_en,
@@ -430,11 +484,13 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
           addCustomExercise(ex);
           patchTargetMsg((m) => ({ ...m, exerciseAdded: ex.name }));
         } else if (ev.type === "memory") {
+          setActiveTool("");
           setStateForProfile(targetProfileId, (ws) => ({
             ...ws,
             profile: { ...ws.profile, memory: [...ws.profile.memory, ev.note] },
           }));
         } else if (ev.type === "error") {
+          setActiveTool("");
           fail(ev.error);
         }
       } catch (err) {
@@ -453,40 +509,57 @@ export async function sendToCoach(text: string, photo?: { full: string; thumb: s
         buf = buf.slice(i + 1);
       }
     }
+    buf += dec.decode();
     handle(buf);
   } catch (err) {
-    console.error("coach request failed", stage, err);
-    const detail = err instanceof Error && err.message ? `(${err.message.slice(0, 80)})` : "";
-    if (typeof navigator !== "undefined" && navigator.onLine === false)
-      fail("手机现在没有网络,连上网后再发一次。");
-    else if (stage === "send")
-      fail(`连不上 App 的服务器,消息没有发出去。请检查网络后再发一次。${detail}`);
-    else if (received)
-      fail("回复传到一半断了(可能是网络不稳,或教练想得太久超时)。上面是已经收到的部分,请再发一次。");
-    else fail(`服务器没有回应就断开了,请再发一次。${detail}`);
+    if (controller.signal.aborted || (err instanceof DOMException && err.name === "AbortError")) {
+      abortedByUser = true;
+    } else {
+      console.error("coach request failed", stage, err);
+      const detail = err instanceof Error && err.message ? `(${err.message.slice(0, 80)})` : "";
+      if (typeof navigator !== "undefined" && navigator.onLine === false)
+        fail("手机现在没有网络,连上网后再发一次。");
+      else if (stage === "send")
+        fail(`连不上 App 的服务器,消息没有发出去。请检查网络后再发一次。${detail}`);
+      else if (received)
+        fail("回复传到一半断了(可能是网络不稳,或教练想得太久超时)。上面是已经收到的部分,请再发一次。");
+      else fail(`服务器没有回应就断开了,请再发一次。${detail}`);
+    }
   } finally {
+    if (activeAbort === controller) activeAbort = null;
+    setActiveTool("");
     patchTargetMsg((m) => {
       const choices = extractChoices(m.text);
+      const cleaned = visibleText(m.text);
       return {
         ...m,
         choices: choices.length ? choices : undefined,
         text:
-          visibleText(m.text) ||
-          (m.plan || m.logged || m.mealLogged || m.exerciseAdded ? "" : "⚠️ 教练没有回复,请再试一次。"),
+          cleaned ||
+          (abortedByUser
+            ? "(已停止生成)"
+            : m.plan || m.logged || m.mealLogged || m.exerciseAdded
+              ? ""
+              : "⚠️ 教练没有回复,请再试一次。"),
       };
     });
+    flushPersist();
     setBusy(false);
   }
 }
 
 export async function fileToJpegDataUrl(file: File, max = 1568): Promise<string> {
   const bmp = await createImageBitmap(file);
-  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
-  const c = document.createElement("canvas");
-  c.width = Math.round(bmp.width * scale);
-  c.height = Math.round(bmp.height * scale);
-  c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
-  return c.toDataURL("image/jpeg", 0.85);
+  try {
+    const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement("canvas");
+    c.width = Math.round(bmp.width * scale);
+    c.height = Math.round(bmp.height * scale);
+    c.getContext("2d")!.drawImage(bmp, 0, 0, c.width, c.height);
+    return c.toDataURL("image/jpeg", 0.85);
+  } finally {
+    bmp.close();
+  }
 }
 
 /**

@@ -127,8 +127,20 @@ textarea,
 select {
   font-size: 16px; /* prevents iOS zoom on focus */
 }
-.safe-b {
-  padding-bottom: env(safe-area-inset-bottom);
+@layer utilities {
+  .safe-b {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+  .safe-b-4 {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 /* text on accent fills follows the theme */

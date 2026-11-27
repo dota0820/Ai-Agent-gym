@@ -17,6 +17,11 @@ export function findExerciseById(
   return EX_BY_ID[id] ?? customExercises.find((c) => c.id === id);
 }
 
+export function allExercises(customExercises: CustomExercise[] = []): AnyExercise[] {
+  const sortedCustom = [...customExercises].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  return [...sortedCustom, ...EXERCISES];
+}
+
 export function listAllExercises(
   g: ExtendedLibGroup,
   sub = "",

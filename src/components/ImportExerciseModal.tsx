@@ -67,13 +67,18 @@ export default function ImportExerciseModal({
           image: photo?.full,
         }),
       });
-      const j = await res.json();
-      if (!res.ok) {
-        setError(j.error ?? "解析失败，请补充说明或图片再试。");
+      const j = await res.json().catch(() => null);
+      if (!res.ok || !j?.exercise) {
+        setError(j?.error ?? "解析失败，请补充说明或图片再试。");
         return;
       }
       setDraft({
         ...j.exercise,
+        cues: Array.isArray(j.exercise.cues) ? j.exercise.cues : [],
+        steps: Array.isArray(j.exercise.steps) ? j.exercise.steps : [],
+        mistakes: Array.isArray(j.exercise.mistakes) ? j.exercise.mistakes : [],
+        primary: Array.isArray(j.exercise.primary) ? j.exercise.primary : [],
+        secondary: Array.isArray(j.exercise.secondary) ? j.exercise.secondary : [],
         sourceUrl: j.sourceUrl,
         sourcePlatform: j.sourcePlatform,
         imageUrl: photo?.thumb || j.imageUrl,
@@ -83,6 +88,11 @@ export default function ImportExerciseModal({
     } finally {
       setBusy(false);
     }
+  }
+
+  function tryClose() {
+    if ((draft || rawInput.trim()) && !window.confirm("还有未保存的内容，确定关闭吗？")) return;
+    onClose();
   }
 
   function save() {
@@ -114,19 +124,27 @@ export default function ImportExerciseModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/45" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end bg-black/45 backdrop-blur-[1px]" onClick={tryClose}>
       <div
-        className="safe-b mx-auto max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-bg p-5"
+        className="safe-b rise-in mx-auto max-h-[90dvh] w-full max-w-md overflow-y-auto overscroll-contain rounded-t-3xl bg-bg px-5 pb-5 pt-2.5"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
+        aria-modal="true"
         aria-label="从链接导入动作"
       >
-        <div className="mb-3 flex items-center justify-between">
+        <div className="flex justify-center pb-2">
+          <span className="h-1 w-10 rounded-full bg-line" aria-hidden />
+        </div>
+        <div className="mb-3 flex items-center justify-between gap-2">
           <div>
             <h2 className="text-lg font-bold">从视频 / 链接添加动作</h2>
             <p className="text-xs text-sub">支持 YouTube、小红书、Facebook 分享文案或截图</p>
           </div>
-          <button className="text-sm text-sub" onClick={onClose}>
+          <button
+            type="button"
+            className="min-h-10 rounded-full px-3 text-sm font-semibold text-sub active:bg-line/50"
+            onClick={tryClose}
+          >
             关闭
           </button>
         </div>

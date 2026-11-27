@@ -23,7 +23,6 @@ export default function MeGymPage() {
       equipment: "",
       details: {},
     };
-    saveProfileGyms([...gyms, created], created.id);
     setEditing(created);
   }
 

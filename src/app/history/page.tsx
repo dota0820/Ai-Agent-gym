@@ -176,10 +176,10 @@ function HistoryContent() {
                         </p>
                       )}
                       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-sub">
-                        {durationMin(w) && <span>⏱ {durationMin(w)} 分钟</span>}
+                        {(durationMin(w) ?? 0) > 0 && <span>⏱ {durationMin(w)} 分钟</span>}
                         {volume(w) > 0 && <span>总重量 {volume(w)} kg</span>}
-                        {w.watch?.calories && <span>{w.watch.calories} 千卡</span>}
-                        {w.watch?.avgHr && <span>心率 {w.watch.avgHr} bpm</span>}
+                        {(w.watch?.calories ?? 0) > 0 && <span>{w.watch!.calories} 千卡</span>}
+                        {(w.watch?.avgHr ?? 0) > 0 && <span>心率 {w.watch!.avgHr} bpm</span>}
                       </div>
                     </Card>
                   </Link>

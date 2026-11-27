@@ -3,7 +3,7 @@ import Link from "next/link";
 import { wrongFeel } from "@/lib/exercise-extras";
 import { findExerciseById, isCustomExercise } from "@/lib/exercise-lookup";
 import { videoUrl } from "@/lib/exercises";
-import { getState, useApp } from "@/lib/store";
+import { getState, safeHttpUrl, useApp } from "@/lib/store";
 import type { CustomExercise, Exercise, Guide as G } from "@/lib/types";
 import AttachmentTip from "./AttachmentTip";
 import ExerciseCover from "./ExerciseCover";
@@ -143,12 +143,12 @@ export default function Guide({
       )}
 
       <div className="flex flex-wrap gap-4">
-        {sourceUrl && (
+        {safeHttpUrl(sourceUrl) && (
           <a
-            href={sourceUrl}
+            href={safeHttpUrl(sourceUrl)}
             target="_blank"
-            rel="noreferrer"
-            className="inline-block text-[15px] font-semibold text-deep underline underline-offset-2"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-10 items-center text-[15px] font-semibold text-deep underline underline-offset-2"
           >
             ▶ 打开原视频 ({sourcePlatform || "来源"})
           </a>
@@ -156,8 +156,8 @@ export default function Guide({
         <a
           href={videoUrl(name, nameEn)}
           target="_blank"
-          rel="noreferrer"
-          className="inline-block text-[15px] font-semibold text-deep underline underline-offset-2"
+          rel="noopener noreferrer"
+          className="inline-flex min-h-10 items-center text-[15px] font-semibold text-deep underline underline-offset-2"
         >
           ▶ YouTube 搜示范视频
         </a>
