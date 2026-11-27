@@ -433,8 +433,8 @@ export default function WorkoutPage() {
               )}
             </div>
 
-            <div className="px-3">
-              <div className="grid grid-cols-[20px_1fr_0.9fr_44px] items-center gap-1.5 py-1 text-center text-xs text-sub">
+            <div className="px-4">
+              <div className="grid grid-cols-[28px_1fr_1fr_52px] items-center gap-2 py-1 text-center text-xs text-sub">
                 <span>组</span>
                 <span>重量 kg</span>
                 <span>{timed ? "时长(秒)" : "次数"}</span>
@@ -454,14 +454,13 @@ export default function WorkoutPage() {
                   : undefined;
                 return (
                   <div key={k}>
-                    <div className="grid grid-cols-[20px_1fr_0.9fr_44px] items-center gap-1.5 py-1">
-                      <span className="num text-center text-base font-bold text-sub">
+                    <div className="grid grid-cols-[28px_1fr_1fr_52px] items-center gap-2 py-1">
+                      <span className="num text-center text-lg font-bold text-sub">
                         {k + 1}
                       </span>
                       <NumInput
                         decimal
-                        step={2.5}
-                        className={`${input} num h-11 px-1 text-center !text-xl font-bold placeholder:!text-sm placeholder:font-normal ${s.done ? "bg-mint-soft" : ""}`}
+                        className={`${input} num h-12 text-center !text-2xl font-bold placeholder:!text-base placeholder:font-normal ${s.done ? "bg-mint-soft" : ""}`}
                         placeholder="自重"
                         aria-label={`${ex.name} 第 ${k + 1} 组重量`}
                         value={s.weight}
@@ -475,8 +474,7 @@ export default function WorkoutPage() {
                         }
                       />
                       <NumInput
-                        step={timed ? 5 : 1}
-                        className={`${input} num h-11 px-1 text-center !text-xl font-bold placeholder:!text-sm placeholder:font-normal ${s.done ? "bg-mint-soft" : ""}`}
+                        className={`${input} num h-12 text-center !text-2xl font-bold placeholder:!text-base placeholder:font-normal ${s.done ? "bg-mint-soft" : ""}`}
                         placeholder="—"
                         aria-label={`${ex.name} 第 ${k + 1} 组${timed ? "时长" : "次数"}`}
                         value={s.reps}
@@ -494,17 +492,17 @@ export default function WorkoutPage() {
                         aria-label={`${ex.name} 第 ${k + 1} 组${s.done ? "取消完成" : "完成"}`}
                         aria-pressed={s.done}
                         onClick={() => toggleSet(i, k)}
-                        className={`flex h-11 items-center justify-center rounded-xl ${
+                        className={`flex h-12 items-center justify-center rounded-xl ${
                           s.done
                             ? "bg-primary text-white"
                             : "border-2 border-line bg-surface text-sub"
                         }`}
                       >
-                        <Icon name="check" size={20} stroke={3} />
+                        <Icon name="check" size={22} stroke={3} />
                       </button>
                     </div>
                     {s.done && !timed && (
-                      <div className="mb-1.5 ml-[26px] space-y-1.5">
+                      <div className="mb-1.5 ml-[36px] space-y-1.5">
                         {s.rir == null ? (
                           <div className="flex items-center gap-1.5">
                             <span className="shrink-0 text-[11px] text-sub">
