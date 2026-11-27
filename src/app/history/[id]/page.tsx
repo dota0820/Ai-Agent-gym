@@ -57,7 +57,7 @@ function Delta({ cur, prev }: { cur: WorkoutExercise; prev: WorkoutExercise }) {
   }
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}
+      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${cls}`}
     >
       {text}
     </span>
@@ -206,7 +206,7 @@ function Detail() {
           ].map((x) => (
             <div key={x.l} className="rounded-xl bg-bg/80 py-2">
               <div className="num text-xl font-bold leading-tight">{x.v ?? "—"}</div>
-              <div className="text-[11px] text-sub">
+              <div className="text-xs text-sub">
                 {x.l}
                 {x.v ? ` ${x.u}` : ""}
               </div>
@@ -300,7 +300,7 @@ function Detail() {
                     删除
                   </button>
                 </div>
-                <div className="grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2 text-center text-[11px] text-sub">
+                <div className="grid grid-cols-[28px_1fr_1fr_36px] items-center gap-2 text-center text-xs text-sub">
                   <span>组</span>
                   <span>重量 kg</span>
                   <span>次数</span>

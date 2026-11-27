@@ -319,7 +319,7 @@ export default function GymWizardModal({
               <div className="text-sm font-bold">
                 {draft.name.trim() || "健身房"}
               </div>
-              <div className="text-[11px] text-sub">
+              <div className="text-xs text-sub">
                 第 {step + 1} / {STEPS.length} 步 · {currentStep.title} · 已选{" "}
                 {selected.length} 项
               </div>
@@ -339,7 +339,7 @@ export default function GymWizardModal({
                 key={s.id}
                 type="button"
                 onClick={() => setStep(idx)}
-                className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold transition ${
+                className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold transition ${
                   idx === step
                     ? "bg-primary text-white"
                     : "bg-bg text-sub active:bg-primary-soft active:text-deep"
@@ -489,7 +489,7 @@ export default function GymWizardModal({
                               {spec ? ` (${spec})` : ""}
                             </div>
                             {hint && (
-                              <div className="mt-0.5 text-[11px] text-sub">
+                              <div className="mt-0.5 text-xs text-sub">
                                 {hint}
                               </div>
                             )}
@@ -579,7 +579,7 @@ export default function GymWizardModal({
                             </span>
                             {hint && (
                               <span
-                                className={`mt-1 text-[11px] leading-snug ${
+                                className={`mt-1 text-xs leading-snug ${
                                   on ? "text-white/85" : "text-sub"
                                 }`}
                               >
@@ -587,7 +587,7 @@ export default function GymWizardModal({
                               </span>
                             )}
                             {on && spec && (
-                              <span className="mt-1 rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-semibold">
+                              <span className="mt-1 rounded bg-white/20 px-1.5 py-0.5 text-xs font-semibold">
                                 {spec}
                               </span>
                             )}
@@ -616,7 +616,7 @@ export default function GymWizardModal({
                           {cur && (
                             <button
                               type="button"
-                              className="shrink-0 text-[11px] text-sub underline"
+                              className="shrink-0 text-xs text-sub underline"
                               onClick={() => setDetail(item, "")}
                             >
                               清除

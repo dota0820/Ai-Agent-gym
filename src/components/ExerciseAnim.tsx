@@ -71,7 +71,7 @@ export default function ExerciseAnim({
                 }`}
               />
             ))}
-            <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">
+            <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
               {frame === 0 ? "① 起始" : "② 发力到位"}
             </span>
           </div>
@@ -85,19 +85,19 @@ export default function ExerciseAnim({
                   onError={() => setFailedId(id)}
                   className="aspect-[3/2] w-full object-cover"
                 />
-                <span className="absolute left-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-[11px] font-semibold text-white">
+                <span className="absolute left-1.5 top-1.5 rounded-full bg-black/60 px-2 py-0.5 text-xs font-semibold text-white">
                   {i === 0 ? "① 起始" : "② 发力到位"}
                 </span>
               </div>
             ))}
           </div>
         )}
-        <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-[11px] text-white">
+        <span className="absolute bottom-2 right-2 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white">
           {playing ? "点一下暂停，看两张对比" : "▶ 点一下播放"}
         </span>
       </button>
       {note && !compact && <figcaption className="mt-1.5 text-xs text-sub">{note}</figcaption>}
-      {note && compact && <figcaption className="mt-1 text-[11px] text-sub">{note}</figcaption>}
+      {note && compact && <figcaption className="mt-1 text-xs text-sub">{note}</figcaption>}
     </figure>
   );
 }

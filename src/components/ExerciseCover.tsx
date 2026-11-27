@@ -46,7 +46,7 @@ export default function ExerciseCover({
             className="h-full w-full object-cover"
           />
           {ex.sourcePlatform && (
-            <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+            <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2.5 py-0.5 text-xs font-semibold text-white">
               {ex.sourcePlatform}
             </span>
           )}

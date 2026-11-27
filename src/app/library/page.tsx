@@ -197,7 +197,7 @@ function Library() {
                     {pills.map((p) => (
                       <span
                         key={p.text}
-                        className={`rounded-full px-2 py-0.5 text-[11px] ${p.cls}`}
+                        className={`rounded-full px-2 py-0.5 text-xs ${p.cls}`}
                       >
                         {p.text}
                       </span>
@@ -211,7 +211,7 @@ function Library() {
         })}
       </ul>
 
-      <p className="mt-4 text-center text-[11px] text-sub">
+      <p className="mt-4 text-center text-xs text-sub">
         free-exercise-db · BodyParts3D
       </p>
 

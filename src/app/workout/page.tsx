@@ -87,7 +87,7 @@ function AdviceLine({
       {onApply && (
         <button
           onClick={onApply}
-          className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-[11px] font-bold shadow-sm"
+          className="shrink-0 rounded-full bg-surface px-2.5 py-1 text-xs font-bold shadow-sm"
         >
           改成 {advice.weight}kg
         </button>
@@ -505,7 +505,7 @@ export default function WorkoutPage() {
                       <div className="mb-1.5 ml-[36px] space-y-1.5">
                         {s.rir == null ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="shrink-0 text-[11px] text-sub">
+                            <span className="shrink-0 text-xs text-sub">
                               余力
                             </span>
                             {RIR_OPTIONS.map((r) => (
@@ -533,7 +533,7 @@ export default function WorkoutPage() {
                             <span className="text-sub">{rirWords(s.rir)}</span>
                             {verdict && (
                               <span
-                                className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${VERDICT_STYLE[verdict]}`}
+                                className={`rounded-full px-2 py-0.5 text-xs font-semibold ${VERDICT_STYLE[verdict]}`}
                               >
                                 {VERDICT_TEXT[verdict]}
                               </span>

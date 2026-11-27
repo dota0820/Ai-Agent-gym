@@ -170,7 +170,7 @@ export default function ExercisePicker({
                             {sub ? `${e.nameEn ? " · " : ""}${sub}` : ""}
                           </span>
                           {isCustomExercise(e) && (
-                            <span className="mt-1 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-deep">
+                            <span className="mt-1 inline-block rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-deep">
                               {e.sourcePlatform ? `来自 ${e.sourcePlatform}` : "自定义"}
                             </span>
                           )}

@@ -118,7 +118,7 @@ function HistoryContent() {
                   {x.v}
                   <span className="ml-0.5 text-xs font-semibold text-sub">{x.u}</span>
                 </div>
-                <div className="text-[11px] text-sub">{x.l}</div>
+                <div className="text-xs text-sub">{x.l}</div>
               </div>
             ))}
           </div>
@@ -127,7 +127,7 @@ function HistoryContent() {
             <Card>
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-xs font-semibold text-sub">核心动作进步</span>
-                <span className="text-[11px] text-sub">近 90 天</span>
+                <span className="text-xs text-sub">近 90 天</span>
               </div>
               <ProgressChart items={progressItems} />
             </Card>
@@ -245,7 +245,7 @@ function HistoryContent() {
                       <div className="flex items-baseline justify-between gap-2">
                         <div className="flex items-baseline gap-2">
                           <span className="text-sm font-bold">{fmtDateKey(dateKey)}</span>
-                          <span className="text-[11px] text-sub tabular-nums">{dateKey}</span>
+                          <span className="text-xs text-sub tabular-nums">{dateKey}</span>
                         </div>
                         <Link
                           href={`/food?date=${dateKey}`}
@@ -286,7 +286,7 @@ function HistoryContent() {
                             )}
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center justify-between gap-2">
-                                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-deep">
+                                <span className="rounded-full bg-primary-soft px-2 py-0.5 text-xs font-semibold text-deep">
                                   {mt.emoji} {mt.label} · {time}
                                 </span>
                                 <button

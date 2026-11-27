@@ -160,7 +160,7 @@ function Detail() {
                 {sub ? ` › ${sub.label}` : ""}
               </span>
               {custom && (
-                <span className="rounded-full bg-mint-soft px-2 py-0.5 text-[11px] text-mint">
+                <span className="rounded-full bg-mint-soft px-2 py-0.5 text-xs text-mint">
                   {e.sourcePlatform ? `${e.sourcePlatform}` : "自定义动作"}
                 </span>
               )}

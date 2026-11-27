@@ -81,7 +81,7 @@ function Card({
                   key={f}
                   className="flex gap-2.5 text-[15px] leading-relaxed"
                 >
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mint-soft text-[12px] font-bold text-mint">
+                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-mint-soft text-xs font-bold text-mint">
                     {i + 1}
                   </span>
                   {f}
@@ -114,7 +114,7 @@ function Card({
                           ▶
                         </span>
                       )}
-                      <span className="block truncate px-2 py-1.5 text-[12px] font-semibold">
+                      <span className="block truncate px-2 py-1.5 text-xs font-semibold">
                         {e.name}
                       </span>
                     </Link>

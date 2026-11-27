@@ -56,7 +56,7 @@ export default function MeAiPage() {
         <div className="flex items-center justify-between gap-2">
           <div className="text-sm font-bold">OpenRouter API Key</div>
           <span
-            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+            className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
               hasAnyKey ? "bg-mint-soft text-mint" : "bg-red-50 text-red-600"
             }`}
           >
@@ -154,7 +154,7 @@ export default function MeAiPage() {
                       <div className="font-semibold">{m.label}</div>
                       <div className="text-xs text-sub">{m.note}</div>
                     </div>
-                    <span className="shrink-0 pt-0.5 text-right text-[11px] tabular-nums text-sub">
+                    <span className="shrink-0 pt-0.5 text-right text-xs tabular-nums text-sub">
                       {fmtPrice(m.price)}
                     </span>
                   </button>
@@ -221,11 +221,11 @@ export default function MeAiPage() {
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block text-sm font-semibold">{m.name}</span>
-                            <span className="block break-all font-mono text-[11px] text-sub">
+                            <span className="block break-all font-mono text-xs text-sub">
                               {m.id}
                             </span>
                           </span>
-                          <span className="shrink-0 text-[11px] tabular-nums text-sub">
+                          <span className="shrink-0 text-xs tabular-nums text-sub">
                             {fmtPrice(m.price)}
                           </span>
                         </button>

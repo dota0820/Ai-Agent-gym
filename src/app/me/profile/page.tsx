@@ -156,19 +156,19 @@ export default function MeProfilePage() {
         <div className="grid grid-cols-4 gap-2 text-center">
           <div className="rounded-xl bg-bg p-2.5">
             <div className="text-base font-bold text-deep">{target.calories}</div>
-            <div className="text-[11px] text-sub">热量 kcal</div>
+            <div className="text-xs text-sub">热量 kcal</div>
           </div>
           <div className="rounded-xl bg-bg p-2.5">
             <div className="text-base font-bold">{target.protein}g</div>
-            <div className="text-[11px] text-sub">蛋白质</div>
+            <div className="text-xs text-sub">蛋白质</div>
           </div>
           <div className="rounded-xl bg-bg p-2.5">
             <div className="text-base font-bold">{target.carbs}g</div>
-            <div className="text-[11px] text-sub">碳水</div>
+            <div className="text-xs text-sub">碳水</div>
           </div>
           <div className="rounded-xl bg-bg p-2.5">
             <div className="text-base font-bold">{target.fat}g</div>
-            <div className="text-[11px] text-sub">脂肪</div>
+            <div className="text-xs text-sub">脂肪</div>
           </div>
         </div>
       </Card>

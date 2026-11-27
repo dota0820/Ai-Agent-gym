@@ -32,7 +32,7 @@ export default function MuscleMap({
               style={{ width: "100%", maxWidth: 150, margin: "0 auto", padding: 0 }}
               svgStyle={{ pointerEvents: "none" }}
             />
-            <div className="mt-1 text-[11px] text-sub">{type === "anterior" ? "正面" : "背面"}</div>
+            <div className="mt-1 text-xs text-sub">{type === "anterior" ? "正面" : "背面"}</div>
           </div>
         ))}
       </div>

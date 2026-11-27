@@ -28,6 +28,11 @@
   --radius-xl: 1rem;
   --radius-2xl: 1.375rem;
   --radius-3xl: 1.75rem;
+  /* one tidy type scale: nothing smaller than 13px */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.35;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.45;
 }
 [data-theme="frost"] {
   color-scheme: light;

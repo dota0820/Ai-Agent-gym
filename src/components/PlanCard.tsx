@@ -33,7 +33,7 @@ export default function PlanCard({
           onClick={() => setCollapsed(false)}
           className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
         >
-          <span className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-bold text-deep">
+          <span className="shrink-0 rounded-full bg-primary-soft px-2 py-0.5 text-xs font-bold text-deep">
             计划
           </span>
           <span className="min-w-0 flex-1 truncate text-sm font-bold">{plan.title}</span>
@@ -118,7 +118,7 @@ export default function PlanCard({
                     {it.targetRir != null ? ` · ${targetRirWords(it.targetRir)}` : ""}
                   </span>
                   {target && (
-                    <span className="mt-0.5 block text-[11px] font-semibold text-deep">
+                    <span className="mt-0.5 block text-xs font-semibold text-deep">
                       {target}
                     </span>
                   )}

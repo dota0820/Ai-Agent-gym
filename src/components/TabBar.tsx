@@ -31,7 +31,7 @@ export default function TabBar() {
               <Link
                 href={t.href}
                 aria-current={on ? "page" : undefined}
-                className={`flex flex-col items-center gap-0.5 pt-1.5 pb-2 text-[11px] ${
+                className={`flex flex-col items-center gap-0.5 pt-1.5 pb-2 text-xs ${
                   on ? "font-bold text-deep" : "text-sub"
                 }`}
               >

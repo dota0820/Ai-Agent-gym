@@ -64,7 +64,7 @@ export default function MeGymPage() {
                     <span className="truncate font-semibold">{g.name}</span>
                     {g.scene && <span className="truncate text-xs text-sub">{g.scene}</span>}
                     {isCurrent && (
-                      <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-deep">
+                      <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-deep">
                         当前
                       </span>
                     )}

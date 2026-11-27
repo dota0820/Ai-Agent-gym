@@ -101,7 +101,7 @@ export default function ChatThreadsSheet({
           ) : (
             groups.map((g) => (
               <div key={g.label} className="space-y-1.5">
-                <div className="px-1 text-[11px] font-semibold text-sub">{g.label}</div>
+                <div className="px-1 text-xs font-semibold text-sub">{g.label}</div>
                 <ul className="space-y-1.5">
                   {g.list.map((t) => {
                     const active = t.id === activeThreadId;
@@ -127,7 +127,7 @@ export default function ChatThreadsSheet({
                           <div className="truncate text-sm font-semibold text-ink">
                             {t.title || "新对话"}
                           </div>
-                          <div className="mt-0.5 text-[11px] text-sub">
+                          <div className="mt-0.5 text-xs text-sub">
                             {count} 轮提问 · {t.updatedAt.slice(5, 10).replace("-", "/")}
                           </div>
                         </button>

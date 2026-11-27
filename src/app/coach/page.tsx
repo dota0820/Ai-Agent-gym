@@ -198,7 +198,7 @@ function Coach() {
           >
             <Icon name="menu" size={18} />
             {threads.length > 0 && (
-              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-xs font-bold text-white">
                 {threads.length}
               </span>
             )}
@@ -528,7 +528,7 @@ function Coach() {
               )}
             </button>
           </div>
-          <p className="mt-1.5 text-center text-[11px] text-sub">
+          <p className="mt-1.5 text-center text-xs text-sub">
             AI 仅供参考，不适请停止
           </p>
         </div>

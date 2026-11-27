@@ -47,7 +47,7 @@ export default function ProgressChart({ items }: { items: ExerciseProgress[] }) 
           </span>
           {delta !== 0 && (
             <span
-              className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+              className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                 delta > 0 ? "bg-mint-soft text-mint" : "bg-primary-soft text-deep"
               }`}
             >
@@ -55,7 +55,7 @@ export default function ProgressChart({ items }: { items: ExerciseProgress[] }) 
             </span>
           )}
         </div>
-        <div className="flex rounded-full bg-bg p-0.5 text-[11px] font-semibold">
+        <div className="flex rounded-full bg-bg p-0.5 text-xs font-semibold">
           <button
             type="button"
             onClick={() => setMetric("weight")}
