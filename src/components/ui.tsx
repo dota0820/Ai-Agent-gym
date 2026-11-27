@@ -11,7 +11,7 @@ export function Card({
 }) {
   return (
     <div
-      className={`rounded-3xl bg-card p-5 ${className}`}
+      className={`lift rounded-3xl bg-card p-5 ${className}`}
     >
       {children}
     </div>
@@ -66,7 +66,7 @@ export function SubPage({ title, children }: { title: string; children: ReactNod
       <header className="flex items-center gap-3">
         <Link
           href="/me"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card text-ink"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-card text-ink lift"
           aria-label="返回我的"
         >
           <Icon name="chevronLeft" size={22} />

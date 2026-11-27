@@ -2,8 +2,14 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { repeatWorkout, startFree } from "@/lib/actions";
-import { getProfileGyms } from "@/lib/equipment";
+import { startFree, startFromPlan } from "@/lib/actions";
+import { computeStreakWeeks } from "@/lib/analytics";
+import {
+  computeNutritionTargets,
+  localDateKey,
+  mealsForDate,
+  sumMealMacros,
+} from "@/lib/nutrition";
 import { planMinutes } from "@/lib/plan-time";
 import { subsFor } from "@/lib/exercises";
 import {
@@ -36,15 +42,12 @@ export default function StartFlow({ name }: { name: string }) {
   const theme = useTheme();
   const router = useRouter();
   const [sheet, setSheet] = useState(false);
-  const { workouts, customExercises, active, plan, profile } = useApp();
+  const { workouts, customExercises, active, plan, profile, meals } = useApp();
   const [now] = useState(() => Date.now());
   const recovery = hoursSinceTrained(workouts, customExercises, now);
   const tip = todaySuggestion(workouts, customExercises, now);
   const dots = weekDots(workouts, now);
   const weekCount = dots.filter((d) => d.done).length;
-  const lastWorkout = [...workouts].sort((a, b) =>
-    b.startedAt.localeCompare(a.startedAt),
-  )[0];
   const hasRecovering = Object.values(recovery).some(
     (h) => h !== undefined && h < RECOVERY_HOURS,
   );
@@ -124,215 +127,387 @@ export default function StartFlow({ name }: { name: string }) {
   };
 
   const goal = Math.max(1, parseInt(profile.daysPerWeek, 10) || 3);
-  const left = goal - weekCount;
-  const gymName = getProfileGyms(profile).activeGym.name;
+  const pct = Math.min(100, Math.round((weekCount / goal) * 100));
+  const streak = computeStreakWeeks(workouts, now);
+  const today = new Date(now);
+  const dateLabel = `周${"日一二三四五六"[today.getDay()]} · ${today.getMonth() + 1}月${today.getDate()}日`;
+  const tipLabel = GROUPS.find((g) => g.id === tip.part)?.label;
 
-  // the one dark card: what to do today
-  const hero: {
-    label: string;
-    title: string;
-    sub: string;
-    meta: string;
-    minutes?: number;
-    cta: string;
-    run: () => void;
-  } = active
-    ? {
-        label: "训练进行中",
-        title: active.title,
-        sub: `已经记了 ${active.exercises.length} 个动作`,
-        meta: "做完记得点结束",
-        cta: "继续训练",
-        run: () => router.push("/workout"),
-      }
+  const cta: { label: string; run: () => void } = active
+    ? { label: "继续训练", run: () => router.push("/workout") }
     : plan
       ? {
-          label: "今天的专属计划",
-          title: plan.title,
-          sub: plan.focus,
-          meta: `${plan.items.length} 个动作  ·  ${plan.items.reduce((n, it) => n + it.sets, 0)} 组`,
-          minutes: planMinutes(plan),
-          cta: "查看训练计划",
-          run: () => router.push("/plan"),
+          label: "开始今日训练",
+          run: () => {
+            startFromPlan(plan);
+            router.push("/workout");
+          },
         }
       : tip.part
-        ? {
-            label: "今天推荐",
-            title: `练${GROUPS.find((g) => g.id === tip.part)?.label}`,
-            sub: tip.text,
-            meta: "回答三个小问题，教练帮你排好",
-            cta: "安排今天的训练",
-            run: () => pick(tip.part!),
-          }
+        ? { label: `安排今天练${tipLabel}`, run: () => pick(tip.part!) }
         : {
-            label: "今天",
-            title: "开始训练",
-            sub: "边练边记，教练会帮你对比上次",
-            meta: "新手友好",
-            cta: "开始记录",
+            label: "开始训练",
             run: () => {
               startFree();
               router.push("/workout");
             },
           };
 
+  const food = computeNutritionTargets(profile);
+  const eaten = sumMealMacros(mealsForDate(meals, localDateKey(today)));
+  const macroRows = [
+    { label: "蛋白质", v: eaten.protein, t: food.protein, color: "#2f6c00" },
+    { label: "碳水化合物", v: eaten.carbs, t: food.carbs, color: "#fbbf24" },
+    { label: "脂肪", v: eaten.fat, t: food.fat, color: "#ff5a36" },
+  ];
+
   const quick: {
     label: string;
-    sub: string;
     icon: IconName;
+    chip: string;
     run: () => void;
   }[] = [
     {
-      label: "问问教练",
-      sub: "不知道练什么?",
-      icon: "chat",
-      run: () => router.push("/coach"),
-    },
-    {
-      label: "记一餐",
-      sub: "吃好,也是训练",
-      icon: "food",
+      label: "记饮食",
+      icon: "addPhoto",
+      chip: "bg-[#fff4d6] text-[#c98a00]",
       run: () => router.push("/food"),
     },
-    ...(lastWorkout && !active && lastWorkout.exercises.length
-      ? [
-          {
-            label: "再练上次",
-            sub: lastWorkout.title,
-            icon: "dumbbell" as IconName,
-            run: () => {
-              repeatWorkout(lastWorkout);
-              router.push("/workout");
-            },
-          },
-        ]
-      : []),
+    {
+      label: "录训练",
+      icon: "dumbbell",
+      chip: "bg-primary text-forest",
+      run: () => {
+        if (active) return router.push("/workout");
+        startFree();
+        router.push("/workout");
+      },
+    },
     {
       label: "避坑指南",
-      sub: "新手常见错误",
       icon: "bulb",
+      chip: "bg-[#ffe6df] text-[#e0482a]",
       run: () => router.push("/learn"),
+    },
+    {
+      label: "问教练",
+      icon: "forum",
+      chip: "bg-forest text-primary",
+      run: () => router.push("/coach"),
     },
   ];
 
   return (
-    <section className="space-y-7">
-      {/* overview */}
-      <div>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-[24px] font-bold">练练</span>
-          <button
-            onClick={() => setSheet(true)}
-            aria-label="切换人物和健身房"
-            className="flex h-[34px] max-w-[60%] items-center gap-2 rounded-full bg-card pl-3.5 pr-3 text-[12px] font-medium"
-          >
-            <span className="truncate">
-              {name ? `${name} · ` : ""}
-              {gymName}
+    <section className="space-y-4">
+      {/* app bar */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="font-['Space_Grotesk'] text-[22px] font-bold tracking-tight text-forest">
+            练练
+          </span>
+          {streak.currentWeeks > 0 && (
+            <span className="lift flex items-center gap-1 rounded-full bg-card px-2.5 py-1 text-[12px] font-bold text-forest">
+              <Icon name="flame" size={16} fill className="text-[#fbbf24]" />
+              {streak.currentWeeks}周
             </span>
-            <Icon name="chevronDown" size={14} />
-          </button>
+          )}
         </div>
-        <h1 className="mt-4 text-[30px] font-bold leading-tight">
-          每一次，都算进步。
-        </h1>
+        <button
+          onClick={() => setSheet(true)}
+          aria-label="切换人物和健身房"
+          className="flex h-9 items-center gap-2 rounded-full pl-3 text-[12px] font-semibold text-sub"
+        >
+          <span className="max-w-[9rem] truncate">{name || "我"}</span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-deep text-white">
+            <Icon name="user" size={19} />
+          </span>
+        </button>
+      </div>
 
-        <p className="mt-5 text-[13px] font-medium text-sub">本周训练</p>
-        <div className="flex items-end justify-between gap-3">
-          <div className="flex items-baseline gap-2">
-            <span className="display-num text-[76px] leading-none">
+      {/* greeting */}
+      <div className="flex items-end justify-between gap-3 pt-1">
+        <div className="min-w-0">
+          <p className="text-[12px] font-semibold tracking-wider text-sub">
+            {dateLabel}
+          </p>
+          <h1 className="mt-1 text-[26px] font-bold leading-tight">
+            今天也要全力以赴
+          </h1>
+        </div>
+        <span className="mb-1 flex shrink-0 items-center gap-1 rounded-full bg-primary-soft px-3 py-1.5 text-[11px] font-bold text-forest">
+          <Icon name="bolt" size={16} fill className="text-deep" />
+          {weekCount >= goal ? "本周已达标" : `本周还差 ${goal - weekCount} 次`}
+        </span>
+      </div>
+
+      {/* hero */}
+      <div className="relative overflow-hidden rounded-[28px] bg-forest p-5 text-white shadow-md">
+        <div className="pointer-events-none absolute -right-12 -top-12 h-48 w-48 rounded-full bg-primary/10 blur-2xl" />
+        <div className="relative flex items-start justify-between">
+          <div>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold tracking-wide text-primary">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
+              {active ? "训练进行中" : "本周训练进度"}
+            </span>
+            <p className="mt-2 text-[13px] text-white/70">本周目标达成度</p>
+          </div>
+          <div className="relative flex h-14 w-14 items-center justify-center">
+            <svg
+              viewBox="0 0 36 36"
+              className="h-full w-full -rotate-90"
+              aria-hidden
+            >
+              <circle
+                cx="18"
+                cy="18"
+                r="15.9"
+                fill="none"
+                stroke="rgba(255,255,255,.1)"
+                strokeWidth="3.5"
+              />
+              <circle
+                cx="18"
+                cy="18"
+                r="15.9"
+                fill="none"
+                stroke="#9fe870"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeDasharray={`${pct} 100`}
+                pathLength={100}
+              />
+            </svg>
+            <span className="absolute text-[12px] font-bold text-primary">
+              {pct}%
+            </span>
+          </div>
+        </div>
+        <div className="relative my-4">
+          <div className="flex items-baseline gap-1.5">
+            <span className="display-num text-[44px] leading-none text-primary">
               {weekCount}
             </span>
-            <span className="text-[21px] font-medium text-sub">
+            <span className="font-['Space_Grotesk'] text-[22px] font-semibold text-primary/80">
               / {goal} 次
             </span>
           </div>
-          <span className="mb-3 shrink-0 rounded-full bg-primary px-4 py-2 text-[12px] font-medium">
-            {left > 0 ? `离目标只差 ${left} 次` : "本周目标达成"}
+          <p className="mt-2 text-[13px] text-white/70">
+            {active
+              ? `${active.title} · 已记 ${active.exercises.length} 个动作`
+              : tip.text}
+          </p>
+        </div>
+        <button
+          onClick={cta.run}
+          className="relative flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-[16px] font-bold text-forest shadow-[0_8px_24px_rgba(159,232,112,0.25)] active:scale-[0.98]"
+        >
+          {cta.label}
+          <Icon name="arrowRight" size={20} />
+        </button>
+      </div>
+
+      {/* AI plan */}
+      <div className="lift rounded-[28px] bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-soft text-forest">
+              <Icon name="robot" size={20} />
+            </span>
+            <h2 className="text-[16px] font-bold">AI 私教个性化方案</h2>
+          </div>
+          <span className="rounded-full bg-bg px-2.5 py-1 text-[11px] font-semibold text-sub">
+            {plan ? "已排好" : "按恢复推荐"}
           </span>
         </div>
+        <div className="mt-3 rounded-[20px] bg-bg p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="truncate text-[19px] font-bold text-forest">
+                {plan
+                  ? plan.title
+                  : tipLabel
+                    ? `今天推荐练${tipLabel}`
+                    : "让教练帮你排今天"}
+              </div>
+              <p className="mt-1 text-[13px] leading-snug text-sub">
+                {plan
+                  ? plan.note || plan.focus
+                  : tip.text || "告诉教练时间和状态,马上排好"}
+              </p>
+            </div>
+            <Icon name="dumbbell" size={24} className="text-deep" />
+          </div>
+          {plan && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {[
+                {
+                  l: "动作组合",
+                  v: plan.items.length,
+                  u: "个",
+                  c: "text-forest",
+                },
+                {
+                  l: "预估时长",
+                  v: planMinutes(plan),
+                  u: "分钟",
+                  c: "text-[#ff5a36]",
+                },
+                {
+                  l: "训练总量",
+                  v: plan.items.reduce((n, it) => n + it.sets, 0),
+                  u: "组",
+                  c: "text-deep",
+                },
+              ].map((x) => (
+                <div key={x.l} className="lift rounded-2xl bg-card px-3 py-2.5">
+                  <div className="text-[11px] font-semibold text-sub">
+                    {x.l}
+                  </div>
+                  <div className={`mt-1 flex items-baseline gap-0.5 ${x.c}`}>
+                    <span className="display-num text-[22px] leading-none">
+                      {x.v}
+                    </span>
+                    <span className="text-[12px] font-bold">{x.u}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="mt-3 flex items-center justify-between px-1 text-[12px] font-semibold">
+          <span className="flex items-center gap-1.5 text-sub">
+            <Icon name="checkCircle" size={17} className="text-deep" />
+            按你的恢复情况安排
+          </span>
+          {plan ? (
+            <Link href="/plan" className="flex items-center text-deep">
+              查看动作详情
+              <Icon name="chevronRight" size={18} />
+            </Link>
+          ) : (
+            <button
+              onClick={() =>
+                tip.part ? pick(tip.part) : router.push("/coach")
+              }
+              className="flex items-center text-deep"
+            >
+              让教练排计划
+              <Icon name="chevronRight" size={18} />
+            </button>
+          )}
+        </div>
+      </div>
 
-        <ul
-          className="mt-5 grid grid-cols-7 gap-[9px]"
-          aria-label={`本周已经练了 ${weekCount} 天`}
-        >
+      {/* food */}
+      <Link href="/food" className="lift block rounded-[28px] bg-card p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon name="food" size={22} className="text-[#fbbf24]" />
+            <h2 className="text-[16px] font-bold">饮食能量监控</h2>
+          </div>
+          <span className="text-[12px] font-bold text-forest">
+            {eaten.calories
+              ? `剩余 ${Math.max(0, food.calories - eaten.calories)} kcal`
+              : "今天还没记录"}
+          </span>
+        </div>
+        <div className="mt-3 flex items-baseline gap-1.5">
+          <span className="display-num text-[30px] leading-none text-forest">
+            {eaten.calories.toLocaleString()}
+          </span>
+          <span className="text-[14px] text-sub">
+            / {food.calories.toLocaleString()} kcal
+          </span>
+        </div>
+        <div className="mt-3 space-y-2.5">
+          {macroRows.map((m) => {
+            const p = m.t ? Math.min(100, Math.round((m.v / m.t) * 100)) : 0;
+            return (
+              <div key={m.label}>
+                <div className="flex justify-between text-[12px]">
+                  <span className="text-sub">
+                    {m.label} {Math.round(m.v)}g / {m.t}g
+                  </span>
+                  <span className="font-bold text-forest">{p}%</span>
+                </div>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-bg">
+                  <div
+                    className="h-full rounded-full"
+                    style={{ width: `${p}%`, background: m.color }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Link>
+
+      {/* week rhythm */}
+      <div className="lift rounded-[28px] bg-card p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[16px] font-bold">本周训练节律</h2>
+          <span className="text-[12px] font-semibold text-sub">
+            目标 {goal} 次 / 已完成 {weekCount} 次
+          </span>
+        </div>
+        <ul className="mt-3 grid grid-cols-7 gap-1.5">
           {dots.map((d) => (
-            <li key={d.label} className="flex flex-col items-center gap-3">
-              <span className="text-[11px] text-sub">{d.label}</span>
+            <li
+              key={d.label}
+              className={`flex flex-col items-center gap-2 rounded-2xl py-2.5 ${d.today ? "bg-primary-soft" : "bg-bg"}`}
+            >
               <span
-                className={`flex aspect-square w-full max-w-[42px] items-center justify-center rounded-full text-[14px] tabular-nums ${
-                  d.done
-                    ? "bg-ink text-white"
-                    : d.today
-                      ? "bg-primary font-bold"
-                      : "bg-card"
-                }`}
-                aria-label={`${d.label} ${d.done ? "练过" : ""}`}
+                className={`text-[11px] ${d.today ? "font-bold text-forest" : "text-sub"}`}
               >
-                {d.done ? <Icon name="check" size={20} /> : d.date}
+                周{d.label}
+              </span>
+              <span
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-[12px] font-bold ${
+                  d.done
+                    ? "bg-forest text-white"
+                    : d.today
+                      ? "bg-primary text-forest"
+                      : "text-[#b5bcb0]"
+                }`}
+              >
+                {d.done ? (
+                  <Icon name="check" size={18} stroke={2.5} />
+                ) : d.today ? (
+                  "今"
+                ) : d.future ? (
+                  <Icon name="dumbbell" size={17} />
+                ) : (
+                  <Icon name="bed" size={17} />
+                )}
               </span>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* today */}
-      <div className="rounded-3xl bg-ink p-5 text-white">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[13px] font-medium text-primary">{hero.label}</p>
-            <h2 className="mt-2 text-[30px] font-bold leading-tight text-white">
-              {hero.title}
-            </h2>
-            <p className="mt-2 text-[13px] leading-snug text-[#cedcc5]">
-              {hero.sub}
-            </p>
-            <p className="mt-2 text-[12px] text-[#cedcc5]">{hero.meta}</p>
-          </div>
-          {hero.minutes != null && (
-            <div className="flex h-[70px] w-[78px] shrink-0 flex-col items-center justify-center rounded-[18px] bg-[#294715] text-primary">
-              <span className="display-num text-[30px] leading-none">
-                {hero.minutes}
-              </span>
-              <span className="mt-1.5 text-[11px]">分钟</span>
-            </div>
-          )}
-        </div>
-        <button
-          onClick={hero.run}
-          className="mt-6 flex h-[47px] w-full items-center justify-between rounded-full bg-primary pl-6 pr-5 text-[14px] font-bold"
-        >
-          {hero.cta}
-          <Icon name="arrowRight" size={22} />
-        </button>
-      </div>
-
-      {/* quick actions */}
-      <div>
-        <h2 className="text-[16px] font-bold">你的健身搭子，随时在。</h2>
-        <div className="mt-4 grid grid-cols-2 gap-3">
-          {quick.map((a) => (
+      {/* quick */}
+      <div className="pt-1">
+        <h2 className="mb-2.5 px-1 text-[15px] font-bold">常用快捷记录</h2>
+        <div className="grid grid-cols-4 gap-2.5">
+          {quick.map((q) => (
             <button
-              key={a.label}
-              onClick={a.run}
-              className="flex min-h-[76px] items-start gap-3 rounded-[20px] bg-card px-3.5 py-3 text-left active:scale-[0.98]"
+              key={q.label}
+              onClick={q.run}
+              className="lift flex flex-col items-center gap-2 rounded-[22px] bg-card py-3.5 active:scale-[0.97]"
             >
-              <span className="mt-1 shrink-0">
-                <Icon name={a.icon} size={22} />
+              <span
+                className={`flex h-12 w-12 items-center justify-center rounded-full ${q.chip}`}
+              >
+                <Icon name={q.icon} size={24} />
               </span>
-              <span className="min-w-0">
-                <span className="block text-[14px] font-bold">{a.label}</span>
-                <span className="mt-1.5 block truncate text-[11px] text-sub">
-                  {a.sub}
-                </span>
-              </span>
+              <span className="text-[12px] font-semibold">{q.label}</span>
             </button>
           ))}
         </div>
       </div>
 
       {/* body + parts */}
-      <div className="overflow-hidden rounded-3xl bg-card">
+      <div className="lift overflow-hidden rounded-[28px] bg-card">
         <div className="flex items-start justify-between gap-3 px-5 pt-5">
           <div>
             <h2 className="text-[17px] font-bold">想练哪里?</h2>

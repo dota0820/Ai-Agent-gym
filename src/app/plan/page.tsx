@@ -24,7 +24,7 @@ export default function PlanPage() {
         type="button"
         onClick={() => router.back()}
         aria-label="返回"
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-card"
+        className="lift flex h-10 w-10 items-center justify-center rounded-full bg-card"
       >
         <Icon name="chevronLeft" size={22} />
       </button>

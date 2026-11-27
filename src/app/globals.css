@@ -5,30 +5,30 @@
  * The list shown in the picker lives in src/lib/theme.ts.
  * Colours are CSS variables so every screen follows the active theme.
  */
-/* Cream + forest green + lime, from the app's Figma design: cream pages,
- * soft sage panels without borders, forest-green text, lime for the main action
- * and for "done". */
+/* Cool white pages, white rounded cards with a soft shadow, a forest-green
+ * hero colour, lime for the main action and for "done". */
 :root,
 [data-theme="fresh"] {
   color-scheme: light;
-  --c-bg: #f7f9f2;
-  --c-card: #e9eedd;
-  --c-surface: #f7f9f2;
-  --c-ink: #163300;
-  --c-sub: #65715c;
-  --c-line: #dfe5d8;
+  --c-bg: #f1f4f6;
+  --c-card: #ffffff;
+  --c-surface: #ffffff;
+  --c-ink: #181c1e;
+  --c-sub: #5c6457;
+  --c-line: #e5e9eb;
   --c-primary: #9fe870;
-  --c-primary-soft: #dde9cf;
+  --c-primary-soft: #e3f6d4;
   --c-mint: #9fe870;
-  --c-mint-soft: #dde9cf;
+  --c-mint-soft: #e3f6d4;
   --c-on-accent: #163300;
-  --c-body: #dfe5d8;
+  --c-body: #e0e3e5;
   --c-muscle: #9fe870;
-  --c-muscle-2: #cdeeb6;
-  --c-deep: #163300;
+  --c-muscle-2: #c5eba3;
+  --c-deep: #2f6c00;
+  --c-forest: #163300;
   --radius-xl: 0.875rem;
   --radius-2xl: 1.25rem;
-  --radius-3xl: 1.5rem;
+  --radius-3xl: 1.75rem;
   /* one tidy type scale: nothing smaller than 13px */
   --text-xs: 0.8125rem;
   --text-xs--line-height: 1.4;
@@ -135,6 +135,7 @@
   --color-primary: var(--c-primary);
   --color-primary-soft: var(--c-primary-soft);
   --color-deep: var(--c-deep);
+  --color-forest: var(--c-forest, #163300);
   --color-mint: var(--c-mint);
   --color-mint-soft: var(--c-mint-soft);
   --font-sans: "Inter Variable", "Noto Sans SC", -apple-system, BlinkMacSystemFont, "PingFang SC",
@@ -306,7 +307,7 @@ html[data-mode="gym"] .bg-amber-50 {
 }
 
 .msg-user {
-  background: var(--c-primary);
+  background: var(--c-primary-soft);
   color: var(--c-ink);
 }
 .msg-ai strong {
@@ -329,6 +330,7 @@ html[data-mode="gym"] .bg-amber-50 {
 .chat-bar {
   background: var(--c-card);
   border: 1px solid transparent;
+  box-shadow: 0 4px 20px rgba(22, 51, 0, 0.07);
 }
 .chat-bar:focus-within {
   border-color: color-mix(in srgb, var(--c-primary) 55%, var(--c-line));
@@ -346,16 +348,51 @@ html[data-mode="gym"] .bg-amber-50 {
 }
 
 /* ───────── Fresh theme details ─────────
- * Matches the Figma: bold Noto Sans SC headings, Inter for numbers, cards are
- * flat sage fills, so borders on cards fade into the fill.
+ * Headings and big numbers in Space Grotesk (CJK falls back to Noto Sans SC),
+ * forest-green headings, white cards lifted by a soft shadow instead of lines.
  */
 [data-theme="fresh"] h1,
 [data-theme="fresh"] h2 {
-  letter-spacing: -0.01em;
+  font-family: "Space Grotesk", var(--font-sans);
+  letter-spacing: -0.02em;
+}
+html:not([data-mode="gym"])[data-theme="fresh"] h1,
+html:not([data-mode="gym"])[data-theme="fresh"] h2 {
+  color: var(--c-forest);
+}
+html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink h1,
+html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink h2,
+html:not([data-mode="gym"])[data-theme="fresh"] .bg-forest h1,
+html:not([data-mode="gym"])[data-theme="fresh"] .bg-forest h2 {
+  color: #ffffff;
 }
 html:not([data-mode="gym"])[data-theme="fresh"] .bg-card.border-line,
 html:not([data-mode="gym"])[data-theme="fresh"] .bg-card.border {
   border-color: transparent;
+}
+[data-theme="fresh"] .msg-user {
+  background: #163300;
+  color: #ffffff;
+}
+.lift {
+  box-shadow: 0 2px 14px rgba(22, 51, 0, 0.05);
+}
+.ms {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  white-space: nowrap;
+  direction: ltr;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "liga";
 }
 /* lime is for fills; as text on white it is unreadable, so success text uses moss */
 html:not([data-mode="gym"])[data-theme="fresh"] .text-mint {
@@ -364,21 +401,15 @@ html:not([data-mode="gym"])[data-theme="fresh"] .text-mint {
 [data-theme="fresh"] .bg-primary {
   color: var(--c-on-accent);
 }
-html:not([data-mode="gym"])[data-theme="fresh"] .send-btn {
-  background: var(--c-ink);
-  color: #ffffff;
-}
-html:not([data-mode="gym"])[data-theme="fresh"] .send-btn span {
-  background: #ffffff;
-}
+
 /* dark fills keep white text (the generic on-accent rule would make it moss) */
 html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink.text-white,
 html:not([data-mode="gym"])[data-theme="fresh"] .bg-ink [class*="text-white"] {
   color: #ffffff;
 }
 .display-num {
-  font-family: "Inter Variable", var(--font-sans);
+  font-family: "Space Grotesk", var(--font-sans);
   font-variant-numeric: tabular-nums;
   font-weight: 700;
-  letter-spacing: -0.03em;
+  letter-spacing: -0.04em;
 }
