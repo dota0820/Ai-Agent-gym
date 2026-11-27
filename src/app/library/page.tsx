@@ -53,12 +53,12 @@ function Library() {
       <div className="mb-4">
         <RecordSwitch on="library" />
       </div>
-      <H1 sub="点开动作看动图示范、练到哪块肌肉；也可贴小红书/FB/YouTube 链接导入">动作库</H1>
+      <H1>动作库</H1>
 
       <div className="relative mb-3">
         <input
           className={`${input} pr-10`}
-          placeholder="搜索动作名称、英文或器械…"
+          placeholder="搜索动作或器械…"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -80,7 +80,7 @@ function Library() {
         className={`${btnSoft} mb-3 w-full border border-primary/25`}
       >
         <Icon name="link" size={18} className="mr-1.5" />
-        从小红书 / FB / YouTube 链接导入新动作
+        链接导入动作
       </button>
 
       {!trimmedQuery && (
@@ -122,7 +122,7 @@ function Library() {
 
           {g === "shape" && (
             <p className="mb-3 rounded-2xl bg-card p-3 text-sm leading-relaxed text-sub">
-              给想塑造身形的新手挑的入门动作：重点练臀腿、把背和肩练挺、收紧腰腹。重量从轻的开始，不会练成“大块头”。
+              入门塑形 · 臀腿 / 背肩 / 核心
             </p>
           )}
         </>
@@ -140,9 +140,9 @@ function Library() {
           <div className="flex justify-center text-deep">
             <Icon name="video" size={28} />
           </div>
-          <p className="mt-2 text-sm font-semibold">还没有导入过外部视频动作</p>
+          <p className="mt-2 text-sm font-semibold">暂无导入动作</p>
           <p className="mt-1 text-xs leading-relaxed text-sub">
-            在小红书、Facebook 或 YouTube 看到喜欢的练臀/练背教学，点上方按钮把链接或分享文案贴进来，AI 会自动帮你整理成标准动作卡。
+            贴入小红书 / YouTube 链接即可导入
           </p>
         </div>
       )}
@@ -153,6 +153,22 @@ function Library() {
           const sLabel = anySubLabel(e, g);
           const custom = isCustomExercise(e);
           const primaryLabel = e.primary[0] ? MUSCLE_LABEL[e.primary[0]]?.split("(")[0] : undefined;
+          const pills = [
+            custom && {
+              text: e.sourcePlatform || "自定义",
+              cls: "bg-mint-soft font-semibold text-mint",
+            },
+            sLabel && {
+              text: sLabel,
+              cls: "bg-primary-soft font-semibold text-deep",
+            },
+            primaryLabel && {
+              text: primaryLabel,
+              cls: "bg-bg text-sub",
+            },
+          ]
+            .filter((x): x is { text: string; cls: string } => Boolean(x))
+            .slice(0, 2);
           return (
             <li key={e.id}>
               <Link
@@ -178,21 +194,14 @@ function Library() {
                     {e.nameEn || e.equipment}
                   </span>
                   <span className="mt-1 flex flex-wrap gap-1">
-                    {custom && (
-                      <span className="rounded-full bg-mint-soft px-2 py-0.5 text-[11px] font-semibold text-mint">
-                        {e.sourcePlatform || "自定义"}
+                    {pills.map((p) => (
+                      <span
+                        key={p.text}
+                        className={`rounded-full px-2 py-0.5 text-[11px] ${p.cls}`}
+                      >
+                        {p.text}
                       </span>
-                    )}
-                    {sLabel && (
-                      <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[11px] font-semibold text-deep">
-                        {sLabel}
-                      </span>
-                    )}
-                    {primaryLabel && (
-                      <span className="rounded-full bg-bg px-2 py-0.5 text-[11px] text-sub">
-                        {primaryLabel}
-                      </span>
-                    )}
+                    ))}
                   </span>
                 </span>
                 <Icon name="chevronRight" size={16} className="shrink-0 text-sub" />
@@ -203,7 +212,7 @@ function Library() {
       </ul>
 
       <p className="mt-4 text-center text-[11px] text-sub">
-        内置示范照片来自公共领域的 free-exercise-db 开源动作库 · 3D 人体模型:BodyParts3D © DBCLS(CC BY-SA 2.1 JP)
+        free-exercise-db · BodyParts3D
       </p>
 
       {showImport && (

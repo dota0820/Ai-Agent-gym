@@ -21,7 +21,7 @@ export default function Home() {
             className="flex shrink-0 items-center gap-1.5 rounded-full bg-mint-soft px-3 py-1.5 text-xs font-semibold text-mint"
           >
             <span className="h-2 w-2 animate-pulse rounded-full bg-mint" />
-            训练进行中 · 继续 ›
+            继续训练 ›
           </Link>
         )}
       </div>
@@ -31,10 +31,7 @@ export default function Home() {
       {!profile.goal && (
         <Link href="/me" className="block">
           <Card className="border-primary/30 bg-primary-soft">
-            <div className="font-semibold text-deep">先让教练认识你 →</div>
-            <p className="mt-1 text-sm text-ink/70">
-              花 1 分钟填一下目标和健身房器械,教练的安排会更适合你。
-            </p>
+            <div className="font-semibold text-deep">完善目标与器械 →</div>
           </Card>
         </Link>
       )}

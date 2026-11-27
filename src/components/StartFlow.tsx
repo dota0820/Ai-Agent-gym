@@ -102,7 +102,7 @@ export default function StartFlow({ name }: { name: string }) {
 
   const questions = [
     {
-      title: `${group?.label ?? ""}想重点练哪里?`,
+      title: "重点部位",
       options: ["都练", ...subs.map((s) => s.label)],
       onPick: (v: string) => {
         setFocus(v === "都练" ? "" : v);
@@ -110,7 +110,7 @@ export default function StartFlow({ name }: { name: string }) {
       },
     },
     {
-      title: "今天有多少时间?",
+      title: "训练时长",
       options: TIMES,
       onPick: (v: string) => {
         setTime(v);
@@ -118,7 +118,7 @@ export default function StartFlow({ name }: { name: string }) {
       },
     },
     {
-      title: "今天状态怎么样?",
+      title: "今日状态",
       options: ENERGY.map((e) => e.label),
       onPick: (v: string) => {
         setEnergy(v);
@@ -132,7 +132,7 @@ export default function StartFlow({ name }: { name: string }) {
 
   return (
     <section>
-      <div className="min-h-[76px]">
+      <div className="min-h-[56px]">
         <h1
           className={`text-[30px] font-bold leading-tight tracking-tight ${
             animate && !line1.done ? "caret" : ""
@@ -142,7 +142,7 @@ export default function StartFlow({ name }: { name: string }) {
         </h1>
         {line2On && (
           <p className={`mt-1 text-lg font-semibold text-deep ${animate ? "rise-in" : ""}`}>
-            今天想做什么?
+            今天练哪？
           </p>
         )}
       </div>
@@ -181,7 +181,7 @@ export default function StartFlow({ name }: { name: string }) {
               <Icon name="chat" size={18} />
             </span>
             <span className="min-w-0 flex-1 leading-snug">{tip.text}</span>
-            {tip.part && <span className="shrink-0 font-bold text-deep">就练这个 ›</span>}
+            {tip.part && <span className="shrink-0 font-bold text-deep">去练 ›</span>}
           </button>
         </div>
       )}
@@ -193,8 +193,8 @@ export default function StartFlow({ name }: { name: string }) {
           }`}
         >
           <div className="flex items-center justify-between px-4 pt-3 text-xs font-semibold text-sub">
-            <span>选一个部位</span>
-            <span className="text-deep">{group ? `已选 · ${group.label}` : "转动 · 点选部位"}</span>
+            <span>点选部位</span>
+            <span className="text-deep">{group ? group.label : "拖动旋转"}</span>
           </div>
           {!no3d && (
             <div className="h-[340px]">
@@ -212,17 +212,17 @@ export default function StartFlow({ name }: { name: string }) {
             <div className="flex items-center justify-center gap-4 pb-1 text-[11px] text-sub">
               <span className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#aab0bd]" />
-                灰色 = 恢复中({RECOVERY_HOURS} 小时内练过)
+                恢复中
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-[#c24c40]" />
-                红色 = 可以练
+                可练
               </span>
             </div>
           )}
           {no3d && (
             <p className="px-4 py-6 text-center text-sm text-sub">
-              这台手机显示不了 3D 模型,用下面的按钮选部位也一样。
+              点下方选部位
             </p>
           )}
           <div className="flex gap-2 overflow-x-auto px-3 pb-3">
@@ -242,8 +242,8 @@ export default function StartFlow({ name }: { name: string }) {
             ))}
             {[
               { label: "有氧", q: "今天想做有氧,帮我安排一下" },
-              { label: "拉伸放松", q: "今天想做拉伸和活动度放松,帮我安排一下" },
-              { label: "帮我决定", q: "我不知道今天该练什么,你根据我的记录帮我决定吧" },
+              { label: "拉伸", q: "今天想做拉伸和活动度放松,帮我安排一下" },
+              { label: "AI 推荐", q: "我不知道今天该练什么,你根据我的记录帮我决定吧" },
             ].map((x) => (
               <button
                 key={x.label}
@@ -267,7 +267,7 @@ export default function StartFlow({ name }: { name: string }) {
           className="mt-2 flex w-full items-center justify-center gap-2 rounded-2xl border border-line bg-card px-3 py-2.5 text-sm font-semibold"
         >
           <span aria-hidden>↻</span>
-          <span className="truncate">再练一次上次的「{lastWorkout.title}」</span>
+          <span className="truncate">再练 · {lastWorkout.title}</span>
         </button>
       )}
 

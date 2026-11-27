@@ -61,9 +61,10 @@ export default function Body3D({
     let cleanup = () => {};
 
     (async () => {
-      const [THREE, { GLTFLoader }] = await Promise.all([
+      const [THREE, { GLTFLoader }, { DRACOLoader }] = await Promise.all([
         import("three"),
         import("three/examples/jsm/loaders/GLTFLoader.js"),
+        import("three/examples/jsm/loaders/DRACOLoader.js"),
       ]);
       if (disposed) return;
       let renderer: import("three").WebGLRenderer;
@@ -83,7 +84,16 @@ export default function Body3D({
         });
       };
 
-      const gltf = await new GLTFLoader().loadAsync("/models/anatomy.glb");
+      const draco = new DRACOLoader();
+      draco.setDecoderPath("/draco/");
+      const loader = new GLTFLoader();
+      loader.setDRACOLoader(draco);
+      let gltf: import("three/examples/jsm/loaders/GLTFLoader.js").GLTF;
+      try {
+        gltf = await loader.loadAsync("/models/anatomy.glb");
+      } finally {
+        draco.dispose();
+      }
       if (disposed) {
         disposeObj(gltf.scene);
         renderer.dispose();

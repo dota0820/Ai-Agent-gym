@@ -29,7 +29,7 @@ import {
 } from "@/lib/store";
 import { MEAL_TYPES, type MealItem, type MealLog, type MealType } from "@/lib/types";
 import { useDictation } from "@/lib/voice";
-import { btnGhost, btnPrimary, btnSoft, Card, H1, input } from "@/components/ui";
+import { btnGhost, btnPrimary, Card, input } from "@/components/ui";
 
 interface MealDraft {
   editingId?: string;
@@ -59,14 +59,12 @@ function MacroBar({
   barColor: string;
 }) {
   const pct = target > 0 ? Math.min(100, Math.round((val / target) * 100)) : 0;
-  const diff = Math.round(target - val);
   return (
     <div>
       <div className="flex items-baseline justify-between text-xs">
-        <span className="font-semibold">{label}</span>
+        <span className="font-semibold text-ink">{label}</span>
         <span className="tabular-nums text-sub">
           <strong className="text-ink">{Math.round(val)}</strong> / {target} {unit}
-          {diff > 0 ? ` · 还差 ${diff}` : diff < 0 ? ` · 超 ${Math.abs(diff)}` : " · 达标"}
         </span>
       </div>
       <div className="mt-1 h-2 overflow-hidden rounded-full bg-bg">
@@ -285,10 +283,9 @@ function FoodContent() {
   const askCoachPrompt = `我现在已摄入 ${totals.calories} 千卡（蛋白质 ${totals.protein}g、碳水 ${totals.carbs}g、脂肪 ${totals.fat}g），目标是 ${targets.calories} 千卡、蛋白质 ${targets.protein}g。请根据我今天的状态建议下一餐吃什么好？`;
 
   return (
-    <div className="space-y-4">
-      <ProfileChip />
-      <div className="flex items-start justify-between gap-2">
-        <H1 sub="拍照片或说一句话，AI 营养师帮你算热量、蛋白质、碳水和脂肪">饮食营养</H1>
+    <div className="space-y-3.5">
+      <div className="flex items-center justify-between gap-2">
+        <ProfileChip />
         <div className="flex shrink-0 items-center gap-1 rounded-full border border-line bg-card p-1 text-xs font-semibold">
           <button
             type="button"
@@ -311,41 +308,34 @@ function FoodContent() {
         </div>
       </div>
 
-      <Card className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xs font-semibold text-sub">
-              {fmtDateKey(dateKey)}营养进度{" "}
-              {targets.isCustom
-                ? "(自定义目标)"
-                : targets.missingBodyStats
-                  ? "(默认参考 · 填身高体重更准)"
-                  : `(${profile.heightCm}cm/${profile.weightKg}kg · BMR ${targets.bmr})`}
-            </div>
-            <div className="num mt-0.5 text-4xl font-bold">
-              {totals.calories}
-              <span className="text-sm font-normal text-sub"> / {targets.calories} kcal</span>
-            </div>
+      <Card className="space-y-4">
+        <div className="flex items-start justify-between gap-2">
+          <div className="num flex items-baseline gap-1.5 leading-none">
+            <span className="text-5xl font-bold tracking-tight text-ink">{totals.calories}</span>
+            <span className="text-lg font-semibold text-sub">/ {targets.calories}</span>
+            <span className="text-xs font-semibold text-sub">kcal</span>
           </div>
           <button
             type="button"
-            className="rounded-full bg-bg px-3 py-1 text-xs font-semibold text-sub"
+            className="mt-1 rounded-full bg-bg px-3 py-1 text-xs font-semibold text-sub"
             onClick={() => setEditTargets(!editTargets)}
           >
-            {editTargets ? "收起目标" : "调目标"}
+            {editTargets ? "完成" : "目标"}
           </button>
         </div>
 
         <div className="h-2.5 overflow-hidden rounded-full bg-bg">
           <div
-            className="h-full rounded-full bg-primary transition-all"
+            className={`h-full rounded-full transition-all ${
+              totals.calories > targets.calories * 1.1 ? "bg-amber-500" : "bg-primary"
+            }`}
             style={{
               width: `${Math.min(100, Math.round((totals.calories / Math.max(1, targets.calories)) * 100))}%`,
             }}
           />
         </div>
 
-        <div className="space-y-2.5 pt-1">
+        <div className="space-y-2.5">
           <MacroBar label="蛋白质" val={totals.protein} target={targets.protein} unit="g" barColor="bg-[#2563eb]" />
           <MacroBar label="碳水" val={totals.carbs} target={targets.carbs} unit="g" barColor="bg-amber-500" />
           <MacroBar label="脂肪" val={totals.fat} target={targets.fat} unit="g" barColor="bg-[#9333ea]" />
@@ -354,7 +344,7 @@ function FoodContent() {
         {editTargets && (
           <div className="space-y-2 border-t border-line pt-3">
             <div className="flex items-center justify-between text-xs text-sub">
-              <span>自定义每日目标（留空则按体重自动算）</span>
+              <span>每日目标（留空自动算）</span>
               {targets.isCustom && (
                 <button
                   type="button"
@@ -366,17 +356,17 @@ function FoodContent() {
                     }))
                   }
                 >
-                  恢复自动计算
+                  恢复默认
                 </button>
               )}
             </div>
             <div className="grid grid-cols-4 gap-2">
               {(
                 [
-                  ["calories", "热量 kcal"],
-                  ["protein", "蛋白 g"],
-                  ["carbs", "碳水 g"],
-                  ["fat", "脂肪 g"],
+                  ["calories", "热量"],
+                  ["protein", "蛋白"],
+                  ["carbs", "碳水"],
+                  ["fat", "脂肪"],
                 ] as const
               ).map(([k, lbl]) => (
                 <label key={k} className="block">
@@ -394,31 +384,37 @@ function FoodContent() {
           </div>
         )}
 
-        {dayWorkouts.length > 0 && (
-          <div className="rounded-xl bg-mint-soft px-3 py-2 text-xs text-mint">
-            {fmtDateKey(dateKey)}练了：{dayWorkouts.map((w) => w.title).join("、")}
-            {workoutCals > 0 ? ` · 手表消耗 ${workoutCals} kcal` : ""}
-          </div>
-        )}
-
-        <Link href={`/coach?q=${encodeURIComponent(askCoachPrompt)}`} className={`${btnSoft} w-full text-sm`}>
-          问营养师 / 教练：下一餐怎么吃更好？
-        </Link>
+        <div className="flex items-center justify-between gap-2 border-t border-line pt-2.5 text-xs">
+          {dayWorkouts.length > 0 ? (
+            <span className="truncate font-semibold text-mint">
+              已练：{dayWorkouts.map((w) => w.title).join("、")}
+              {workoutCals > 0 ? ` · ${workoutCals} kcal` : ""}
+            </span>
+          ) : (
+            <span className="text-sub">{fmtDateKey(dateKey)}摄入</span>
+          )}
+          <Link
+            href={`/coach?q=${encodeURIComponent(askCoachPrompt)}`}
+            className="shrink-0 font-semibold text-deep"
+          >
+            问下一餐 ›
+          </Link>
+        </div>
       </Card>
 
       <Card className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-sm font-bold">
-            <Icon name="camera" size={16} />
-            记一餐
+            <Icon name="camera" size={16} className="text-deep" />
+            拍照扫描
           </div>
           {!draft && (
             <button
               type="button"
-              className="text-xs font-semibold text-sub underline"
+              className="text-xs font-semibold text-sub"
               onClick={openManualDraft}
             >
-              自己填数字
+              手动填
             </button>
           )}
         </div>
@@ -459,13 +455,11 @@ function FoodContent() {
 
             {photo && (
               <div className="flex items-center gap-3 rounded-2xl border border-line bg-bg p-2">
-                <img src={photo.thumb} alt="食物照片" className="h-16 w-16 rounded-xl object-cover" />
-                <div className="flex-1 text-xs text-sub">
-                  已选食物照片，可以再补一句说明（比如“米饭只吃了一半”）
-                </div>
+                <img src={photo.thumb} alt="食物照片" className="h-14 w-14 rounded-xl object-cover" />
+                <div className="flex-1 text-xs text-sub">已选照片，可补说明</div>
                 <button
                   type="button"
-                  className="px-2 text-xs text-sub underline"
+                  className="px-2 text-xs text-sub"
                   onClick={() => setPhoto(null)}
                 >
                   移除
@@ -473,15 +467,13 @@ function FoodContent() {
               </div>
             )}
 
-            <div className="flex gap-2">
-              <textarea
-                className={`${input} min-h-[72px] flex-1`}
-                rows={2}
-                placeholder="拍食物照片，或直接写吃了什么（例如：鸡腿去皮饭+青菜+一杯冰美式）"
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-              />
-            </div>
+            <textarea
+              className={`${input} min-h-[60px]`}
+              rows={2}
+              placeholder="拍食物或写吃了什么…"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+            />
 
             <div className="flex gap-2">
               <button
@@ -491,7 +483,7 @@ function FoodContent() {
                 onClick={() => fileRef.current?.click()}
               >
                 <Icon name="camera" size={18} className="mr-1.5" />
-                {photo ? "换一张图" : "拍食物 / 传图"}
+                {photo ? "换图" : "拍照"}
               </button>
               {dictation.supported && (
                 <button
@@ -511,32 +503,31 @@ function FoodContent() {
                   {dictation.listening ? "停止" : "语音"}
                 </button>
               )}
+              <button
+                type="button"
+                className={`${btnPrimary} flex-1 text-sm`}
+                disabled={busy || (!text.trim() && !photo)}
+                onClick={() => void analyzeMeal()}
+              >
+                <Icon name="sparkles" size={17} className="mr-1" />
+                {busy ? "分析中…" : "AI 扫描"}
+              </button>
             </div>
 
             {dictation.error && <p className="text-xs text-deep">{dictation.error}</p>}
             {error && (
               <div className="rounded-xl bg-primary-soft px-3 py-2 text-xs text-deep">{error}</div>
             )}
-
-            <button
-              type="button"
-              className={`${btnPrimary} w-full`}
-              disabled={busy || (!text.trim() && !photo)}
-              onClick={() => void analyzeMeal()}
-            >
-              <Icon name="sparkles" size={18} className="mr-1.5" />
-              {busy ? "AI 营养师正在识别食物并计算…" : "AI 分析蛋白质 / 碳水 / 热量"}
-            </button>
           </>
         ) : (
           <div className="space-y-3 border-t border-line pt-3">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-deep">
-                {manualMode ? "手动填写（直接修改数字）" : "AI 分析结果（可核对微调后保存）"}
+                {manualMode ? "手动记录" : "扫描结果"}
               </span>
               <button
                 type="button"
-                className="text-xs text-sub underline"
+                className="text-xs text-sub"
                 onClick={() => {
                   setDraft(null);
                   setManualMode(false);
@@ -553,7 +544,7 @@ function FoodContent() {
             )}
 
             <label className="block">
-              <span className="text-xs text-sub">这餐名称</span>
+              <span className="text-xs text-sub">餐名</span>
               <input
                 className={`${input} mt-1`}
                 value={draft.summary}
@@ -564,7 +555,7 @@ function FoodContent() {
             <div className="grid grid-cols-4 gap-2">
               {(
                 [
-                  ["calories", "热量 kcal"],
+                  ["calories", "热量"],
                   ["protein", "蛋白 g"],
                   ["carbs", "碳水 g"],
                   ["fat", "脂肪 g"],
@@ -585,7 +576,7 @@ function FoodContent() {
             {draft.items.length > 0 && (
               <details className="rounded-xl border border-line bg-bg px-3 py-2" open>
                 <summary className="cursor-pointer text-xs font-semibold text-sub">
-                  食物拆解明细（{draft.items.length} 项，改数字会自动重算总计）
+                  明细 ({draft.items.length})
                 </summary>
                 <div className="mt-2 space-y-2">
                   {draft.items.map((it, idx) => (
@@ -598,9 +589,9 @@ function FoodContent() {
                         {(
                           [
                             ["calories", "kcal"],
-                            ["protein", "蛋白g"],
-                            ["carbs", "碳水g"],
-                            ["fat", "脂肪g"],
+                            ["protein", "蛋白"],
+                            ["carbs", "碳水"],
+                            ["fat", "脂肪"],
                           ] as const
                         ).map(([k, u]) => (
                           <label key={k} className="block">
@@ -621,24 +612,20 @@ function FoodContent() {
             )}
 
             <button type="button" className={`${btnPrimary} w-full`} onClick={saveDraft}>
-              {draft.editingId ? "保存修改" : `保存到${fmtDateKey(dateKey)}饮食记录`}
+              {draft.editingId ? "保存修改" : "保存"}
             </button>
           </div>
         )}
       </Card>
 
       <section className="space-y-2.5">
-        <div className="text-sm font-semibold text-sub">
-          {fmtDateKey(dateKey)}吃过的（{dayMeals.length} 餐）
+        <div className="text-xs font-semibold text-sub">
+          {fmtDateKey(dateKey)} · {dayMeals.length} 餐
         </div>
 
         {dayMeals.length === 0 ? (
           <Card>
-            <p className="text-sm text-sub">
-              {dateKey === today
-                ? "今天还没有记录饮食。吃之前拍张照，看看蛋白质够不够吧！"
-                : "这一天没有饮食记录。"}
-            </p>
+            <p className="py-2 text-center text-sm text-sub">暂无记录</p>
           </Card>
         ) : (
           dayMeals.map((m) => {

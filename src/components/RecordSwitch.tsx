@@ -2,9 +2,9 @@ import Link from "next/link";
 import Icon, { type IconName } from "./Icon";
 
 const ITEMS: { id: "log" | "library" | "learn"; href: string; label: string; icon: IconName }[] = [
-  { id: "log", href: "/history", label: "我的记录", icon: "clipboard" },
+  { id: "log", href: "/history", label: "记录", icon: "clipboard" },
   { id: "library", href: "/library", label: "动作库", icon: "book" },
-  { id: "learn", href: "/learn", label: "避坑指南", icon: "bulb" },
+  { id: "learn", href: "/learn", label: "指南", icon: "bulb" },
 ];
 
 /** 记录 tab header: switches between the logs, the exercise library and the pitfalls guide. */

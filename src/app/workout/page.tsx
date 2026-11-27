@@ -225,7 +225,7 @@ export default function WorkoutPage() {
       .map((e) => ({ ...e, sets: e.sets.filter((s) => s.done) }))
       .filter((e) => e.sets.length);
     if (finishedExercises.length === 0) {
-      setHint("还没有打勾任何完成的组。如果想放弃这次训练，请点「放弃不保存」。");
+      setHint("还没有打勾任何完成的组。如果想放弃这次训练，请点「放弃」。");
       return;
     }
     const w: Workout = {
@@ -268,7 +268,7 @@ export default function WorkoutPage() {
                 </>
               )}
               <span>
-                · 已完成 <span className="num text-[15px] font-bold text-ink">{doneSets}/{totalSets}</span> 组
+                · <span className="num text-[15px] font-bold text-ink">{doneSets}/{totalSets}</span> 组
               </span>
             </span>
             <label className="relative flex cursor-pointer items-center gap-1 font-semibold text-deep underline underline-offset-2">
@@ -355,7 +355,7 @@ export default function WorkoutPage() {
                         setHiddenImgs((m) => ({ ...m, [stateKey]: !m[stateKey] }))
                       }
                     >
-                      {imgShown ? "收起图" : "大图"}
+                      {imgShown ? "隐图" : "图示"}
                     </button>
                   )}
                   <button
@@ -368,7 +368,7 @@ export default function WorkoutPage() {
                     onClick={() => setOpenGuide(openGuide === stateKey ? null : stateKey)}
                     aria-expanded={openGuide === stateKey}
                   >
-                    {openGuide === stateKey ? "收起" : "怎么做?"}
+                    {openGuide === stateKey ? "收起" : "教程"}
                   </button>
                 </div>
               </div>
@@ -390,7 +390,7 @@ export default function WorkoutPage() {
                     </span>
                   </>
                 ) : (
-                  "第一次做这个动作，从轻的开始，先把动作做对"
+                  "首次练习 · 轻重量起手"
                 )}
               </div>
               {sessionAdvice && showSessionAdvice && (
@@ -414,7 +414,7 @@ export default function WorkoutPage() {
                       onClick={() => saveToLibrary(ex)}
                       className="mb-3 w-full rounded-xl border border-primary/40 bg-primary-soft px-3 py-2.5 text-sm font-semibold text-deep"
                     >
-                      ＋ 加入我的动作库(以后可以直接用)
+                      + 存到动作库
                     </button>
                   )}
                   {guide ? (
@@ -506,7 +506,7 @@ export default function WorkoutPage() {
                         {s.rir == null ? (
                           <div className="flex items-center gap-1.5">
                             <span className="shrink-0 text-[11px] text-sub">
-                              还能做几次?
+                              余力
                             </span>
                             {RIR_OPTIONS.map((r) => (
                               <button
@@ -635,7 +635,7 @@ export default function WorkoutPage() {
         <div className="safe-b-4 fixed inset-x-0 bottom-0 z-30 px-4">
           <div className="mx-auto flex max-w-md items-center justify-between rounded-3xl bg-primary px-5 py-3 text-[var(--c-on-accent)] shadow-lg">
             <div>
-              <div className="text-xs font-semibold opacity-80">休息一下，喝口水</div>
+              <div className="text-xs font-semibold opacity-80">组间休息</div>
               <div className="num text-5xl font-bold leading-none">
                 {mmss(restLeft)}
               </div>
@@ -684,7 +684,7 @@ export default function WorkoutPage() {
             role="dialog"
             aria-label="结束训练"
           >
-            <h2 className="text-xl font-bold">练完啦!</h2>
+            <h2 className="text-xl font-bold">完成训练</h2>
             <p className="mt-1 text-sm text-sub">
               完成 {doneSets} 组 ·{" "}
               {backfill
@@ -693,7 +693,7 @@ export default function WorkoutPage() {
               。没打勾的组不会被记录。
             </p>
 
-            <div className="mt-4 text-sm font-semibold">今天感觉怎么样?</div>
+            <div className="mt-4 text-sm font-semibold">训练感受</div>
             <div className="mt-2 flex justify-between">
               {FEELINGS.map((f, i) => (
                 <button
@@ -712,12 +712,12 @@ export default function WorkoutPage() {
               ))}
             </div>
 
-            <div className="mt-4 text-sm font-semibold">手表数据(可选)</div>
+            <div className="mt-4 text-sm font-semibold">手表数据</div>
             <div className="mt-2">
               <WatchForm value={watch} onChange={setWatch} />
             </div>
 
-            <div className="mt-4 text-sm font-semibold">备注(可选)</div>
+            <div className="mt-4 text-sm font-semibold">备注</div>
             <textarea
               className={`${input} mt-2`}
               rows={2}
@@ -727,7 +727,7 @@ export default function WorkoutPage() {
             />
 
             <button className={`${btnPrimary} mt-4 w-full`} onClick={finish}>
-              保存这次训练
+              保存训练
             </button>
             <div className="mt-2 flex gap-2">
               <button
@@ -745,7 +745,7 @@ export default function WorkoutPage() {
                   }
                 }}
               >
-                放弃不保存
+                放弃
               </button>
             </div>
           </div>

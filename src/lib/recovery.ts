@@ -85,11 +85,11 @@ export function todaySuggestion(
   now: number,
 ): { text: string; part?: BodyPart } {
   if (!workouts.length)
-    return { text: "还没有训练记录。点一下身体上想练的部位,开始第一次训练吧。" };
+    return { text: "点选部位，开始首训" };
   const since = hoursSinceTrained(workouts, custom, now);
   const trained = BODY_PARTS.filter((p) => since[p] !== undefined);
   if (!trained.length)
-    return { text: "点一下身体上想练的部位,教练会帮你排好今天的训练。" };
+    return { text: "点选部位，开始首训" };
 
   const ready = trained.filter((p) => since[p]! >= RECOVERY_HOURS);
   const recovering = trained.filter((p) => since[p]! < RECOVERY_HOURS);
@@ -98,14 +98,14 @@ export function todaySuggestion(
   // longest-rested part that has been trained before wins; untrained parts come next
   if (ready.length) {
     const p = ready.sort((a, b) => since[b]! - since[a]!)[0];
-    return { text: `距离上次练${partLabel(p)} ${ago(since[p]!)}了,今天适合练${partLabel(p)}。`, part: p };
+    return { text: `推荐练${partLabel(p)}（已休 ${ago(since[p]!)}）`, part: p };
   }
   if (never.length) {
     const p = never[0];
     const done = recovering.map(partLabel).join("、");
-    return { text: `${done}还在恢复,今天可以试试还没练过的${partLabel(p)}。`, part: p };
+    return { text: `推荐练${partLabel(p)}（${done}恢复中）`, part: p };
   }
-  return { text: "这两天全身都练到了,今天适合休息或做点拉伸放松。" };
+  return { text: "全身恢复中，建议拉伸" };
 }
 
 /** Monday-to-Sunday of the current week: which days have a workout, and which is today. */

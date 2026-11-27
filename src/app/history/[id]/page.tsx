@@ -6,6 +6,7 @@ import ExercisePicker from "@/components/ExercisePicker";
 import NumInput from "@/components/NumInput";
 import WatchForm from "@/components/WatchForm";
 import { btnGhost, btnPrimary, btnSoft, Card, input } from "@/components/ui";
+import { detectWorkoutPRs } from "@/lib/analytics";
 import {
   mergeWorkouts,
   sameDayWorkouts,
@@ -127,6 +128,8 @@ function Detail() {
       sets: e.sets.map((st, j) => (j === k ? { ...st, ...patch } : st)),
     }));
   const reviewQ = `我完成了 ${localDate(w.startedAt)} 的「${w.title}」，请点评这次训练，和上一次比怎么样，并告诉我下次的目标。`;
+  const prs = detectWorkoutPRs(w, workouts);
+  const doneSets = w.exercises.reduce((n, e) => n + e.sets.filter((s) => s.done).length, 0);
 
   return (
     <div className="space-y-3">
@@ -134,7 +137,7 @@ function Detail() {
         href="/history"
         className="-ml-2 inline-flex min-h-11 items-center gap-1 px-2 text-sm font-semibold text-sub"
       >
-        ‹ 训练记录
+        ‹ 返回
       </Link>
       <header>
         <div className="flex items-start justify-between gap-2">
@@ -155,6 +158,7 @@ function Detail() {
             <h1 className="text-2xl font-bold tracking-tight">{w.title}</h1>
           )}
           <button
+            type="button"
             onClick={() => setEditing(!editing)}
             className={`shrink-0 rounded-full px-3.5 py-2 text-sm font-semibold ${
               editing
@@ -168,7 +172,7 @@ function Detail() {
         <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-sub">
           <span>
             {fmtDate(w.startedAt)}
-            {w.feeling ? ` · 感受 ${FEELINGS[w.feeling - 1]}` : ""}
+            {w.feeling ? ` · ${FEELINGS[w.feeling - 1]}` : ""}
           </span>
           <label className="relative cursor-pointer font-semibold text-deep underline underline-offset-2">
             改日期
@@ -184,59 +188,83 @@ function Detail() {
         </p>
       </header>
 
+      {/* Battle Report Card with PR badges */}
+      <Card className="space-y-3 border-primary/25 bg-gradient-to-br from-card via-card to-primary-soft/50">
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold tracking-wide text-deep">训练战报</span>
+          <span className="text-xs text-sub">
+            {w.exercises.length} 动作 · {doneSets} 组
+          </span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2 text-center">
+          {[
+            { l: "时长", v: durationMin(w), u: "分" },
+            { l: "容量", v: volume(w) || null, u: "kg" },
+            { l: "消耗", v: w.watch?.calories, u: "kcal" },
+            { l: "心率", v: w.watch?.avgHr, u: "bpm" },
+          ].map((x) => (
+            <div key={x.l} className="rounded-xl bg-bg/80 py-2">
+              <div className="num text-xl font-bold leading-tight">{x.v ?? "—"}</div>
+              <div className="text-[11px] text-sub">
+                {x.l}
+                {x.v ? ` ${x.u}` : ""}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {prs.length > 0 && (
+          <div className="space-y-1.5 border-t border-line pt-2.5">
+            <div className="text-xs font-bold text-deep">🏆 破纪录 ({prs.length})</div>
+            <div className="flex flex-wrap gap-1.5">
+              {prs.map((pr) => (
+                <span
+                  key={`${pr.exerciseName}-${pr.kind}`}
+                  className="inline-flex items-center gap-1 rounded-full bg-mint-soft px-2.5 py-1 text-xs font-bold text-mint"
+                >
+                  <span>PR</span>
+                  <span>{pr.exerciseName}</span>
+                  <span className="num">
+                    {pr.value}kg
+                    {pr.kind === "weight" ? " 新高" : " 容量新高"}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
       {twins.map((t) => (
         <div
           key={t.id}
           className="rounded-2xl border border-primary/40 bg-primary-soft p-3 text-sm"
         >
-          <div className="font-semibold text-deep">
-            同一天还有一条记录「{t.title}」
-          </div>
+          <div className="font-semibold text-deep">同日有「{t.title}」</div>
           <p className="mt-0.5 text-xs text-sub">
-            {t.exercises.map((e) => e.name).join(" · ") || "没有动作"}
-          </p>
-          <p className="mt-1 text-xs text-sub">
-            如果是同一次训练,可以合并成一条:动作和组数都会保留,相同的动作会合在一起。
+            {t.exercises.map((e) => e.name).join(" · ") || "无动作"}
           </p>
           <button
+            type="button"
             className={`${btnPrimary} mt-2 w-full py-2.5`}
             onClick={() => {
               if (
-                confirm(`把「${t.title}」合并到这条记录里?合并后那条会被删除。`)
+                confirm(`把「${t.title}」合并到这条记录里？合并后那条会被删除。`)
               )
                 mergeWorkouts(w.id, t.id);
             }}
           >
-            合并成一条记录
+            合并记录
           </button>
         </div>
       ))}
-
-      <div className="grid grid-cols-4 gap-2 text-center">
-        {[
-          { l: "时长", v: durationMin(w), u: "分钟" },
-          { l: "总重量", v: volume(w) || null, u: "kg" },
-          { l: "消耗", v: w.watch?.calories, u: "千卡" },
-          { l: "平均心率", v: w.watch?.avgHr, u: "bpm" },
-        ].map((x) => (
-          <div
-            key={x.l}
-            className="rounded-2xl border border-line bg-card py-2"
-          >
-            <div className="text-lg font-bold tabular-nums">{x.v ?? "—"}</div>
-            <div className="text-[11px] text-sub">
-              {x.l}
-              {x.v ? ` ${x.u}` : ""}
-            </div>
-          </div>
-        ))}
-      </div>
 
       <Link
         href={`/coach?q=${encodeURIComponent(reviewQ)}`}
         className={`${btnPrimary} w-full`}
       >
-        让教练点评这次训练
+        AI 点评
       </Link>
 
       {w.exercises.map((e, i) => {

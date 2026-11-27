@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import RecordSwitch from "@/components/RecordSwitch";
 import PlanCard from "@/components/PlanCard";
-import { btnPrimary, btnSoft, Card, H1 } from "@/components/ui";
+import ProgressChart from "@/components/ProgressChart";
+import { btnPrimary, btnSoft, Card } from "@/components/ui";
 import { startFree } from "@/lib/actions";
+import { computeStreakWeeks, topExerciseProgress } from "@/lib/analytics";
 import { sameDayWorkouts } from "@/lib/workout-edit";
 import {
   computeNutritionTargets,
@@ -18,6 +20,7 @@ import {
   durationMin,
   fmtDate,
   removeMealLog,
+  setState,
   useApp,
   useHydrated,
   volume,
@@ -39,10 +42,8 @@ function HistoryContent() {
   };
 
   const sortedWorkouts = [...workouts].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
-  const weekAgo = new Date(now - 7 * 864e5).toISOString();
-  const weekWorkouts = workouts.filter((w) => w.startedAt >= weekAgo);
-  const weekCount = weekWorkouts.length;
-  const weekMinutes = weekWorkouts.reduce((n, w) => n + (durationMin(w) ?? 0), 0);
+  const streak = computeStreakWeeks(workouts, now);
+  const progressItems = topExerciseProgress(workouts, 90, 6);
   const targets = computeNutritionTargets(profile);
 
   // Group meals by local calendar day, newest day first, newest meal first within each day
@@ -57,14 +58,8 @@ function HistoryContent() {
   const dayEntries = [...mealsByDay.entries()].sort(([a], [b]) => b.localeCompare(a));
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <RecordSwitch on="log" />
-
-      <H1
-        sub={`${profile.name || "当前人物"} · ${workouts.length} 次训练 · ${meals.length} 条饮食`}
-      >
-        记录
-      </H1>
 
       {/* Dual tab selector: Training vs Food */}
       <div
@@ -100,65 +95,79 @@ function HistoryContent() {
         <div className="space-y-3">
           {active && (
             <Card className="border-mint/40 bg-mint-soft">
-              <div className="text-sm font-semibold text-mint">训练进行中</div>
-              <div className="mt-0.5 text-lg font-bold">{active.title}</div>
-              <Link href="/workout" className={`${btnPrimary} mt-3 w-full`}>
-                继续训练
-              </Link>
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-xs font-semibold text-mint">训练中</div>
+                  <div className="text-base font-bold">{active.title}</div>
+                </div>
+                <Link href="/workout" className={`${btnPrimary} py-2 text-sm`}>
+                  继续
+                </Link>
+              </div>
             </Card>
           )}
 
           <div className="grid grid-cols-3 gap-2 text-center">
             {[
-              { l: "最近 7 天", v: weekCount, u: "次" },
-              { l: "一共", v: workouts.length, u: "次" },
-              { l: "最近 7 天", v: weekMinutes, u: "分钟" },
-            ].map((x, i) => (
-              <div key={i} className="rounded-2xl border border-line bg-card py-2.5">
-                <div className="num text-2xl font-bold">{x.v}</div>
-                <div className="text-[11px] text-sub">
-                  {x.l} · {x.u}
+              { l: "连续打卡", v: streak.currentWeeks, u: "周" },
+              { l: "本周已练", v: streak.thisWeekDays, u: "天" },
+              { l: "累计训练", v: workouts.length, u: "次" },
+            ].map((x) => (
+              <div key={x.l} className="rounded-2xl border border-line bg-card py-2.5">
+                <div className="num text-2xl font-bold">
+                  {x.v}
+                  <span className="ml-0.5 text-xs font-semibold text-sub">{x.u}</span>
                 </div>
+                <div className="text-[11px] text-sub">{x.l}</div>
               </div>
             ))}
           </div>
 
+          {progressItems.length > 0 && (
+            <Card>
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-xs font-semibold text-sub">核心动作进步</span>
+                <span className="text-[11px] text-sub">近 90 天</span>
+              </div>
+              <ProgressChart items={progressItems} />
+            </Card>
+          )}
+
           {plan && !active && (
-            <section>
-              <h2 className="mb-2 text-sm font-semibold text-sub">
-                教练安排的计划 · {fmtDate(plan.createdAt)}
-              </h2>
-              <PlanCard plan={plan} />
-            </section>
+            <PlanCard
+              plan={plan}
+              collapsible
+              defaultCollapsed
+              onDismiss={() => setState((s) => ({ ...s, plan: null }))}
+            />
           )}
 
           <div className="grid grid-cols-2 gap-2">
             <button
+              type="button"
               className={btnSoft}
               onClick={() => {
-                if (active && !confirm("有一次训练还没结束,要放弃它重新开始记录吗?")) return;
+                if (active && !confirm("有一次训练还没结束，要放弃它重新开始记录吗？")) return;
                 startFree();
                 router.push("/workout");
               }}
             >
-              自己添加记录
+              手动记
             </button>
             <Link
               href={`/coach?q=${encodeURIComponent("我想补记一次训练,你来问我做了什么,帮我记录下来")}`}
               className={btnSoft}
             >
-              让教练帮我记
+              AI 帮记
             </Link>
           </div>
 
           {sortedWorkouts.length === 0 ? (
             <Card>
-              <p className="text-sm text-sub">
-                还没有训练记录。去「今天」点一下 3D 人体,让教练安排第一次训练吧，练完这里就会出现记录，下次还能看到和上次的对比。
-              </p>
+              <p className="py-2 text-center text-sm text-sub">暂无训练记录</p>
             </Card>
           ) : (
-            <ul className="space-y-3">
+            <ul className="space-y-2.5">
               {sortedWorkouts.map((w) => (
                 <li key={w.id}>
                   <Link href={`/history/${w.id}`} className="block">
@@ -189,31 +198,24 @@ function HistoryContent() {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <Link href="/food" className={btnSoft}>
-              拍照 / 记一餐
+              记一餐
             </Link>
             <Link
               href={`/coach?q=${encodeURIComponent("帮我看看最近的饮食和热量、蛋白质达标情况，给我下一餐建议")}`}
               className={btnSoft}
             >
-              问教练怎么吃
+              问教练
             </Link>
           </div>
 
           <Card className="space-y-1.5">
             <div className="flex items-center justify-between gap-2 text-xs">
-              <span className="font-semibold text-sub">
-                {profile.name || "当前人物"}每日进食目标
-                {targets.isCustom
-                  ? "（自定义）"
-                  : targets.missingBodyStats
-                    ? "（默认参考）"
-                    : `（按 ${profile.heightCm}cm / ${profile.weightKg}kg 计算）`}
-              </span>
-              <Link href="/me" className="font-semibold text-deep underline">
-                改身体数据
+              <span className="font-semibold text-sub">每日目标</span>
+              <Link href="/me/profile" className="font-semibold text-deep">
+                修改 ›
               </Link>
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold tabular-nums">
@@ -225,13 +227,11 @@ function HistoryContent() {
           </Card>
 
           {dayEntries.length === 0 ? (
-            <Card className="space-y-2">
-              <p className="text-sm text-sub">
-                当前人物还没有饮食记录。点上方「拍照 / 记一餐」，AI 营养师会结合你现在的身高体重自动估算热量与营养并记到这里。
-              </p>
+            <Card>
+              <p className="py-2 text-center text-sm text-sub">暂无饮食记录</p>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {dayEntries.map(([dateKey, dayMeals]) => {
                 const dayTotals = sumMealMacros(dayMeals);
                 const pct = Math.min(
@@ -249,9 +249,9 @@ function HistoryContent() {
                         </div>
                         <Link
                           href={`/food?date=${dateKey}`}
-                          className="text-xs font-semibold text-deep underline"
+                          className="text-xs font-semibold text-deep"
                         >
-                          + 补记这天
+                          + 补记
                         </Link>
                       </div>
                       <div className="mt-1.5 flex items-baseline justify-between text-xs tabular-nums">

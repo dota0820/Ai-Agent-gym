@@ -27,17 +27,17 @@ const STARTERS: {
 }[] = [
   {
     icon: "calendar",
-    label: "帮我安排今天的训练",
+    label: "安排今日训练",
     send: "帮我安排今天的训练,根据我最近的记录决定练哪里",
   },
-  { icon: "target", label: "下次我应该练什么?", send: "下次我应该练什么?" },
+  { icon: "target", label: "下次练什么", send: "下次我应该练什么?" },
   {
     icon: "dumbbell",
-    label: "教我一个动作的正确做法",
+    label: "学动作做法",
     send: "我想学一个动作的正确做法,你先问我是哪个动作",
   },
-  { icon: "camera", label: "拍器械,问怎么用", photo: true },
-  { icon: "bulb", label: "新手避坑指南(练不到?会不会受伤?)", href: "/learn" },
+  { icon: "camera", label: "拍器械问用法", photo: true },
+  { icon: "bulb", label: "新手避坑指南", href: "/learn" },
 ];
 
 function ChoiceButton({
@@ -193,7 +193,7 @@ function Coach() {
                   <span className="truncate">{toolStatus || "思考中…"}</span>
                 </>
               ) : (
-                "记得你的身体情况和喜好"
+                "随时提问"
               )}
             </div>
           </div>
@@ -259,7 +259,7 @@ function Coach() {
               {profile.name ? `,${profile.name}` : ""}
             </h1>
             <p className="mt-2 text-[15px] text-sub">
-              我是你的 AI 健身教练,今天想练什么?
+              今天想练什么？
             </p>
           </div>
           <div className="space-y-1">
@@ -404,7 +404,7 @@ function Coach() {
                     className="h-14 w-14 rounded-xl object-cover"
                   />
                   <span className="flex-1 text-sub">
-                    照片已选好，可以再补一句话，然后点发送
+                    已选照片，可补文字
                   </span>
                   <button
                     type="button"
@@ -419,7 +419,7 @@ function Coach() {
               {!photo && dictation.listening && (
                 <span className="flex flex-1 animate-pulse items-center gap-1.5 px-2 font-semibold text-deep">
                   <Icon name="mic" size={16} />
-                  正在听…说完会自动停
+                  聆听中…
                 </span>
               )}
               {!photo &&
@@ -471,7 +471,7 @@ function Coach() {
               }}
               rows={1}
               enterKeyHint="enter"
-              placeholder="问问 AI 教练…"
+              placeholder="问教练…"
               aria-label="给教练发消息"
               className="max-h-[168px] min-h-10 min-w-0 flex-1 resize-none bg-transparent px-1 py-2 text-[16px] leading-6 outline-none placeholder:text-sub"
             />
@@ -509,7 +509,7 @@ function Coach() {
             </button>
           </div>
           <p className="mt-1.5 text-center text-[11px] text-sub">
-            AI 教练也会出错，关节痛或身体不舒服请先停下来
+            AI 仅供参考，不适请停止
           </p>
         </div>
       </div>

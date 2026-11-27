@@ -46,7 +46,7 @@ export default function Me() {
         <div className="min-w-0 flex-1">
           <div className="truncate text-base font-bold">{profile.name || "默认人物"}</div>
           <div className="truncate text-xs text-sub">
-            {meta || "点「身体与目标」填写身高、体重和目标"}
+            {meta || "完善身体资料"}
           </div>
         </div>
         <span className="shrink-0 text-xs font-semibold text-sub">切换 ▾</span>
@@ -68,7 +68,7 @@ export default function Me() {
         <Row
           href="/me/profile#memory"
           icon="brain"
-          title="教练记住的事"
+          title="教练记忆"
           value={`${profile.memory.length} 条`}
         />
       </Card>
@@ -81,9 +81,8 @@ export default function Me() {
       <Card>
         <div className="flex items-center gap-1.5 text-sm font-bold">
           <Icon name="palette" size={16} />
-          外观（配色）
+          主题配色
         </div>
-        <p className="mt-0.5 text-xs text-sub">点一下马上换。开始训练后会自动变成同色系的深色模式。</p>
         <div className="mt-3 grid grid-cols-3 gap-2">
           {THEMES.map((t) => (
             <button
