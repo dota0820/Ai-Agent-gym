@@ -66,6 +66,7 @@ const MS = {
   sunrise: "wb_twilight",
   sun: "light_mode",
   moon: "dark_mode",
+  gallery: "photo_library",
 } as const;
 
 export type IconName = keyof typeof MS;

@@ -81,6 +81,8 @@ function FoodContent() {
   const [editTargets, setEditTargets] = useState(false);
 
   const fileRef = useRef<HTMLInputElement>(null);
+  // capture="environment" opens the camera straight away; fileRef picks from the gallery
+  const cameraRef = useRef<HTMLInputElement>(null);
   const dictPrefixRef = useRef("");
   const dictation = useDictation((t) => {
     const prefix = dictPrefixRef.current;
@@ -392,7 +394,7 @@ function FoodContent() {
           type="button"
           onClick={() => {
             if (draft) setDraft(null);
-            setTimeout(() => fileRef.current?.click(), 0);
+            setTimeout(() => cameraRef.current?.click(), 0);
           }}
           className="relative mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-primary text-[16px] font-bold text-forest shadow-[0_8px_24px_color-mix(in_srgb,var(--c-primary)_25%,transparent)]"
         >
@@ -434,9 +436,7 @@ function FoodContent() {
                   <span className="text-[12px] font-semibold text-sub">
                     {l}
                   </span>
-                  <span className="text-[11px] font-bold text-deep">
-                    {p}%
-                  </span>
+                  <span className="text-[11px] font-bold text-deep">{p}%</span>
                 </div>
                 <div className="mt-1 flex items-baseline">
                   <span className="display-num text-[22px] leading-none text-forest">
@@ -573,6 +573,18 @@ function FoodContent() {
                 e.target.value = "";
               }}
             />
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onPickPhoto(f);
+                e.target.value = "";
+              }}
+            />
 
             {photo && (
               <div className="flex items-center gap-3 rounded-2xl border border-line bg-bg p-2">
@@ -607,10 +619,19 @@ function FoodContent() {
                 type="button"
                 className={`${btnGhost} flex-1 text-sm`}
                 disabled={busy}
-                onClick={() => fileRef.current?.click()}
+                onClick={() => cameraRef.current?.click()}
               >
                 <Icon name="camera" size={18} className="mr-1.5" />
-                {photo ? "换图" : "拍照"}
+                拍照
+              </button>
+              <button
+                type="button"
+                className={`${btnGhost} flex-1 text-sm`}
+                disabled={busy}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Icon name="gallery" size={18} className="mr-1.5" />
+                {photo ? "换图" : "相册"}
               </button>
               {dictation.supported && (
                 <button
@@ -819,7 +840,7 @@ function FoodContent() {
                     onClick={() => {
                       setMealType(type);
                       if (draft) setDraft(null);
-                      setTimeout(() => fileRef.current?.click(), 0);
+                      setTimeout(() => cameraRef.current?.click(), 0);
                     }}
                     className="lift flex h-11 items-center justify-center gap-1.5 rounded-full bg-card text-[13px] font-bold text-forest"
                   >

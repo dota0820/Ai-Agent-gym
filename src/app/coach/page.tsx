@@ -95,6 +95,8 @@ function Coach() {
   const router = useRouter();
   const endRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const [photoMenu, setPhotoMenu] = useState(false);
   const boxRef = useRef<HTMLTextAreaElement>(null);
   const sentQ = useRef<string | null>(null);
   const didFreshMount = useRef(false);
@@ -288,7 +290,7 @@ function Coach() {
                   s.href
                     ? router.push(s.href)
                     : s.photo
-                      ? fileRef.current?.click()
+                      ? cameraRef.current?.click()
                       : s.send && void sendToCoach(s.send)
                 }
                 className="lift flex w-full items-center gap-3.5 rounded-[22px] bg-card px-3 py-2.5 text-left text-[15px] font-semibold text-forest active:scale-[0.99]"
@@ -478,15 +480,53 @@ function Coach() {
                 e.target.value = "";
               }}
             />
-            <button
-              type="button"
-              className={`${iconBtn} text-ink`}
-              aria-label="拍照或选照片发给教练"
-              disabled={busy}
-              onClick={() => fileRef.current?.click()}
-            >
-              <Icon name="plus" size={22} />
-            </button>
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void onPhoto(f);
+                e.target.value = "";
+              }}
+            />
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                className={`${iconBtn} text-ink`}
+                aria-label="拍照或选照片发给教练"
+                aria-expanded={photoMenu}
+                disabled={busy}
+                onClick={() => setPhotoMenu(!photoMenu)}
+              >
+                <Icon name={photoMenu ? "x" : "plus"} size={22} />
+              </button>
+              {photoMenu && (
+                <div className="lift absolute bottom-[calc(100%+10px)] left-0 z-20 w-44 overflow-hidden rounded-2xl bg-card py-1">
+                  {(
+                    [
+                      { label: "拍照", icon: "camera", ref: cameraRef },
+                      { label: "从相册选", icon: "gallery", ref: fileRef },
+                    ] as const
+                  ).map((o) => (
+                    <button
+                      key={o.label}
+                      type="button"
+                      onClick={() => {
+                        setPhotoMenu(false);
+                        o.ref.current?.click();
+                      }}
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left text-[15px] font-semibold active:bg-bg"
+                    >
+                      <Icon name={o.icon} size={21} className="text-deep" />
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <textarea
               ref={boxRef}
               value={text}

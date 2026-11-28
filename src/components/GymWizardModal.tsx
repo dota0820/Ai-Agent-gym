@@ -124,6 +124,7 @@ export default function GymWizardModal({
     null,
   );
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const selected = parseEquipmentList(draft.equipment);
   const selectedSet = new Set(selected);
@@ -275,7 +276,8 @@ export default function GymWizardModal({
       draft.name !== initialGym.name ||
       draft.equipment !== initialGym.equipment ||
       (draft.notes ?? "") !== (initialGym.notes ?? "");
-    if (dirty && !window.confirm("还有未保存的健身房配置，确定放弃吗？")) return;
+    if (dirty && !window.confirm("还有未保存的健身房配置，确定放弃吗？"))
+      return;
     onClose();
   }
 
@@ -295,6 +297,18 @@ export default function GymWizardModal({
           ref={fileRef}
           type="file"
           accept="image/*"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) void onScanPhoto(f);
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
           hidden
           onChange={(e) => {
             const f = e.target.files?.[0];
@@ -418,24 +432,36 @@ export default function GymWizardModal({
                 </p>
               </div>
 
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => fileRef.current?.click()}
-                className="flex w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/40 bg-surface px-4 py-6 text-center active:bg-bg disabled:opacity-50"
-              >
-                <span className="text-deep">
-                  <Icon name={busy ? "timer" : "camera"} size={28} />
-                </span>
-                <span className="text-sm font-bold text-deep">
-                  {busy
-                    ? "AI 正在识别照片里的器械…"
-                    : "拍照 / 从相册选图让 AI 识别"}
-                </span>
-                <span className="text-xs text-sub">
-                  识别后会先给你看清单，你点确认才会加入
-                </span>
-              </button>
+              {busy ? (
+                <div className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-primary/40 bg-surface px-4 py-6 text-sm font-bold text-deep">
+                  <Icon name="timer" size={22} />
+                  AI 正在识别照片里的器械…
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => cameraRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-primary/40 bg-surface px-3 py-5 text-sm font-bold text-deep active:bg-bg"
+                    >
+                      <Icon name="camera" size={28} />
+                      拍照识别
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => fileRef.current?.click()}
+                      className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-line bg-surface px-3 py-5 text-sm font-bold text-deep active:bg-bg"
+                    >
+                      <Icon name="gallery" size={28} />
+                      从相册选
+                    </button>
+                  </div>
+                  <p className="text-center text-xs text-sub">
+                    识别后会先给你看清单，你点确认才会加入
+                  </p>
+                </div>
+              )}
 
               {scanError && (
                 <div className="rounded-xl bg-red-50 px-3 py-2 text-xs text-red-600">

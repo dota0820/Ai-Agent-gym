@@ -6,8 +6,8 @@ import { themeColors, useTheme } from "@/lib/theme";
 
 /** Front + back body diagram with the target muscles coloured in. */
 export default function MuscleMap({
-  primary,
-  secondary,
+  primary: rawPrimary,
+  secondary: rawSecondary,
 }: {
   primary: Muscle[];
   secondary: Muscle[];
@@ -15,8 +15,8 @@ export default function MuscleMap({
   useTheme(); // re-render when the theme changes
   const { muscle: PRIMARY, muscle2: SECONDARY, body: BODY } = themeColors();
   // unknown names (old or hand-edited data) would crash the diagram
-  primary = primary.filter((m) => m in MUSCLE_LABEL);
-  secondary = secondary.filter((m) => m in MUSCLE_LABEL);
+  const primary = rawPrimary.filter((m) => m in MUSCLE_LABEL);
+  const secondary = rawSecondary.filter((m) => m in MUSCLE_LABEL);
   // The diagram colours by "frequency": 2 = primary, 1 = secondary.
   const data: IExerciseData[] = [
     { name: "primary", muscles: primary, frequency: 2 },
